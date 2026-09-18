@@ -21,7 +21,10 @@ always mine; this records where the idea came from.
 
 When a decision changes, add a new entry with **Supersedes:** <old ID>, and add
 **Superseded by** <new ID> to the old entry. Entries without that line are
-active.
+active. When only part of an entry changes, the new entry names that part
+(**Supersedes:** Q5, first bullet) and the old entry gets **Superseded in
+part by** <new ID>, naming the same part; the rest of the old entry stays
+active. The old entry's text is never edited.
 
 ---
 
@@ -308,6 +311,9 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
 - **Origin:** LLM-suggested, modified. LLM proposed warning immediately on an
   employee with an undeclared company; I chose to hold it until end of input.
   End-of-input ordering detail: LLM-suggested, accepted.
+- **Superseded in part by** [Q13](#q13) (first bullet: exact repeats) and
+  [Q12](#q12) (second and fourth bullets: name conflicts now span partners
+  and employees, so partners are resolved with employees).
 
 ### <a id="q6"></a>Q6 — Error handling depth
 
@@ -401,6 +407,124 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   back-link (a task could be finished with its question still open).
 - **Origin:** Adding them to §4: Mine. Cross-link format: LLM-suggested,
   accepted.
+
+### <a id="t2-3"></a>T2.3 — Types live in the layer that owns them
+
+- **Decision:** `Command`, `ContactType`, and the per-line parse result are
+  exported from `parser.ts`; `Network` and the resolution warnings from
+  `network.ts`. `assertNever` has its own module, `assert-never.ts`, because
+  every layer may use it.
+- **Context:** T2a. The types come before the code that uses them (T3–T6).
+- **Why:** Each type sits beside the code that produces it, so imports follow
+  the layer order in D2 (`network` imports from `parser`, never the reverse).
+  Rejected: one shared `types.ts`, which every module would import, and which
+  tends to collect unrelated types over time.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t2-4"></a>T2.4 — Command and contact-type shapes
+
+- **Decision:** `CONTACT_TYPES` is a `const` list; `ContactType` is derived from
+  it, and `isContactType` checks against it. `Command` is discriminated on
+  `kind`, whose values are the input keywords (`"Partner"`, …), with named,
+  read-only fields; the contact's field is `contactType`.
+- **Context:** T2b, T2c.
+- **Why:** One list feeds the type, the parser's check (T3d), and the warning
+  text, so adding a contact type is a one-line change. Keywords as `kind`
+  values mean the parser and warnings use the same strings as the input.
+  Named fields (`employee`, `partner`) instead of positional words make the
+  network code read like the brief. Read-only fields because a command is a
+  record of an input line and is never changed. `contactType`, not `type`,
+  so it doesn't read like TypeScript's `type`.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t2-5"></a>T2.5 — Parser and network return data; cli writes text
+
+- **Decision:** A parsed line is `command`, `malformed`, or `blank`
+  (discriminated on `outcome`), and carries its `SourceLine` (1-based line
+  number and raw text). `malformed` holds a reason code and, unless the
+  keyword is unknown, the command's `kind`; the type allows no other
+  combination. The parser exports its grammar as data, `COMMAND_SYNTAX`
+  (each command's argument names); the parser's word count (T3c) and the
+  warning's expected format and list of valid commands are all derived from
+  it. `NetworkWarning` likewise holds a problem code and the data involved.
+  An unresolved contact (Q8) lists one failure per slot, never none, each
+  with its role (`employee` or `partner`), the name, and a cause:
+  `undeclared`, or `wrong-role` when the name is the other kind of person
+  (Q12). Turning these into warning messages is left to `cli` (T6). `Network` is a
+  read-only view of resolved facts; pending partners, employees, and
+  contacts stay private to the network layer and reuse `SourcedCommand`.
+- **Context:** T2d, T2e. Q5, Q7, and Q8 all need the line number and line in
+  their warnings. Q7 also needs each command's expected format.
+- **Why:** Codes can be asserted in parser and network tests without matching
+  exact wording, and the wording changes in one place. `outcome` is used
+  instead of a second `kind` so `line.outcome` and `line.command.kind` can't
+  be confused. The grammar table keeps the command syntax in one place, as
+  `CONTACT_TYPES` does for contact types (T2.4). Rejected: returning finished
+  message strings from each layer, which spreads output wording across three
+  modules; a finished expected-format string from the parser (the first
+  draft), for the same reason; and format strings written in `cli`, which
+  describe the grammar a second time, where they can drift from the parser.
+  Per-slot contact failures let a swapped line (`Contact Chris Laurie email`)
+  say which person is in the wrong role, instead of calling two known names
+  unknown. Rejected: a plain list of unknown names (the first draft), which
+  lost the role and allowed an empty list.
+- **Origin:** LLM-suggested, accepted. The grammar table and the per-slot
+  contact failures came from reviewing the first draft, which had the parser
+  return the expected format as text and the network list unknown names
+  without their role.
+
+### <a id="q13"></a>Q13 — Repeated commands: contacts count, declarations warn
+
+- **Decision:** Every `Contact` line is one interaction and counts toward
+  strength, even when it repeats an earlier line word for word. A
+  `Partner`, `Company`, or `Employee` line that declares a name already
+  declared is discarded with a warning naming the declaration that stands
+  (the first valid one, Q5). This covers exact repeats too.
+- **Context:** T2 review. Q5 ignored every exact repeat silently, which
+  would have dropped repeated contacts, while the plan's T4 subtasks
+  already assumed contacts count.
+- **Why:** A declaration says that a person or company exists, and each one
+  exists once, so a second declaration is a data error the user may want to
+  fix; a warning surfaces the overlap instead of hiding it. A contact is an
+  event, and the same kind of interaction can happen many times; the brief
+  defines strength as the "total amount of Contacts". **Known tradeoff:** a
+  contact recorded twice by mistake counts twice, because the input has no
+  field that tells a real repeat from a duplicate record. The README notes
+  this (T7d). Rejected: ignoring repeated declarations silently (Q5's
+  original rule), and ignoring repeated contacts.
+- **Supersedes:** [Q5](#q5), first bullet.
+- **Origin:** Contacts count and declarations don't: Mine. Warning on
+  repeated declarations: Mine, chosen over ignoring them silently. One
+  `duplicate-declaration` warning that carries both the discarded and the
+  standing declaration, replacing `employee-conflict`: LLM-suggested,
+  accepted.
+
+### <a id="q12"></a>Q12 — One name, one person
+
+- **Decision:** Partners and employees share one namespace: a name belongs
+  to at most one person. Companies have their own namespace: each company
+  name is distinct (a repeat gets the Q13 warning), but it may match a
+  person's name. Name claims are judged at end of input:
+  partners and employees are resolved together in input order, the first
+  valid declaration of a name stands, and any later `Partner` or `Employee`
+  with that name is discarded with the Q13 warning. Partners are therefore
+  held until end of input, like employees.
+- **Context:** T2 review. The brief says employee names are "globally
+  unique" and gives only an employee example; the earlier default read that
+  as unique among employees, with a separate namespace per kind.
+- **Why:** A name is the only identity in the input, so one name for one
+  person keeps every reference unambiguous; `Contact` lines never have to
+  rely on word position to tell a partner from an employee of the same name.
+  Partners are held because Q5 judges "first valid declaration" after
+  resolution: `Employee Sam Hooli` on line 2 must beat `Partner Sam` on
+  line 9, which can't be known until the employee resolves. Rejected: a
+  separate namespace per kind (the earlier default).
+- **Supersedes:** [Q5](#q5), second and fourth bullets (conflicts were
+  employee-only, and resolution ran employees before contacts without
+  partners).
+- **Origin:** One namespace for people: Mine. Companies kept separate:
+  LLM-suggested, accepted. Holding partners until end of input:
+  LLM-suggested, accepted.
 
 ---
 

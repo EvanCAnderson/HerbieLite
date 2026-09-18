@@ -70,15 +70,6 @@ their subtasks are built.
 - **Q11 — Command keyword case.** Q4 covers names, not keywords.
   **Default: case-sensitive, like names; `partner Chris` is malformed (Q7).**
   Settle in T3b.
-- **Q12 — One name used by more than one entity kind** (e.g. a Partner and an
-  Employee both named `Sam`, or a Partner and a Company). Brief only requires
-  employee names to be unique among employees. **Default: allowed; each kind
-  has its own namespace, and a name's position in a `Contact` line says which
-  kind it is.** Settle in T4a.
-- **Q13 — Identical `Contact` lines.** Q5 ignores exact repeats, but a second
-  identical contact is a second interaction. **Default: every `Contact` line
-  counts; Q5's exact-repeat rule covers `Partner`, `Company`, and `Employee`
-  only, and its wording is narrowed when this is settled.** Settle in T4c.
 - **Q1 — Tie-break between partners with equal strength.** Brief is silent.
   **Default: alphabetical by partner name.** Deterministic and testable.
   Settle in T5b.
@@ -100,6 +91,8 @@ their subtasks are built.
 - [**Q7**](./DECISIONS.md#q7) — Malformed lines: discard, warn with expected format, continue.
 - [**Q8**](./DECISIONS.md#q8) — Contacts resolved after all input; unresolved ones warned and discarded.
 - [**Q9**](./DECISIONS.md#q9) — A word is letters only, `[A-Za-z]+`.
+- [**Q12**](./DECISIONS.md#q12) — One name, one person: partners and employees share a namespace; companies don't.
+- [**Q13**](./DECISIONS.md#q13) — Every `Contact` line counts; a repeated declaration is discarded with a warning.
 
 ## 5. Tooling
 
@@ -119,39 +112,43 @@ prefix).
 - [x] T0 — Confirm tooling (§5). Tie-break (Q1) deferred to implementation.
 - [x] T1 — Scaffold project: `package.json`, `tsconfig`(+`.build`), vitest,
       eslint+prettier, `src/` entry + smoke test. All scripts green.
-- [ ] T2 — Types: `Command` union, malformed-line result, domain types.
-  - [ ] T2a — Decide where types live (one shared module vs. the layer that
+- [x] T2 — Types: `Command` union, malformed-line result, domain types.
+  - [x] T2a — Decide where types live (one shared module vs. the layer that
         owns them) and record it.
-  - [ ] T2b — Contact types as one `const` list with a derived union type, so
+  - [x] T2b — Contact types as one `const` list with a derived union type, so
         parser validation and warning text share a single source (FR1).
-  - [ ] T2c — `Command` discriminated union on `kind` with named fields, plus
+  - [x] T2c — `Command` discriminated union on `kind` with named fields, plus
         an `assertNever` helper for exhaustive switches (D3).
-  - [ ] T2d — Per-line parse result: command, malformed (reason and expected
-        format, Q7), or blank (skipped, Q6), each carrying its 1-based line
-        number and raw text for later warnings (Q5, Q8).
-  - [ ] T2e — Network state and warning types: partner and company sets,
-        employee → company map, contact list, pending employees and contacts
-        (D4).
+  - [x] T2d — Per-line parse result: command, malformed (reason and command
+        kind, Q7), or blank (skipped, Q6), each carrying its 1-based line
+        number and raw text for later warnings (Q5, Q8). The grammar as data
+        (`COMMAND_SYNTAX`), so warnings can quote each command's format.
+  - [x] T2e — Network state and warning types: partner and company sets,
+        employee → company map, contact list (D4), and one warning for any
+        repeated declaration (Q12, Q13). Pending partners, employees, and
+        contacts stay private to `network` (T2.5).
 - [ ] T3 — `parser`: line → `Command` or malformed (Q7, Q9); unit tests.
   - [ ] T3a — Split a line into words; skip blank lines (Q6). Settles Q10.
   - [ ] T3b — Recognise the command keyword; unknown keyword → malformed,
         listing the valid commands (Q7). Settles Q11.
-  - [ ] T3c — Per-command word count and `[A-Za-z]+` word check (Q9); a
-        failure → malformed with that command's expected format (Q7).
+  - [ ] T3c — Per-command word count, read from `COMMAND_SYNTAX`, and
+        `[A-Za-z]+` word check (Q9); a failure → malformed with that
+        command's kind (Q7, T2.5).
   - [ ] T3d — Contact type restricted to `email|call|coffee`; anything else →
         malformed (FR1, Q7).
-- [ ] T4 — `network`: apply commands, hold pending employees and contacts,
-      resolve at end of input (Q5, Q8); unit tests.
-  - [ ] T4a — Apply `Partner` and `Company` at once; exact repeats ignored
-        silently (Q5). Settles Q12.
-  - [ ] T4b — Hold each `Employee` as pending with its line number (Q5); exact
-        repeats ignored.
-  - [ ] T4c — Hold each `Contact` as pending with its line number (Q8).
-        Settles Q13.
-  - [ ] T4d — End-of-input resolution: employees in input order (first valid
-        declaration wins; conflicts and unknown companies warned), then
-        contacts (unknown employee or partner warned). Returns the resolved
-        network and warnings in input order (Q5, Q8).
+- [ ] T4 — `network`: apply commands, hold pending partners, employees, and
+      contacts, resolve at end of input (Q5, Q8, Q12); unit tests.
+  - [ ] T4a — Apply `Company` at once; a repeated company is discarded with
+        the duplicate-declaration warning (Q13).
+  - [ ] T4b — Hold each `Partner` and `Employee` as pending with its line
+        number (Q5, Q12).
+  - [ ] T4c — Hold each `Contact` as pending with its line number (Q8);
+        every line is kept, repeats included (Q13).
+  - [ ] T4d — End-of-input resolution: partners and employees together in
+        input order, the first valid declaration of a name standing and any
+        later one warned (Q12, Q13), unknown companies warned (Q5); then
+        contacts (each failed slot warned as undeclared or wrong role, Q8,
+        Q12). Returns the resolved network and warnings in input order.
 - [ ] T5 — `report`: network → sorted lines; add the brief's
       `input.txt` fixture; unit tests incl. the brief's example.
   - [ ] T5a — Tally relationship strength per (company, partner) from resolved
