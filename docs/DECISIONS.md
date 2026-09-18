@@ -364,6 +364,46 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
 
 ---
 
+## T2 — Types
+
+### <a id="t2-1"></a>T2.1 — Break T2–T8 into lettered subtasks
+
+- **Decision:** Each of T2–T8 in PLAN §6 gets 2–5 subtasks, ordered by when they
+  are built and grouped by subject. Subtasks are lettered (`T2a`, `T2b`, …),
+  are more specific than their parent, and name the D/Q entries they
+  implement.
+- **Context:** Before starting T2. The one-line tasks were too coarse to show
+  progress or to decide where a commit should end.
+- **Why:** Small, ordered subtasks make natural commit boundaries within one
+  task (CLAUDE.md), and put each unsettled question next to the code that
+  depends on it. Letters, not `T2.1`-style numbers, because dotted IDs already
+  name decision entries (T1.1–T1.9), and numbered subtasks would collide with
+  them. Rejected: a separate "write tests" subtask per task, since CLAUDE.md
+  puts a change's tests in the same commit as the change.
+- **Origin:** Breakdown and its 2–5 subtask shape: Mine. Subtask contents and
+  lettered IDs: LLM-suggested, accepted.
+
+### <a id="t2-2"></a>T2.2 — Open questions live in PLAN §4, cross-linked to subtasks
+
+- **Decision:** Every open question is a numbered Q in PLAN §4 with a default
+  and the subtask that settles it ("Settle in T3a"); that subtask in §6 names
+  it back ("Settles Q10"). Once settled, the question gets a DECISIONS entry
+  and moves to §4's Decided list. Q10–Q15 were added this way from the
+  questions T2.1's breakdown surfaced, and Q1 now points at T5b.
+- **Context:** The first draft of T2.1 wrote these questions inline in the
+  subtasks, which kept them next to their task but outside the Q numbering
+  that the README (T7d) and the definition of done rely on.
+- **Why:** The question and its default are written once, so they can't drift
+  apart, and both directions stay one lookup away: from a task to what it must
+  decide, and from a question to where it is decided. Q1 already worked this
+  way ("Confirm in T5"). Rejected: questions only inside subtasks (no stable
+  ID to cite from README or code comments), and questions only in §4 with no
+  back-link (a task could be finished with its question still open).
+- **Origin:** Adding them to §4: Mine. Cross-link format: LLM-suggested,
+  accepted.
+
+---
+
 ## Open questions
 
 Open questions live in [PLAN §4](./PLAN.md#4-questions-and-assumptions-document-all-in-readme)
