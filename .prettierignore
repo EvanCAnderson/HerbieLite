@@ -1,0 +1,6 @@
+dist
+coverage
+node_modules
+
+# Frozen interview prompt; must stay verbatim.
+docs/BRIEF.md

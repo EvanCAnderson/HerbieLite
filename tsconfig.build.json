@@ -1,0 +1,7 @@
+// Build config: emits dist/ from production sources only. The base tsconfig
+// (used by typecheck, ESLint and editors) still includes *.test.ts so tests
+// are type-checked; here we exclude them so they don't land in the artifact.
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["**/*.test.ts"]
+}

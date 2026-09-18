@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    /* Language & module: modern greenfield ESM (see PLAN §5, D-modules). */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+
+    /* Emit */
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true,
+
+    /* Strictness: lean on the compiler as the first line of defense. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+
+    /* Interop & checking hygiene */
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}
