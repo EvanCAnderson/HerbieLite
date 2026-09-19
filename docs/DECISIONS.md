@@ -24,13 +24,31 @@ When a decision changes, add a new entry with **Supersedes:** <old ID>, and add
 active. When only part of an entry changes, the new entry names that part
 (**Supersedes:** Q5, first bullet) and the old entry gets **Superseded in
 part by** <new ID>, naming the same part; the rest of the old entry stays
-active. The old entry's text is never edited.
+active. What an old entry says is never edited; its heading and the IDs
+it cites may be updated when IDs are restructured (T3.1).
+
+## Key
+
+Every entry has one ID, and its heading starts with it.
+
+- `S<n>`: setup, decided before any task.
+- `T<n>.<m>`: a decision recorded in task T<n> of PLAN §6, numbered in the
+  order made. Decisions from reviewing a task go in that task's section,
+  with **Context:** "T<n> review". There is no separate review section.
+- `Q<n>`: a question from PLAN §4. It keeps the number it was opened with,
+  which code comments and the README cite. When a task settles it, it gets
+  a T ID in that task's section and the heading shows both:
+  `T3.2 — Q10: Whitespace within a line`.
+- Subtasks (`T3a`) name PLAN work, not decisions (T2.1). `U<n>` names an idea
+  deferred to [UPGRADES](./UPGRADES.md).
+- Each heading has an anchor for its T ID (`#t3-2`) and, if it has one, its
+  Q (`#q10`).
 
 ---
 
 ## Setup — language & framing
 
-### S1 — Language: TypeScript on Node.js
+### <a id="s1"></a>S1 — Language: TypeScript on Node.js
 
 - **Decision:** Implement in TypeScript, run on Node.js.
 - **Context:** Brief says pick your strongest language, explicitly _not_ one from
@@ -44,7 +62,7 @@ active. The old entry's text is never edited.
 
 ## T0 — Tooling
 
-### T0.1 — Toolchain: `tsx` + `vitest` + `tsc`, npm
+### <a id="t0-1"></a>T0.1 — Toolchain: `tsx` + `vitest` + `tsc`, npm
 
 - **Decision:** `tsx` to run `.ts` directly, `tsc` to build `dist/` and to
   type-check (`--noEmit`), `vitest` for tests, `npm` as package manager.
@@ -54,7 +72,7 @@ active. The old entry's text is never edited.
   Jest-style. Alternatives (ts-node, jest+ts-jest) are slower/heavier to config.
 - **Origin:** LLM-suggested, accepted.
 
-### T0.2 — Modules: ESM with `NodeNext`
+### <a id="t0-2"></a>T0.2 — Modules: ESM with `NodeNext`
 
 - **Decision:** `"type": "module"`; tsconfig `module` + `moduleResolution` =
   `NodeNext`.
@@ -66,9 +84,14 @@ active. The old entry's text is never edited.
 
 ---
 
+<a id="t1"></a>
+
 ## T1 — Scaffold
 
-### T1.1 — Test layout: colocated
+T1.10–T1.21 were decided while reviewing T1, before implementation
+started.
+
+### <a id="t1-1"></a>T1.1 — Test layout: colocated
 
 - **Decision:** Tests sit next to the unit under test (`src/foo.test.ts` beside
   `src/foo.ts`).
@@ -77,7 +100,7 @@ active. The old entry's text is never edited.
   `src/` tidier but adds indirection for a 4-module codebase.
 - **Origin:** LLM-suggested, accepted.
 
-### T1.2 — Lint + format: ESLint (type-checked) + Prettier
+### <a id="t1-2"></a>T1.2 — Lint + format: ESLint (type-checked) + Prettier
 
 - **Decision:** ESLint for correctness (type-checked rules via `projectService`),
   Prettier for formatting, reconciled with `eslint-config-prettier`.
@@ -92,7 +115,7 @@ active. The old entry's text is never edited.
   `_italic_`, blank lines after headings.
 - **Origin:** LLM-suggested, accepted.
 
-### T1.3 — Build vs. type-check split
+### <a id="t1-3"></a>T1.3 — Build vs. type-check split
 
 - **Decision:** Base `tsconfig.json` includes `*.test.ts` (so tests are
   type-checked); `tsconfig.build.json` excludes them so they don't reach `dist/`.
@@ -103,7 +126,7 @@ active. The old entry's text is never edited.
   left out, since typecheck already catches anything that would break it.
 - **Origin:** LLM-suggested, accepted.
 
-### T1.4 — Dropped `package.json` `bin` field
+### <a id="t1-4"></a>T1.4 — Dropped `package.json` `bin` field
 
 - **Decision:** Removed the `bin: { herbie-lite → dist/cli.js }` entry.
 - **Context:** Surfaced in the T1 review — the entry promised an executable but
@@ -114,13 +137,13 @@ active. The old entry's text is never edited.
   brief doesn't use.
 - **Origin:** LLM-suggested, accepted.
 
-### T1.5 — Compiler strictness
+### <a id="t1-5"></a>T1.5 — Compiler strictness
 
 - **Decision:** `strict`, plus `noUncheckedIndexedAccess`,
   `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, and `noImplicitOverride`.
   `exactOptionalPropertyTypes` removed.
 - **Context:** Surfaced in the T1 review. The design looks names up constantly
-  (Q5, Q8) and switches over command kinds (D3).
+  (Q5, Q8) and switches over command kinds (T1.12).
 - **Why:** The compiler is the first line of defense. `noUncheckedIndexedAccess`
   types every lookup as `T | undefined`, so a missing employee or partner can't
   be forgotten; cost is more narrowing code at lookups.
@@ -136,7 +159,7 @@ active. The old entry's text is never edited.
   `noImplicitOverride`; asking for its reasoning led it to revise that and keep
   it.
 
-### T1.6 — Separate executable entry (`bin.ts`) from `cli.ts`
+### <a id="t1-6"></a>T1.6 — Separate executable entry (`bin.ts`) from `cli.ts`
 
 - **Decision:** `src/cli.ts` exports `main` and runs nothing on import.
   `src/bin.ts` is the executable entry and only calls `main`. `start` runs
@@ -151,7 +174,7 @@ active. The old entry's text is never edited.
   subtle check that every reader has to reason about.
 - **Origin:** LLM-suggested, accepted.
 
-### T1.7 — Supported Node version: 22.13 and later
+### <a id="t1-7"></a>T1.7 — Supported Node version: 22.13 and later
 
 - **Decision:** `engines.node` is `>=22.13` (was `>=20`). The `.13` comes from
   the T1.9 upgrade: eslint 10 needs 22.13 and vitest 5 needs 22.12.
@@ -167,7 +190,7 @@ active. The old entry's text is never edited.
   (listing `>=22` as an alternative); asking about the risk of `>=22` led it to
   recommend 22.
 
-### T1.8 — Package and build settings
+### <a id="t1-8"></a>T1.8 — Package and build settings
 
 - **Decision:** `package.json` gets `"private": true` and loses
   `"license": "MIT"`. `tsconfig.json` drops `"declaration": true`; `sourceMap`
@@ -181,7 +204,7 @@ active. The old entry's text is never edited.
   maps stay because they point stack traces at the TypeScript source.
 - **Origin:** LLM-suggested, accepted.
 
-### T1.9 — Dependencies on current major versions
+### <a id="t1-9"></a>T1.9 — Dependencies on current major versions
 
 - **Decision:** vitest 5 (with `vite` 8 as an explicit dev dependency), eslint
   and `@eslint/js` 10, `eslint-config-prettier` 10, `typescript-eslint` 8.70,
@@ -199,16 +222,7 @@ active. The old entry's text is never edited.
   behind and force a migration later.
 - **Origin:** LLM-suggested, accepted.
 
----
-
-<a id="t1-review"></a>
-
-## T1 review — design and input rules
-
-Decided while reviewing T1, before implementation starts. IDs match PLAN §3
-(D) and §4 (Q).
-
-### <a id="d1"></a>D1 — Input: file argument, STDIN, and interactive entry
+### <a id="t1-10"></a>T1.10 — Input: file argument, STDIN, and interactive entry
 
 - **Decision:** Accept a file path argument, or read STDIN when none is given.
   When STDIN is a terminal (no file, nothing piped), print a one-line hint to
@@ -233,7 +247,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   with interactive entry moved to UPGRADES). File/STDIN run commands:
   LLM-suggested, accepted.
 
-### <a id="d2"></a>D2 — Layered architecture
+### <a id="t1-11"></a>T1.11 — Layered architecture
 
 - **Decision:** Four layers, pure logic separate from I/O:
   1. `parser` — line → typed `Command` (a discriminated union), or a
@@ -245,14 +259,14 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
 - **Why:** Every layer except `cli` is testable without files or processes.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="d3"></a>D3 — Commands as a discriminated union
+### <a id="t1-12"></a>T1.12 — Commands as a discriminated union
 
 - **Decision:** `Command` is a TypeScript discriminated union on the command kind.
 - **Why:** Exhaustiveness checking means adding a command type makes the compiler
   flag every place that must handle it.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="d4"></a>D4 — Store raw facts; compute at report time
+### <a id="t1-13"></a>T1.13 — Store raw facts; compute at report time
 
 - **Decision:** `network` holds partners, companies, employee → company, and the
   list of contacts. After input ends, pending employees and contacts are
@@ -265,14 +279,14 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   pass; O(lines) with map lookups.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="q2"></a>Q2 — Companies with no relationship
+### <a id="t1-14"></a><a id="q2"></a>T1.14 — Q2: Companies with no relationship
 
 - **Decision:** A company whose employees have zero contacts, or that has no
   employees, prints `<CompanyName>: No current relationship`.
 - **Why:** Strength 0 is not a relationship.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="q3"></a>Q3 — Drive Capital never appears in the output
+### <a id="t1-15"></a><a id="q3"></a>T1.15 — Q3: Drive Capital never appears in the output
 
 - **Decision:** Only `Company`-declared companies are listed, so Drive Capital
   never appears.
@@ -282,14 +296,14 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
 - **Origin:** LLM-suggested, accepted (the conclusion and, later, the
   single-word argument).
 
-### <a id="q4"></a>Q4 — Names are case-sensitive
+### <a id="t1-16"></a><a id="q4"></a>T1.16 — Q4: Names are case-sensitive
 
 - **Decision:** `Chris` and `chris` are different names.
 - **Why:** The brief gives no reason to fold case; exact matching is the least
   surprising and simplest rule.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="q5"></a>Q5 — Duplicate and conflicting declarations
+### <a id="t1-17"></a><a id="q5"></a>T1.17 — Q5: Duplicate and conflicting declarations
 
 - **Decision:**
   - An exact repeat (same command, same words) is ignored without a warning.
@@ -315,7 +329,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   [Q12](#q12) (second and fourth bullets: name conflicts now span partners
   and employees, so partners are resolved with employees).
 
-### <a id="q6"></a>Q6 — Error handling depth
+### <a id="t1-18"></a><a id="q6"></a>T1.18 — Q6: Error handling depth
 
 - **Decision:** Every malformed line gets the Q7 handling. Blank lines are
   skipped without a warning.
@@ -324,7 +338,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   and test than a rule per case.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="q7"></a>Q7 — Malformed lines: discard, warn, continue
+### <a id="t1-19"></a><a id="q7"></a>T1.19 — Q7: Malformed lines: discard, warn, continue
 
 - **Decision:** A malformed line (unknown command, wrong number of words, a word
   that isn't letters-only per Q9, or a contact type other than
@@ -345,7 +359,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   each bad line immediately, warn with the expected format, and never withhold
   the report. Exit code 0: LLM-suggested, accepted.
 
-### <a id="q8"></a>Q8 — Contacts resolved after all input
+### <a id="t1-20"></a><a id="q8"></a>T1.20 — Q8: Contacts resolved after all input
 
 - **Decision:** Contacts are resolved after all input is read, so declaration
   order doesn't matter. A contact still unresolved at the end is discarded with
@@ -359,7 +373,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   feedback but can misread valid input.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="q9"></a>Q9 — A word is letters only
+### <a id="t1-21"></a><a id="q9"></a>T1.21 — Q9: A word is letters only
 
 - **Decision:** Words match `[A-Za-z]+`. The README notes this interpretation.
 - **Context:** The brief says "the upper- and lowercase characters A thru z".
@@ -416,7 +430,8 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   every layer may use it.
 - **Context:** T2a. The types come before the code that uses them (T3–T6).
 - **Why:** Each type sits beside the code that produces it, so imports follow
-  the layer order in D2 (`network` imports from `parser`, never the reverse).
+  the layer order in T1.11 (`network` imports from `parser`, never the
+  reverse).
   Rejected: one shared `types.ts`, which every module would import, and which
   tends to collect unrelated types over time.
 - **Origin:** LLM-suggested, accepted.
@@ -473,7 +488,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   return the expected format as text and the network list unknown names
   without their role.
 
-### <a id="q13"></a>Q13 — Repeated commands: contacts count, declarations warn
+### <a id="t2-6"></a><a id="q13"></a>T2.6 — Q13: Repeated commands: contacts count, declarations warn
 
 - **Decision:** Every `Contact` line is one interaction and counts toward
   strength, even when it repeats an earlier line word for word. A
@@ -499,7 +514,7 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
   standing declaration, replacing `employee-conflict`: LLM-suggested,
   accepted.
 
-### <a id="q12"></a>Q12 — One name, one person
+### <a id="t2-7"></a><a id="q12"></a>T2.7 — Q12: One name, one person
 
 - **Decision:** Partners and employees share one namespace: a name belongs
   to at most one person. Companies have their own namespace: each company
@@ -525,6 +540,36 @@ Decided while reviewing T1, before implementation starts. IDs match PLAN §3
 - **Origin:** One namespace for people: Mine. Companies kept separate:
   LLM-suggested, accepted. Holding partners until end of input:
   LLM-suggested, accepted.
+
+---
+
+## T3 — Parser
+
+### <a id="t3-1"></a>T3.1 — Decision IDs: one T ID per entry, Q kept as a tag
+
+- **Decision:** Every entry's ID is `T<n>.<m>`, in the section of the task
+  that decided it (Key). D1–D4 become T1.10–T1.13 and the D prefix is
+  retired. A decided question keeps its Q number as a tag beside its T ID.
+  The T1 review section merges into T1 as T1.10–T1.21; later reviews add
+  entries to their own task's section. Headings, and the IDs an entry
+  cites, may be updated when IDs are restructured; what an entry says is
+  never edited.
+- **Context:** Before starting T3. Headings mixed three schemes (T, D, Q),
+  and a D or Q heading didn't say which stage decided it. The T1 review had
+  its own section, but the T2 review's decisions (Q12, Q13) sit in T2.
+- **Why:** The heading alone shows which task made a decision, and one
+  numbering covers every entry. A D ID had no lifecycle, so it was a second
+  name for an ordinary entry. A Q does: it is cited by number while open
+  (PLAN §4, code comments, the README), so it stays as a tag and no
+  citation changes when it is settled. Reviews recorded in their task's
+  section match how T2's review was already written. Rejected: keeping D
+  as a tag (two IDs per entry for no gain); retiring a Q once decided,
+  which renames a question when it is settled and changes about 30 code
+  comments; a review section for every task.
+- **Origin:** A T ID for every entry, merging the T1 review into T1, and
+  showing the section in Q headings: Mine. Retiring D, keeping Q as a tag,
+  and the Key: LLM-suggested, accepted. Recording it as a decision made
+  before T3 started: Mine.
 
 ---
 

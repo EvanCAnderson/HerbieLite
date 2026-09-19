@@ -35,7 +35,7 @@ Four entity kinds, drawn straight from the four commands:
     program "should only accept" these; any other type is rejected (see Q7).
 - **FR2 — Input.** The brief lets us assume well-formed input; malformed lines are
   still handled (Q7). Accept via **file argument, STDIN, and interactive entry**
-  (see D1).
+  (see T1.10).
 - **FR3 — Output to stdout**, one line per company.
 - **FR4 — Company report.** List **all** companies, **sorted alphabetically**. For each:
   - has a relationship → `<CompanyName>: <PartnerName> (<RelationshipStrength>)`
@@ -47,12 +47,12 @@ Four entity kinds, drawn straight from the four commands:
 
 ## 3. Design decisions (index)
 
-All decided; full text in [DECISIONS — T1 review](./DECISIONS.md#t1-review).
+All decided in T1; full text in [DECISIONS — T1](./DECISIONS.md#t1).
 
-- [**D1**](./DECISIONS.md#d1) — Input: file argument, STDIN, and interactive entry.
-- [**D2**](./DECISIONS.md#d2) — Layers: `parser` / `network` / `report` / `cli`.
-- [**D3**](./DECISIONS.md#d3) — Commands as a discriminated union.
-- [**D4**](./DECISIONS.md#d4) — Store raw facts; compute strongest partner at report time.
+- [**T1.10**](./DECISIONS.md#t1-10) — Input: file argument, STDIN, and interactive entry.
+- [**T1.11**](./DECISIONS.md#t1-11) — Layers: `parser` / `network` / `report` / `cli`.
+- [**T1.12**](./DECISIONS.md#t1-12) — Commands as a discriminated union.
+- [**T1.13**](./DECISIONS.md#t1-13) — Store raw facts; compute strongest partner at report time.
 
 ## 4. Questions and assumptions (document all in README)
 
@@ -83,16 +83,16 @@ their subtasks are built.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md#t1-review))
 
-- [**Q2**](./DECISIONS.md#q2) — Zero contacts (or no employees) → "No current relationship".
-- [**Q3**](./DECISIONS.md#q3) — Drive Capital never appears in the output.
-- [**Q4**](./DECISIONS.md#q4) — Names are case-sensitive.
-- [**Q5**](./DECISIONS.md#q5) — Duplicate and conflicting declarations.
-- [**Q6**](./DECISIONS.md#q6) — Error handling depth: every malformed line gets Q7.
-- [**Q7**](./DECISIONS.md#q7) — Malformed lines: discard, warn with expected format, continue.
-- [**Q8**](./DECISIONS.md#q8) — Contacts resolved after all input; unresolved ones warned and discarded.
-- [**Q9**](./DECISIONS.md#q9) — A word is letters only, `[A-Za-z]+`.
-- [**Q12**](./DECISIONS.md#q12) — One name, one person: partners and employees share a namespace; companies don't.
-- [**Q13**](./DECISIONS.md#q13) — Every `Contact` line counts; a repeated declaration is discarded with a warning.
+- [**Q2**](./DECISIONS.md#q2) (T1.14) — Zero contacts (or no employees) → "No current relationship".
+- [**Q3**](./DECISIONS.md#q3) (T1.15) — Drive Capital never appears in the output.
+- [**Q4**](./DECISIONS.md#q4) (T1.16) — Names are case-sensitive.
+- [**Q5**](./DECISIONS.md#q5) (T1.17) — Duplicate and conflicting declarations.
+- [**Q6**](./DECISIONS.md#q6) (T1.18) — Error handling depth: every malformed line gets Q7.
+- [**Q7**](./DECISIONS.md#q7) (T1.19) — Malformed lines: discard, warn with expected format, continue.
+- [**Q8**](./DECISIONS.md#q8) (T1.20) — Contacts resolved after all input; unresolved ones warned and discarded.
+- [**Q9**](./DECISIONS.md#q9) (T1.21) — A word is letters only, `[A-Za-z]+`.
+- [**Q12**](./DECISIONS.md#q12) (T2.7) — One name, one person: partners and employees share a namespace; companies don't.
+- [**Q13**](./DECISIONS.md#q13) (T2.6) — Every `Contact` line counts; a repeated declaration is discarded with a warning.
 
 ## 5. Tooling
 
@@ -118,13 +118,13 @@ prefix).
   - [x] T2b — Contact types as one `const` list with a derived union type, so
         parser validation and warning text share a single source (FR1).
   - [x] T2c — `Command` discriminated union on `kind` with named fields, plus
-        an `assertNever` helper for exhaustive switches (D3).
+        an `assertNever` helper for exhaustive switches (T1.12).
   - [x] T2d — Per-line parse result: command, malformed (reason and command
         kind, Q7), or blank (skipped, Q6), each carrying its 1-based line
         number and raw text for later warnings (Q5, Q8). The grammar as data
         (`COMMAND_SYNTAX`), so warnings can quote each command's format.
   - [x] T2e — Network state and warning types: partner and company sets,
-        employee → company map, contact list (D4), and one warning for any
+        employee → company map, contact list (T1.13), and one warning for any
         repeated declaration (Q12, Q13). Pending partners, employees, and
         contacts stay private to `network` (T2.5).
 - [ ] T3 — `parser`: line → `Command` or malformed (Q7, Q9); unit tests.
@@ -160,25 +160,27 @@ prefix).
         removed, its trailing blank line kept) and a test asserting the exact
         output in §7.
 - [ ] T6 — `cli`: `async main(argv, stdin, stdout, stderr)` → exit code; file
-      arg, STDIN, interactive entry (D1); warnings on stderr; end-to-end tests.
+      arg, STDIN, interactive entry (T1.10); warnings on stderr; end-to-end
+      tests.
   - [ ] T6a — Replace the placeholder with `main(argv, stdin, stdout, stderr)`
         returning an exit code; `bin.ts` passes the process streams and sets
         `process.exitCode`. Replace the scaffold smoke test.
-  - [ ] T6b — Choose the input source: file argument, else STDIN (D1).
+  - [ ] T6b — Choose the input source: file argument, else STDIN (T1.10).
         Settles Q15.
   - [ ] T6c — Stream lines through the parser, printing Q7 warnings as each
         line is read; at end of input print Q5/Q8 warnings, then the report on
         stdout; exit 0.
   - [ ] T6d — When STDIN is a terminal, print the one-line hint to stderr
-        before reading (D1).
+        before reading (T1.10).
   - [ ] T6e — Process-level test through `bin.ts`: file argument and a pipe
         both produce §7's output with empty stderr.
-- [ ] T7 — README (build/run/test, approach, LLM usage, every D and Q).
+- [ ] T7 — README (build/run/test, approach, LLM usage, every §3 decision
+      and Q).
   - [ ] T7a — Build, run, and test: Node 22.13+, `npm install`,
-        `npm run check`, `npm run build`, and every run form in D1, including
+        `npm run check`, `npm run build`, and every run form in T1.10, including
         interactive entry (brief 3, 7.1).
-  - [ ] T7b — Approach and design: the four layers and D1–D4 with their
-        tradeoffs, linking to DECISIONS (brief 7.2).
+  - [ ] T7b — Approach and design: the four layers and T1.10–T1.13 with
+        their tradeoffs, linking to DECISIONS (brief 7.2).
   - [ ] T7c — How LLMs were used: workflow, what was accepted, modified, or
         rejected, citing DECISIONS Origin lines (brief 7.2.1).
   - [ ] T7d — Assumptions and edge cases: every Q, flagging where the brief was interpreted (brief 7.3, 7.3.1).
@@ -186,8 +188,8 @@ prefix).
   - [ ] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
         no placeholder text or dead code.
   - [ ] T8b — Docs consistency: PLAN §3–§4 index matches DECISIONS, no
-        questions left open, README covers every D and Q, deferred ideas are
-        in UPGRADES.
+        questions left open, README covers every §3 decision and Q,
+        deferred ideas are in UPGRADES.
   - [ ] T8c — Walk BRIEF requirements 1–7 and §7, recording the test or
         command that shows each is met.
   - [ ] T8d — Clean-clone check: `npm ci`, `npm run check`, `npm run build`,
@@ -206,4 +208,4 @@ prefix).
   prints, and the exit code is 0 (Q5, Q7, Q8).
 - `npm run check` passes (typecheck, lint, format, tests).
 - Tests cover parser, network, report, and `cli` end-to-end.
-- README covers every D and Q in §3–§4.
+- README covers every entry in §3–§4.

@@ -1,4 +1,4 @@
-// Network layer (DECISIONS D2, layer 2): applies commands, holds pending
+// Network layer (DECISIONS T1.11, layer 2): applies commands, holds pending
 // partners, employees, and contacts, and resolves them at end of input (Q5,
 // Q8, Q12). Types only for now; the implementation lands in T4.
 import type {
@@ -16,7 +16,7 @@ export type Declaration = Exclude<Command, ContactCommand>;
 
 /**
  * The resolved network: raw facts only, with no pre-computed strengths
- * (DECISIONS D4). Every contact's employee and partner are declared.
+ * (DECISIONS T1.13). Every contact's employee and partner are declared.
  *
  * The shapes encode Q12 and Q13: each declared name is held once (sets and a
  * map), while contacts are a list, because every Contact line counts. A name

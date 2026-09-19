@@ -1,6 +1,6 @@
-// Parser layer (DECISIONS D2, layer 1): one input line → a typed Command, or
-// a malformed-line result (Q7). Types and grammar only for now; parsing lands
-// in T3.
+// Parser layer (DECISIONS T1.11, layer 1): one input line → a typed Command,
+// or a malformed-line result (Q7). Types and grammar only for now; parsing
+// lands in T3.
 
 /** The closed set of contact types (FR1); validation and warnings read it. */
 export const CONTACT_TYPES = ["email", "call", "coffee"] as const;
@@ -11,7 +11,7 @@ export function isContactType(word: string): word is ContactType {
   return (CONTACT_TYPES as readonly string[]).includes(word);
 }
 
-/** One input command, discriminated on its keyword (DECISIONS D3). */
+/** One input command, discriminated on its keyword (DECISIONS T1.12). */
 export type Command =
   | { readonly kind: "Partner"; readonly name: string }
   | { readonly kind: "Company"; readonly name: string }

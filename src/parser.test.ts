@@ -26,7 +26,8 @@ describe("contact types", () => {
 });
 
 describe("Command", () => {
-  // Compile-time check (D3): a switch that misses a kind fails to type-check.
+  // Compile-time check (T1.12): a switch that misses a kind fails to
+  // type-check.
   it("forces switches to handle every kind", () => {
     const describeCommand = (command: Command): string => {
       switch (command.kind) {

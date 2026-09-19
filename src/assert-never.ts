@@ -1,4 +1,5 @@
-// Exhaustiveness guard for switches over discriminated unions (DECISIONS D3).
+// Exhaustiveness guard for switches over discriminated unions
+// (DECISIONS T1.12).
 // Called in the default branch: if a case is missing, the value there is not
 // `never` and the call fails to compile. The throw only runs if a value
 // escapes the type system at runtime.

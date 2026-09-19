@@ -30,7 +30,9 @@ contacts) and reports, per company, the partner with the strongest relationship.
   what (the diff shows what), and name the DECISIONS IDs added or changed.
   Wrap at 72 columns.
 - `npm run check` passes before committing.
-- LLM-assisted commits end with a `Co-Authored-By:` line.
+- Never add a `Co-Authored-By:` trailer, or any other attribution line, to a
+  commit or pull request. How LLMs were used is recorded in the DECISIONS
+  Origin lines and the README (T7c), not in git metadata.
 
 ## Scope discipline
 
@@ -38,4 +40,4 @@ This is graded on how quality software is built, not on scope. Build exactly wha
 [`docs/BRIEF.md`](docs/BRIEF.md) asks for first. Anything not in the brief goes to
 `docs/UPGRADES.md` and stays there until the base is done, unless a
 [`docs/DECISIONS.md`](docs/DECISIONS.md) entry records a deliberate choice to include
-it in the base (e.g. D1's interactive entry).
+it in the base (e.g. T1.10's interactive entry).

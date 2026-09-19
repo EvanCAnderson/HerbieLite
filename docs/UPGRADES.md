@@ -8,8 +8,8 @@ complete.
 ## U1 — Guided input-file builder
 
 An interactive mode that creates a new input file, checking each line as it is
-typed and saving only lines that pass validation. Extends D1's interactive entry,
-which only reads typed commands and prints a report.
+typed and saving only lines that pass validation. Extends T1.10's interactive
+entry, which only reads typed commands and prints a report.
 
 - **Origin:** Mine (raised during the T1 review; LLM recommended deferring it
   here rather than building it in the base).
