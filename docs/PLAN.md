@@ -64,12 +64,6 @@ question and its default live only here. When the subtask settles it, the
 question moves to DECISIONS and to the Decided list below. Listed in the order
 their subtasks are built.
 
-- **Q10 — Whitespace within a line.** Brief says "space-separated" only.
-  **Default: split on runs of spaces or tabs, ignore leading and trailing
-  whitespace, and strip a trailing `\r` (CRLF files).** Settle in T3a.
-- **Q11 — Command keyword case.** Q4 covers names, not keywords.
-  **Default: case-sensitive, like names; `partner Chris` is malformed (Q7).**
-  Settle in T3b.
 - **Q1 — Tie-break between partners with equal strength.** Brief is silent.
   **Default: alphabetical by partner name.** Deterministic and testable.
   Settle in T5b.
@@ -80,8 +74,16 @@ their subtasks are built.
 - **Q15 — Invalid invocation.** Q7 covers bad lines, not a bad command line.
   **Default: a missing or unreadable file, or more than one argument, prints
   an error to stderr, prints no report, and exits 1.** Settle in T6b.
+- **Q16 — A byte-order mark (BOM) at the start of the file.** Some editors
+  (Windows Notepad, Excel's UTF-8 CSV) begin a file with an invisible U+FEFF,
+  and Node does not remove it when reading, so line 1 arrives as
+  `\uFEFFPartner Chris` and is rejected as an unknown command (Q7, Q11).
+  **Default: not handled in the base; line 1 is discarded with the Q7
+  warning, even when it looks blank (a BOM alone is not a blank line, Q6),
+  and the README names the cause and how to remove it (T7d).
+  Stripping the BOM is [UPGRADES U2](./UPGRADES.md#u2).** Settle in T6c.
 
-### Decided (full text in [DECISIONS](./DECISIONS.md#t1-review))
+### Decided (full text in [DECISIONS](./DECISIONS.md))
 
 - [**Q2**](./DECISIONS.md#q2) (T1.14) — Zero contacts (or no employees) → "No current relationship".
 - [**Q3**](./DECISIONS.md#q3) (T1.15) — Drive Capital never appears in the output.
@@ -93,6 +95,8 @@ their subtasks are built.
 - [**Q9**](./DECISIONS.md#q9) (T1.21) — A word is letters only, `[A-Za-z]+`.
 - [**Q12**](./DECISIONS.md#q12) (T2.7) — One name, one person: partners and employees share a namespace; companies don't.
 - [**Q13**](./DECISIONS.md#q13) (T2.6) — Every `Contact` line counts; a repeated declaration is discarded with a warning.
+- [**Q10**](./DECISIONS.md#q10) (T3.2) — Words split on runs of spaces or tabs; edges and a CRLF `\r` ignored.
+- [**Q11**](./DECISIONS.md#q11) (T3.3) — Command keywords are case-sensitive.
 
 ## 5. Tooling
 
@@ -127,14 +131,14 @@ prefix).
         employee → company map, contact list (T1.13), and one warning for any
         repeated declaration (Q12, Q13). Pending partners, employees, and
         contacts stay private to `network` (T2.5).
-- [ ] T3 — `parser`: line → `Command` or malformed (Q7, Q9); unit tests.
-  - [ ] T3a — Split a line into words; skip blank lines (Q6). Settles Q10.
-  - [ ] T3b — Recognise the command keyword; unknown keyword → malformed,
+- [x] T3 — `parser`: line → `Command` or malformed (Q7, Q9); unit tests.
+  - [x] T3a — Split a line into words; skip blank lines (Q6). Settles Q10.
+  - [x] T3b — Recognise the command keyword; unknown keyword → malformed,
         listing the valid commands (Q7). Settles Q11.
-  - [ ] T3c — Per-command word count, read from `COMMAND_SYNTAX`, and
+  - [x] T3c — Per-command word count, read from `COMMAND_SYNTAX`, and
         `[A-Za-z]+` word check (Q9); a failure → malformed with that
         command's kind (Q7, T2.5).
-  - [ ] T3d — Contact type restricted to `email|call|coffee`; anything else →
+  - [x] T3d — Contact type restricted to `email|call|coffee`; anything else →
         malformed (FR1, Q7).
 - [ ] T4 — `network`: apply commands, hold pending partners, employees, and
       contacts, resolve at end of input (Q5, Q8, Q12); unit tests.
@@ -169,7 +173,9 @@ prefix).
         Settles Q15.
   - [ ] T6c — Stream lines through the parser, printing Q7 warnings as each
         line is read; at end of input print Q5/Q8 warnings, then the report on
-        stdout; exit 0.
+        stdout; exit 0. Choose the line reader and how line numbers are
+        counted: `readline` already strips `\r\n`, and treats a lone `\r` as a
+        line break, which shifts every later line number (Q10). Settles Q16.
   - [ ] T6d — When STDIN is a terminal, print the one-line hint to stderr
         before reading (T1.10).
   - [ ] T6e — Process-level test through `bin.ts`: file argument and a pipe
@@ -183,7 +189,9 @@ prefix).
         their tradeoffs, linking to DECISIONS (brief 7.2).
   - [ ] T7c — How LLMs were used: workflow, what was accepted, modified, or
         rejected, citing DECISIONS Origin lines (brief 7.2.1).
-  - [ ] T7d — Assumptions and edge cases: every Q, flagging where the brief was interpreted (brief 7.3, 7.3.1).
+  - [ ] T7d — Assumptions and edge cases: every Q, flagging where the brief
+        was interpreted (brief 7.3, 7.3.1). Note that a keyword may be used
+        as a name (`Company Contact`), which follows from Q9.
 - [ ] T8 — Final pass: naming, comments, tradeoff notes.
   - [ ] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
         no placeholder text or dead code.

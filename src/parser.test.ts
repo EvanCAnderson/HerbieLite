@@ -4,6 +4,7 @@ import {
   COMMAND_SYNTAX,
   CONTACT_TYPES,
   isContactType,
+  parseLine,
   type Command,
   type CommandKind,
   type ContactType,
@@ -118,5 +119,162 @@ describe("MalformedLine", () => {
     };
 
     expect([...valid, missingKind, unknownWithKind]).toHaveLength(4);
+  });
+});
+
+describe("parseLine", () => {
+  const parse = (text: string) => parseLine({ lineNumber: 7, text });
+
+  const command = (text: string, expected: Command) => ({
+    outcome: "command",
+    source: { lineNumber: 7, text },
+    command: expected,
+  });
+
+  const malformed = (
+    text: string,
+    reason: MalformedLine["reason"],
+    kind?: CommandKind,
+  ) => ({
+    outcome: "malformed",
+    source: { lineNumber: 7, text },
+    reason,
+    ...(kind === undefined ? {} : { kind }),
+  });
+
+  describe("each command", () => {
+    it.each<[string, Command]>([
+      ["Partner Chris", { kind: "Partner", name: "Chris" }],
+      ["Company Globex", { kind: "Company", name: "Globex" }],
+      [
+        "Employee Laurie Globex",
+        { kind: "Employee", name: "Laurie", company: "Globex" },
+      ],
+      ...CONTACT_TYPES.map((contactType): [string, Command] => [
+        `Contact Laurie Chris ${contactType}`,
+        { kind: "Contact", employee: "Laurie", partner: "Chris", contactType },
+      ]),
+    ])("parses %j", (text, expected) => {
+      expect(parse(text)).toEqual(command(text, expected));
+    });
+
+    it("allows a keyword as a name", () => {
+      expect(parse("Company Contact")).toEqual(
+        command("Company Contact", { kind: "Company", name: "Contact" }),
+      );
+    });
+  });
+
+  describe("blank lines (Q6)", () => {
+    it.each(["", " ", "\t \t", "\r", "  \r"])("skips %j", (text) => {
+      expect(parse(text)).toEqual({
+        outcome: "blank",
+        source: { lineNumber: 7, text },
+      });
+    });
+  });
+
+  describe("whitespace (Q10)", () => {
+    it.each([
+      "Employee  Laurie   Globex",
+      "Employee\tLaurie \t Globex",
+      "  Employee Laurie Globex  ",
+      "\tEmployee Laurie Globex\t",
+      "Employee Laurie Globex\r",
+      "Employee Laurie Globex \r",
+    ])("splits %j on runs of spaces and tabs", (text) => {
+      // The source keeps the raw text; only the words are normalised.
+      expect(parse(text)).toEqual(
+        command(text, { kind: "Employee", name: "Laurie", company: "Globex" }),
+      );
+    });
+
+    it("keeps other whitespace inside a word", () => {
+      expect(parse("Partner Chris\u00a0")).toEqual(
+        malformed("Partner Chris\u00a0", "invalid-word", "Partner"),
+      );
+      expect(parse("Partner\u00a0Chris")).toEqual(
+        malformed("Partner\u00a0Chris", "unknown-command"),
+      );
+    });
+
+    it("strips only a trailing carriage return", () => {
+      expect(parse("Partner Chris\r ")).toEqual(
+        malformed("Partner Chris\r ", "invalid-word", "Partner"),
+      );
+    });
+  });
+
+  describe("unknown keywords (Q7, Q11)", () => {
+    it.each([
+      "partner Chris",
+      "PARTNER Chris",
+      "Partners Chris",
+      "Hello",
+      "Chris Partner",
+    ])("rejects %j", (text) => {
+      expect(parse(text)).toEqual(malformed(text, "unknown-command"));
+    });
+
+    it.each(["constructor Chris", "__proto__ Chris", "toString Chris"])(
+      "does not treat an object property as a command: %j",
+      (text) => {
+        expect(parse(text)).toEqual(malformed(text, "unknown-command"));
+      },
+    );
+  });
+
+  describe("word count (Q7)", () => {
+    it.each<[string, CommandKind]>([
+      ["Partner", "Partner"],
+      ["Partner Chris Molly", "Partner"],
+      ["Company", "Company"],
+      ["Company Globex Inc", "Company"],
+      ["Employee Laurie", "Employee"],
+      ["Employee Laurie Globex Hooli", "Employee"],
+      ["Contact Laurie Chris", "Contact"],
+      ["Contact Laurie Chris email coffee", "Contact"],
+    ])("rejects %j", (text, kind) => {
+      expect(parse(text)).toEqual(malformed(text, "wrong-word-count", kind));
+    });
+  });
+
+  describe("letters-only names (Q9)", () => {
+    it.each<[string, CommandKind]>([
+      ["Partner Chr1s", "Partner"],
+      ["Partner Zoë", "Partner"],
+      // `[` and `_` lie between `Z` and `a` in ASCII.
+      ["Partner Chris[", "Partner"],
+      ["Company ACME_Co", "Company"],
+      ["Employee Laurie Globex-Inc", "Employee"],
+      ["Employee O'Hara Globex", "Employee"],
+      ["Contact L4urie Chris email", "Contact"],
+      ["Contact Laurie Chris. email", "Contact"],
+    ])("rejects %j", (text, kind) => {
+      expect(parse(text)).toEqual(malformed(text, "invalid-word", kind));
+    });
+  });
+
+  describe("contact types (FR1)", () => {
+    it.each(["text", "Email", "CALL", "e-mail", "meeting"])(
+      "rejects %j",
+      (contactType) => {
+        const text = `Contact Laurie Chris ${contactType}`;
+        expect(parse(text)).toEqual(
+          malformed(text, "invalid-contact-type", "Contact"),
+        );
+      },
+    );
+  });
+
+  describe("check order (T3.4)", () => {
+    it.each<[string, MalformedLine["reason"]]>([
+      ["Partner Chr1s Molly", "wrong-word-count"],
+      ["Contact L4urie Chris", "wrong-word-count"],
+      ["Contact L4urie Chris text", "invalid-word"],
+    ])("reports the first failure for %j", (text, reason) => {
+      const line = parse(text);
+      expect(line.outcome === "malformed" && line.reason).toBe(reason);
+    });
   });
 });

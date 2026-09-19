@@ -571,6 +571,69 @@ started.
   and the Key: LLM-suggested, accepted. Recording it as a decision made
   before T3 started: Mine.
 
+### <a id="t3-2"></a><a id="q10"></a>T3.2 — Q10: Whitespace within a line
+
+- **Decision:** Words are separated by runs of spaces or tabs. Leading and
+  trailing spaces and tabs are ignored, as is a trailing `\r` left by a CRLF
+  file; the cli's reader may already remove it (T6c). A line with no words
+  is blank (Q6). Any other whitespace, such as a non-breaking space, stays
+  part of a word and so fails the letters-only check (Q9). The line's raw
+  text is kept unchanged in `source`.
+- **Context:** T3a. The brief says only "space-separated".
+- **Why:** An extra space, a tab, or a file saved on Windows says nothing
+  about the data, and under Q7 a discarded line lowers strengths; tolerating
+  them costs one regular expression. Rejected: exactly one space between
+  words, which matches the brief literally but discards lines over
+  invisible formatting; and any Unicode whitespace (`\s`), which accepts
+  characters the brief never mentions and is harder to state in the README.
+  An unusual space still gets a warning rather than passing silently.
+- **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
+  confirmed when T3 started).
+
+### <a id="t3-3"></a><a id="q11"></a>T3.3 — Q11: Command keywords are case-sensitive
+
+- **Decision:** A keyword must match exactly: `Partner`, `Company`,
+  `Employee`, `Contact`. `partner Chris` is an unknown command, discarded
+  with the warning that lists the valid commands (Q7).
+- **Context:** T3b. Q4 covers names, not keywords.
+- **Why:** Names (Q4) and contact types (T2.4, `Email` is rejected) are
+  already exact, so one rule covers every word of a line. Rejected:
+  case-insensitive keywords, which are friendlier but put keywords under a
+  different rule from the other words and invite the question of why
+  `Email` isn't accepted too. The unknown-command warning lists the correct
+  spelling.
+- **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
+  confirmed when T3 started).
+
+### <a id="t3-4"></a>T3.4 — Parser checks: fixed order, first failure reported
+
+- **Decision:** `parseLine(source)` takes a `SourceLine` and returns it
+  unchanged in its result. Checks run in this order, and the first that
+  fails is the one reported: keyword (`unknown-command`), word count against
+  `COMMAND_SYNTAX` (`wrong-word-count`), letters-only names (`invalid-word`,
+  Q9), then the contact type (`invalid-contact-type`). The contact-type
+  word is checked only against `CONTACT_TYPES`, not the letters-only rule.
+  Keywords are looked up among `COMMAND_SYNTAX`'s own keys. A malformed
+  result names the reason, not the offending word.
+- **Context:** T3c, T3d. A line can break several rules at once
+  (`Contact L4urie Chris text`).
+- **Why:** Words can't be matched to arguments until the count is right, so
+  the count comes before any per-word check; names come before the contact
+  type in the order they appear. One reason per line keeps the result type
+  and the warning simple. Checking the contact type only against the closed
+  set means `e-mail` gets the warning that lists `email|call|coffee`, which
+  is more useful than "letters only". An own-key lookup stops words such as
+  `constructor` or `__proto__`, which every object inherits, from being
+  taken as commands. Naming the bad word was rejected: the warning quotes
+  the whole line, which is at most four words, so it would change T2's types
+  for little gain. **Known tradeoff:** a line broken by an invisible
+  character (`Partner Chris\u00a0`) looks valid when quoted, so the
+  warning alone doesn't show the cause; escaping such characters is
+  [UPGRADES U3](./UPGRADES.md#u3).
+- **Origin:** Check order, contact-type check, and own-key lookup:
+  LLM-suggested, accepted. Reason only, without the word: LLM-suggested,
+  accepted when asked.
+
 ---
 
 ## Open questions
