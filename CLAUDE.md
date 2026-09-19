@@ -6,10 +6,42 @@ contacts) and reports, per company, the partner with the strongest relationship.
 
 ## Documents
 
+The three below are imported into every session's context automatically; read
+them as already-loaded, not as files to go fetch.
+
+@docs/BRIEF.md
+@docs/PLAN.md
+@docs/DECISIONS.md
+
 - [`docs/BRIEF.md`](docs/BRIEF.md) — the interview prompt, **verbatim and frozen**. Source of truth. Do not edit.
 - [`docs/PLAN.md`](docs/PLAN.md) — requirements, an index of decisions, open questions, and the task plan.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — chronological decision log: what was decided at each stage, and why.
-- [`docs/UPGRADES.md`](docs/UPGRADES.md) — _(later)_ smart iterations beyond the brief. **Do not build from this until the base submission is complete.**
+- [`docs/UPGRADES.md`](docs/UPGRADES.md) — _(later)_ smart iterations beyond the brief. Deliberately **not** imported, and **do not build from it until the base submission is complete.**
+
+## Decisions
+
+Record a decision in [`docs/DECISIONS.md`](docs/DECISIONS.md) when it is made,
+including one made in conversation that changes no code yet. The entry is part
+of the change, not a write-up of it afterwards.
+
+A decision is any choice a reviewer could ask "why that way?" about: one where a
+reasonable alternative existed and the choice constrains later code or docs.
+Domain semantics, structure, tooling, conventions, and process all count. The
+test: **if you can name the alternative you rejected, it is a decision.** Not
+decisions: applying a rule already recorded here, and anything the types or a
+passing test already force.
+
+Route each one:
+
+- **Decided** — an entry in DECISIONS, in the section of the task in progress,
+  with **Decision** · **Context** · **Why** (incl. rejected alternatives) ·
+  **Origin**, per that file's Key.
+- **Still open** — [`docs/PLAN.md`](docs/PLAN.md) §4, as a numbered question
+  with its current default and the subtask that will settle it (T2.2). It
+  graduates to DECISIONS once settled.
+- **Out of scope** — [`docs/UPGRADES.md`](docs/UPGRADES.md), with a `U<n>` ID.
+- **Reversed** — a new entry with **Supersedes:**, and **Superseded by** added
+  to the old one. What an old entry says is never edited.
 
 ## Stack
 

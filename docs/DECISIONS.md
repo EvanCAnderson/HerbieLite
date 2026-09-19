@@ -634,6 +634,63 @@ started.
   LLM-suggested, accepted. Reason only, without the word: LLM-suggested,
   accepted when asked.
 
+## T4 — Network
+
+### <a id="t4-1"></a>T4.1 — Project docs imported into every session's context
+
+- **Decision:** `CLAUDE.md` pulls in [BRIEF](./BRIEF.md), [PLAN](./PLAN.md)
+  and this log with `@` import lines, so every session starts with all three
+  already loaded. [UPGRADES](./UPGRADES.md) is deliberately left out and
+  stays a link. The bullet list of all four documents stays as it was, for a
+  reader outside the tool.
+- **Context:** Before starting T4. Until now `CLAUDE.md` only linked the
+  documents, so which of them were actually read varied from session to
+  session.
+- **Why:** A link is an instruction that can be followed late or not at all,
+  and an unread decision log is how a settled question gets re-opened or
+  contradicted. An import is resolved before the first message, so it cannot
+  be skipped. Importing UPGRADES would put deferred ideas in context during
+  base work, against the scope rule in `CLAUDE.md`. The cost is roughly 14k
+  tokens per session at today's sizes (BRIEF 6.7KB, PLAN 13KB, DECISIONS
+  35KB); this log grows with every task, so its import is the first to drop
+  if that becomes a problem. Rejected: a `SessionStart` hook in
+  `.claude/settings.json`, which achieves the same thing with a shell script
+  and a config file to maintain, and only earns that if the injection needs
+  to be conditional; and trimming this log to keep it cheap to import, which
+  would lose the record it exists to keep.
+- **Origin:** LLM-suggested, accepted. I asked for a way to be sure the
+  documents are read at the start of every session; the `@` import, leaving
+  UPGRADES out, and the note about dropping the DECISIONS import if it grows
+  too large were its suggestions.
+
+### <a id="t4-2"></a>T4.2 — Log a decision when it is made, on a named threshold
+
+- **Decision:** `CLAUDE.md` gains a **Decisions** section: an entry is written
+  when the decision is made, including one made in conversation that changes
+  no code yet. A decision is a choice where a reasonable alternative existed
+  and the choice constrains later code or docs; the test is whether the
+  rejected alternative can be named. The section routes each case to this log,
+  [PLAN](./PLAN.md) §4, or [UPGRADES](./UPGRADES.md), and points reversals at
+  **Supersedes**.
+- **Context:** Before starting T4, with T4.1. `CLAUDE.md` asked for DECISIONS
+  entries only in the Commits section, which tied logging to a commit and said
+  nothing about what was worth logging.
+- **Why:** A decision recorded at commit time is reconstructed rather than
+  recorded, and one settled in conversation had no home at all until it
+  reached code — this log's value to a reviewer is the reasoning at the moment
+  of choosing. The threshold matches how this file is already written: every
+  entry names a rejected alternative, so that test adds no new standard. The
+  routing lines put the existing rules (T2.2 for open questions, `U<n>` for
+  deferrals, **Supersedes** for reversals) where they are read at the start of
+  every session (T4.1), instead of only inside the files they govern.
+  Rejected: "record every decision" with no threshold, which either gets
+  ignored or fills the log with entries that have no alternative to reject;
+  and a `PostToolUse` or `Stop` hook that checks whether DECISIONS changed,
+  which cannot tell a decision from an edit and would nag on every commit.
+- **Origin:** Recording decisions as they are made, rather than at commit time:
+  Mine. The named-alternative threshold, the exclusions, and the routing list:
+  LLM-suggested, accepted.
+
 ---
 
 ## Open questions
