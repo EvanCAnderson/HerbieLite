@@ -248,6 +248,8 @@ started.
 - **Origin:** Interactive entry: Mine (LLM recommended files and pipes only,
   with interactive entry moved to UPGRADES). File/STDIN run commands:
   LLM-suggested, accepted.
+- **Superseded in part by** [T6.13](#t6-13) (the terminal hint only; the file
+  and STDIN run commands, and interactive entry itself, stand).
 
 ### <a id="t1-11"></a>T1.11 — Layered architecture
 
@@ -971,6 +973,440 @@ started.
   that the exit code is identical either way, and surfaced EPIPE as a separate
   reachable case, which became Q17. Stating the data-versus-bug split in T5.2
   as well as here: Mine.
+
+### <a id="t6-2"></a>T6.2 — `main` takes its streams; `bin.ts` stays logic-free
+
+- **Decision:** `main(args, stdin, stdout, stderr): Promise<number>`, over
+  Node's own stream types, returning the exit code rather than setting one.
+  `bin.ts` passes `process.argv.slice(2)` and the three process streams, and
+  assigns the result to `process.exitCode`. Nothing in `main` asks whether a
+  stream is a terminal: the base prints nothing extra for typed input
+  ([T6.13](#t6-13)), so the program's only input question is whether an
+  argument was given.
+- **Context:** T6a. PLAN named the signature; what the parameters are typed
+  as, and where the terminal check lives, were open.
+- **Why:** Every test drives the real entry point with `Readable.from` and a
+  collecting `Writable`, so nothing is stubbed and no module-level state is
+  touched; a test that wants the interactive path opts in with
+  `Object.assign(stream, { isTTY: true })`, and every other test gets the
+  piped path by construction. Returning the code keeps `main` a function of
+  its arguments, so `process` is named in exactly one file (T1.6). Node's
+  stream types also carry the `EventEmitter` surface that Q17's write-failure
+  handling needs. **Rejected:** narrow interfaces of our own
+  (`{ write(text: string): void }`), the purest boundary, but it invents an
+  abstraction for two callers that already satisfy the Node types, and it has
+  nowhere to attach the `error` listener Q17 needs.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t6-3"></a><a id="q15"></a>T6.3 — Q15: One optional file argument
+
+- **Decision:** Zero arguments reads STDIN; one names a file; two or more is
+  an error. An argument that cannot be read is an error. Both print one line
+  to stderr, print no report, and exit 1 (T6.1). There is no `--help`, no
+  usage line, and no `-` for STDIN; a `--help` flag is
+  [UPGRADES U5](./UPGRADES.md#u5).
+- **Context:** T6b. Q7 covers a bad line, not a bad command line.
+- **Why:** The two run forms in the brief are a file argument and a pipe, and
+  this is the smallest rule that serves both: the argument list is either
+  empty or one path. Exiting 1 with no report matches T6.1's contract that
+  exit 1 means no report was produced, which a bad line never causes.
+  **Rejected:** printing a usage line after the error, which is friendlier
+  but adds a second description of the run forms that can drift from the
+  README (T7a); and `--help`, which is a feature the brief does not ask for
+  and which puts a non-path argument into the argument handling — deferred
+  to U5 rather than dropped.
+- **Origin:** The rule: LLM-suggested, accepted (the default recorded in PLAN
+  §4, confirmed when T6 started). Deferring `--help` to UPGRADES rather than
+  leaving it unrecorded: Mine.
+
+### <a id="t6-4"></a>T6.4 — Reading lines: our own `\n` splitter
+
+- **Decision:** `readLines(stream)` is an async generator that decodes the
+  stream as UTF-8, buffers partial lines across chunks, splits on `\n` alone,
+  numbers lines from 1, and yields a final line that has no trailing newline.
+  A trailing `\r` is left in the text for the parser to strip, as it already
+  does (T3.2).
+- **Context:** T6c. PLAN left the reader open, noting that `readline` treats a
+  lone `\r` as a line break.
+- **Why:** A line number is quoted in every warning, so it has to mean what a
+  reader's editor shows. `readline` splits on `\r` as well as `\n`, so one
+  stray `\r` anywhere in a file silently renumbers every line after it and
+  every later warning points at the wrong line — a failure with no symptom
+  except wrong advice. Splitting on `\n` alone costs about fifteen lines and
+  makes the number exact; a lone `\r` then stays inside its line and fails
+  the letters-only check (Q9), which is a warning rather than a silent shift.
+  Decoding with `setEncoding` rather than concatenating buffers also
+  reassembles a multi-byte character split across two chunks. Streaming, not
+  reading the whole input first, is what lets a mistyped line be answered as
+  it is typed (Q7, T1.10). Leaving `\r` to the parser keeps one meaning for
+  `source.text` — the bytes between two newlines — rather than two modules
+  negotiating what belongs to a line, keeps T3.2's strip reachable in
+  production rather than only from its own tests, and costs only a trailing
+  `\r` inside the text a warning quotes, which is invisible because the
+  quoted line comes last (T6.7). **Rejected:** `node:readline` with
+  `crlfDelay: Infinity`, for the renumbering above; reading all input and
+  then splitting, which is exact but prints nothing until end of input and so
+  would gut T1.10's interactive entry; and stripping `\r` in the reader,
+  either alongside T3.2's strip (two modules knowing about CRLF, and the
+  parser's strip dead in production) or instead of it (supersedes part of
+  T3.2, and `parseLine` then mis-parses any CRLF line not routed through the
+  reader, including in the network and report tests, which build lines from
+  text themselves).
+- **Origin:** LLM-suggested, accepted. Leaving `\r` to the parser: raised as
+  a question by me, recommended and reasoned by the LLM, accepted.
+
+### <a id="t6-5"></a>T6.5 — `lines.ts` and `warnings.ts` are helpers of the cli layer
+
+- **Decision:** The reader (T6.4) lives in `lines.ts` and every line of
+  stderr text in `warnings.ts`. Neither is a fifth layer: T1.11's four layers
+  stand, and these two are helpers _of_ `cli`, which is still the only module
+  that touches a stream or decides what to print. Both are added to PLAN §3's
+  reading list along with T6.2, since a reviewer opening `src/` sees six
+  modules where T1.11 promised four.
+- **Context:** T6c. T2.5 put the wording in `cli`, and the reader could as
+  easily have been a private generator there.
+- **Why:** Both are the parts of the cli worth testing without a stream. The
+  reader's hard cases are about where a chunk boundary falls — a line split
+  across two chunks, a final line with no newline, a BOM alone in a chunk —
+  and at this boundary each is a two-line test, while through `main` the same
+  case has to be asserted via a warning's line number, several layers from
+  the bug. The wording is about seven message shapes; as private functions
+  they are reachable only by running text through streams, and `cli.ts` would
+  be mostly prose. What is left in `cli.ts` is the shape the layer is
+  supposed to have: choose a source, loop, collect, print. **Rejected:**
+  both inline in `cli.ts` (T2.5's literal reading, and no new files, but the
+  tests above move several layers away from what they test); `readLines` in
+  `parser.ts`, where `SourceLine` and Q10 already live, which puts stream I/O
+  into the layer T1.11 keeps pure and answers U2's reader-or-parser question
+  the other way from T6.6; and each layer formatting its own warnings, which
+  supersedes T2.5 rather than following it.
+- **Origin:** `warnings.ts`: LLM-suggested, accepted. `lines.ts`:
+  LLM-suggested, accepted after I asked what it would contain and why it beat
+  inlining.
+
+### <a id="t6-6"></a><a id="q16"></a>T6.6 — Q16: Strip a byte-order mark, silently
+
+- **Decision:** `readLines` removes one U+FEFF at the very start of the
+  stream, and says nothing about it. A BOM anywhere else — including at the
+  start of a later line, as concatenating two files produces — is left alone
+  and reaches the parser as part of a word. This settles two of
+  [UPGRADES U2](./UPGRADES.md#u2)'s three questions as _reader_ and _line 1
+  only_, and the third as _silently_, so U2 is built here rather than
+  deferred.
+- **Context:** T6c. PLAN's default was to leave this out of the base, and the
+  README would have named the cause.
+- **Why:** A file saved by Windows Notepad or as Excel's UTF-8 CSV begins
+  with an invisible character that makes line 1 an unknown command (Q11).
+  The damage does not stop there: if line 1 is `Partner Chris`, then Chris is
+  never declared, every `Contact` naming Chris fails to resolve (Q8), and the
+  report names a different partner — one invisible byte, three warnings, and
+  a changed answer. The warning cannot even show the cause, because U+FEFF
+  prints as nothing, so the quoted line looks valid (U3). One line in the
+  reader removes a whole class of wrong-but-warned output on files a reviewer
+  might plausibly produce. Silent, because a BOM is a file-encoding artifact
+  and not a fact about the network — there is nothing for a user to fix once
+  it is handled, and a note would be a stderr line that is not a discarded
+  line, which fits neither the warning shape (T2.5) nor the exit contract.
+  Line 1 only, because that is where an encoder writes it; a U+FEFF elsewhere
+  is data, and Q9 already rejects it loudly. **Known limit:** a BOM alone on
+  line 1 still leaves an empty line 1, which is blank under Q6 and so passes
+  silently — the line numbering is unaffected either way. **Rejected:**
+  leaving it out of the base, which keeps the scope rule clean but ships a
+  program that gives a wrong report for an invisible reason; and stripping it
+  with a note on stderr, for the warning-shape reason above.
+- **Origin:** Mine. The LLM recommended keeping it out of the base, with the
+  cascade above set out as the cost, and deferring it to U2; I chose to build
+  it, which is a deliberate inclusion beyond the brief in the sense T1.10
+  set.
+
+### <a id="t6-7"></a>T6.7 — Warning text: one prefixed line, the input quoted last
+
+- **Decision:** Every stderr line is
+  `herbie-lite: line <n>: <problem>; discarded: <the line as written>`, with
+  the program name on every line and the input quoted last. The expected
+  format in a parser warning is built from `COMMAND_SYNTAX`
+  (`expected "Employee <Name> <CompanyName>"`), never written out again.
+  Invocation and I/O failures use the same prefix without the line part.
+  Malformed lines are printed as they are read and resolution warnings after
+  all input is in, so stderr is in two passes rather than one run of input
+  order.
+- **Context:** T6c. T2.5 left the wording to this layer and nothing had
+  fixed its shape.
+- **Why:** One line per problem stays greppable and keeps the one-warning-
+  per-line ordering T4.3 established visible. The prefix keeps stderr
+  attributable once it is merged into a log or another program's output.
+  Quoting the input last keeps a long or odd line away from the part of the
+  message that names the problem. Ordering alone turned out not to be enough
+  — [T6.8](#t6-8) adds a second quote in the middle of the line, where a
+  carriage return does overwrite the message — so the quoted text is escaped
+  and bounded instead ([T6.11](#t6-11)), and quoting last is now the second
+  line of defence rather than the guarantee. **Known tradeoff:** the two passes mean
+  a warning for line 12 can print before one for line 2, which is the price
+  of answering a typed line immediately (Q7, T1.10); within each pass the
+  order is the file's. **Rejected:** dropping the program prefix (shorter,
+  but anonymous in a merged log); a multi-line warning with the quoted line
+  indented below, which reads best on a terminal but triples stderr on a
+  messy file and is harder to grep; and holding parser warnings back so all
+  of stderr is in input order, which would make interactive entry silent
+  until Ctrl+D.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t6-8"></a>T6.8 — Q13's warning: a repeat reads differently from a claim
+
+- **Decision:** A repeated declaration warns in one of two wordings. When the
+  two commands say the same thing, `repeats the declaration on line 1`. When
+  the name is claimed by a different declaration,
+  `Laurie is already declared on line 2 as "Employee Laurie Globex"`, quoting
+  the standing line as the user wrote it (escaped and bounded like any other
+  quoted input, [T6.11](#t6-11)). `cli` tells them apart by comparing
+  the commands, not their text, so spacing never makes a repeat look like a
+  conflict (Q10).
+- **Context:** T6c. Q13 gives both cases one warning, and T2.5 anticipated
+  the cli distinguishing them.
+- **Why:** They are different events to the person reading stderr. An exact
+  repeat is noise in the file and needs no action beyond deleting a line; a
+  name claimed twice is a data error where the program has chosen which
+  declaration stands, and quoting the standing line is what lets the user see
+  the choice. Comparing commands rather than text is what makes
+  `Employee Sam Hooli` and `Employee  Sam  Hooli` a repeat, as Q10 implies
+  they should be. **Rejected:** one wording for both, which is one code path
+  and still quotes the standing line, but describes an identical line as a
+  conflict; and staying silent on exact repeats, which reverses Q13's
+  deliberate choice to surface them and would need a superseding entry
+  rather than a T6 one.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t6-9"></a><a id="q17"></a>T6.9 — Q17: A closed stdout ends quietly; other I/O fails loudly
+
+- **Decision:** A write to stdout that fails with `EPIPE` ends the run with no
+  message and exit 0. Any other write failure, and any failure while reading,
+  prints one line to stderr and exits 1 (T6.1) — a file that could not be
+  opened (Q15) and a read that failed partway reach the same handler and read
+  the same way. Only the read loop and the final write are wrapped;
+  `buildNetwork` and `reportLines` are not, so a broken invariant still
+  propagates as T6.1 requires. Both output streams also get a no-op `error`
+  listener, because a failing stream emits `error` as well as reporting to
+  the write callback, and an unhandled one would end the process before the
+  callback could decide anything.
+- **Context:** T6c. Q7, Q15 and T6.1 covered bad data, a bad invocation and a
+  bug; a reader closing the pipe is none of the three.
+- **Why:** `node dist/bin.js input.txt | head -1` is an ordinary shell idiom,
+  and `head` closing the pipe is the reader saying it has enough — not a
+  failure of this program. A stack trace there is noise, and a non-zero exit
+  would break pipelines that are working correctly. Everything else that goes
+  wrong with the file or the terminal genuinely means no report was produced,
+  which is exactly what exit 1 signals. The read and the write are caught
+  because I/O is expected to fail; the domain calls between them are not,
+  because a throw from either is a contradiction in the program (T5.2).
+  **Rejected:** letting everything propagate, which is the least code and
+  keeps T6.1's no-catch stance whole, but prints a stack trace for `| head`;
+  and treating a closed pipe like any other failure (one rule, no exit-code
+  subtlety), which makes a correct pipeline a failing command.
+- **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
+  confirmed when T6 started).
+
+### <a id="t6-10"></a>T6.10 — The process-level test runs the source through `tsx`
+
+- **Decision:** T6e spawns `node_modules/.bin/tsx src/bin.ts`, not
+  `node dist/bin.js`, and asserts the brief's output with empty stderr for
+  both a file argument and a pipe.
+- **Context:** T6e. T1.3 keeps `build` out of `npm run check`, on the grounds
+  that `typecheck` already catches what would break it.
+- **Why:** `npm test` then passes on a clean clone with no build step, so
+  `check` covers the end-to-end path without contradicting T1.3. What the
+  test loses is the exact artifact a reviewer runs — the built `dist/`,
+  including the ESM `.js` extensions T0.2 taxes us for — and T8d's
+  clean-clone check covers that by running the built program directly.
+  **Rejected:** spawning `node dist/bin.js`, which tests the real artifact
+  but makes `npm test` fail on a clean clone unless a build ran first, so
+  either `check` grows a build step or the suite becomes order-dependent; and
+  running both, with the built program tested only when `dist/` exists, which
+  is a test that can be green because it quietly skipped.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t6-11"></a>T6.11 — Quoted input is escaped and bounded
+
+- **Decision:** Wherever a warning quotes input, the text is escaped and
+  capped at 200 characters of output. Escaped: every control, format and
+  separator character (`\p{C}`, `\p{Z}`) other than a plain space, plus `\`
+  itself. Tab and carriage return use the familiar `\t` and `\r`; everything
+  else is `\u` and its code point (` `, `\u{e0041}`). Visible non-ASCII
+  such as `Zoë` is left as typed. Past the cap the quote ends
+  `... (5008 characters)`. This is [UPGRADES U3](./UPGRADES.md#u3), built in
+  the base rather than deferred, and it settles U3's three open questions as
+  _escape tabs_, _keep visible non-ASCII_, and _short forms for `\t` and
+  `\r`_.
+- **Context:** T6 review. [T6.7](#t6-7), which fixes the shape of a warning,
+  made the message safe by quoting the input last; [T6.8](#t6-8), which gives
+  a repeated declaration its wording, then added a second quote — the standing
+  declaration — in the middle of the line. On a CRLF file that quote carries a
+  `\r`, and the warning overwrites its own opening. What a terminal shows is
+  `"; discarded: Partner Laurieis already declared on line 2 as "Employee
+Laurie Globex`: the program name, the line number and the name are gone.
+- **Why:** T6.7's guarantee is that a control character in quoted input cannot
+  cost the reader the part of the message that names the problem; quoting last
+  was only the mechanism, and the mechanism broke inside the same task, which
+  is the evidence that it cannot carry the guarantee alone. Escaping also
+  removes two costs recorded elsewhere: [T3.4](#t3-4)'s known tradeoff, that a
+  line broken by an invisible character looks valid in the warning, and the
+  terminal escape sequences a hostile or merely wrong file can otherwise send
+  to stderr — `node dist/bin.js /bin/ls` wrote 212KB of raw bytes before this
+  change. The cap bounds the same case from the other side, since escaping a
+  five-megabyte line would produce twenty; the loop stops at the limit instead
+  of escaping the whole line first, so a long line costs nothing to quote and
+  no escape is ever cut in half. Short forms for `\t` and `\r` because a
+  Windows file is the common case and `\r` is what every reader already knows.
+  **Rejected:** sanitizing only T6.8's standing quote, which leaves the next
+  mid-message quote exposed the same way; reordering the message so the
+  standing line comes last, which only moves which of the two quotes is
+  exposed; stripping `\r` in the reader, which supersedes part of
+  [T6.4](#t6-4), the reader's own `\n`-only splitting rule, and covers one
+  character out of the class; a uniform `\u` with no short forms, one sentence
+  shorter to state but `
+` on every line of a Windows file; escaping all
+  non-ASCII, which shows `Zoë` as `Zoë`; and capping the number of
+  warnings rather than their length, which makes the program withhold discards
+  it has decided to announce ([T5.2](#t5-2), where a lost contact is judged
+  the one thing the program must never do quietly) and adds a stderr line that
+  is not a discarded line. **Known limit:** invalid UTF-8 reaches the program
+  as U+FFFD, which is printable and so is not escaped — the warning shows the
+  replacement character and cannot show the original bytes. The README notes
+  it (T7d).
+- **Origin:** LLM-suggested (the CRLF failure came out of the T6 review, and
+  U3 already proposed this escaping rule); building it in the base, in the
+  sense [T6.6](#t6-6) set when it pulled the byte-order mark in, and the
+  truncation: Mine, chosen after the LLM set out escaping alone, escaping with
+  a cap, and documenting the behaviour as it stood. Capping the warning count
+  was offered and rejected.
+
+### <a id="t6-12"></a>T6.12 — The reader names its own failures
+
+- **Decision:** `readLines` wraps a failure of the stream in a `ReadError`
+  carrying it as `cause`. `cli`'s read loop catches only `ReadError` and
+  rethrows anything else, so a throw from the loop's own body — the parser, or
+  writing a warning — reaches the top and crashes with its stack trace, as
+  [T6.1](#t6-1) requires of a bug.
+- **Context:** T6 review. `parseLine` runs inside the `try` that reports
+  "cannot read `<file>`" ([Q17](#q17)), so a bug in the parser layer exited 1
+  with a confident, wrong diagnosis pointing at the user's file, and no stack
+  trace. [T6.9](#t6-9), which settles Q17, says only the read and the final
+  write are caught "so a broken invariant still propagates" — which the loop
+  body quietly broke.
+- **Why:** T6.1's contract is that bad data warns and a bug crashes loudly; a
+  bug that blames the input file does neither. Naming the failure in the
+  module that owns the stream matches [T6.5](#t6-5), which keeps `lines.ts` as
+  the cli's I/O helper rather than a layer of its own, and it covers
+  `createReadStream`'s `ENOENT` and `EISDIR` ([Q15](#q15), one optional file
+  argument) without a second code path, because those surface through the same
+  iteration. A `for await` that abandons its loop resumes the generator with a
+  `return` completion rather than a `throw`, so the wrap cannot catch a
+  consumer's own failure — a test in `lines.test.ts` holds that, because the
+  argument is not obvious from reading the code. **Rejected:** narrowing the
+  `try` in `cli.ts` to a manual `asyncIterator` with a `try` around `next()`
+  alone, which is correct and needs no new type but leaves a loop shape every
+  reader has to decode, the kind of subtlety [T1.6](#t1-6) removed rather than
+  patched when it split `bin.ts` from `cli.ts`; and accepting the behaviour
+  with T6.9 reworded, which is free and leaves a bug class that misdiagnoses
+  itself.
+- **Origin:** LLM-suggested, accepted (raised in the T6 review, with the
+  manual-iterator form and a reworded T6.9 as the alternatives).
+
+### <a id="t6-13"></a>T6.13 — No interactive hint, and no terminal check
+
+- **Decision:** The program prints nothing extra when input is typed at a
+  terminal. `INTERACTIVE_HINT` and the `isTerminal` check are removed, PLAN's
+  T6d is dropped, and nothing in the program asks whether a stream is a TTY.
+  Typing commands still works — it is STDIN with no file argument — it simply
+  gets no greeting. An opening explanation is
+  [UPGRADES U6](./UPGRADES.md#u6).
+- **Context:** T6 review. The shipped hint also read
+  `herbie-lite: enter commands, ...` rather than the
+  `Enter commands, ...` that [T1.10](#t1-10) quotes, because [T6.7](#t6-7)
+  puts the program name on every stderr line.
+- **Why:** One line of greeting is the smallest and least useful version of
+  what interactive entry actually wants, which is an explanation of the four
+  commands and the contact types; shipping the stub invites reading it as the
+  finished thing. It is also the only place in the program that branches on
+  what kind of stream it was handed, so removing it leaves `cli.ts` with
+  nothing but input, output and exit code, and leaves no function without a
+  caller for T8a's read-through to find. **Accepted cost:** T1.10's reason for
+  the hint was that a bare `node dist/bin.js` otherwise looks frozen, and it
+  does again until U6 lands. The brief's two run forms are unaffected, since
+  each names a file or a pipe. **Rejected:** keeping the hint and recording
+  its reworded text, which keeps the stub; keeping `isTerminal` for U6 to use
+  later, which ships a function nothing calls and a test asserting a branch
+  that does nothing; and writing the full explanation now, which is scope
+  beyond the brief with no forcing argument of the kind [T6.6](#t6-6) had for
+  the byte-order mark.
+- **Supersedes:** [T1.10](#t1-10), the terminal hint only. Its file and STDIN
+  run commands, and interactive entry itself, stand.
+- **Origin:** Mine. The LLM recommended keeping the hint and extending T6.7 to
+  cover its wording; I chose to remove it and defer the fuller version.
+
+### <a id="t6-14"></a>T6.14 — No declared companies prints nothing
+
+- **Decision:** When no `Company` was declared, the program writes nothing at
+  all to stdout and exits 0, rather than the single newline that joining an
+  empty list and terminating it would produce.
+- **Context:** T6 review. The behaviour was already in the code with a test
+  and a comment, but no entry, and the alternative is what the code does with
+  the branch removed.
+- **Why:** FR4 makes the output a list of companies, and a list of none is
+  nothing; a lone newline is a line that says nothing, and anything counting
+  lines or diffing output would see one report where there is none. It also
+  keeps this case consistent with empty input, which already prints nothing.
+  **Rejected:** the bare newline that falls out of joining an empty list and
+  terminating it, with no branch; and a note on stderr, which is not a
+  discarded line and so fits neither [T6.7](#t6-7)'s warning shape nor the
+  exit contract — the same reasoning [T6.6](#t6-6) used to strip the
+  byte-order mark silently.
+- **Origin:** LLM-suggested, accepted. Recording it as a decision rather than
+  leaving the code comment as the only record: Mine (T6 review).
+
+### <a id="t6-15"></a>T6.15 — A stderr that cannot be written to is silent
+
+- **Decision:** Warnings are written to stderr without waiting for the write
+  to be acknowledged, and the no-op `error` listener on stderr is the whole
+  policy: if stderr cannot be written to, every warning is lost silently and
+  the exit code still reflects only what stdout did. [Q17](#q17)'s exit-1 rule
+  for a failed write covers stdout alone.
+- **Context:** T6 review. Q17 settled what a failing stdout means and said
+  nothing about stderr.
+- **Why:** A failure to write stderr cannot be reported on stderr, so the only
+  real question is whether to fail the run over it — and failing would discard
+  a report that stdout accepted, against [Q7](#q7)'s rule that bad data never
+  costs the report, for a stream the brief does not use at all. Not waiting
+  for each warning is also what lets a mistyped line be answered as it is
+  typed ([T1.10](#t1-10)). **Rejected:** treating stderr like stdout under
+  Q17, which needs every warning write awaited, slows the interactive path,
+  and throws away a report the user did receive; and reporting the failure on
+  stdout, which corrupts the report in order to complain about the warnings.
+- **Origin:** LLM-suggested, accepted (raised in the T6 review as an
+  exit-code edge case Q17 had not covered).
+
+### <a id="t6-16"></a>T6.16 — A cited decision is explained where it is cited
+
+- **Decision:** `CLAUDE.md` gains a rule: whenever a decision or task ID is
+  cited outside this log — in conversation, in a commit message, in a review —
+  the citation carries enough of the decision to be read on its own, either a
+  clause summarising it or a note of which part of it is being relied on.
+  `T4.2` alone is not a citation; "T4.2, which asks for a decision to be
+  logged when it is made" is. Code comments are exempt.
+- **Context:** T6 review, raised by me. This log is now long enough that a
+  review naming `T6.7`, `Q13` and `T4.3` in one paragraph cannot be read
+  without three lookups, and those lookups happen in a different window from
+  the conversation.
+- **Why:** The IDs exist so a claim can be traced, not so it can be
+  compressed; a citation that cannot be read without the file open moves work
+  from the writer to the reader on every reading, and the writer has the entry
+  in hand at the moment of citing. Code comments are exempt because they sit
+  beside the code the entry governs, a reader there already has the repository
+  open, and glossing every ID inline would bury short comments — T8a asks for
+  comments that cite IDs, not comments that reproduce them. **Rejected:**
+  requiring the gloss everywhere, code comments included, which turns a
+  two-line comment into five; and relying on the markdown links alone, which
+  is what happens today and is what prompted the rule.
+- **Origin:** Mine (the LLM was citing IDs bare and I asked for the rule).
 
 ---
 

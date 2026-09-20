@@ -61,37 +61,18 @@ That log keeps the complete record, in task order.
 - [**T5.2**](./DECISIONS.md#t5-2) — A network that breaks its own invariants throws.
 - [**T5.5**](./DECISIONS.md#t5-5) — The example test reads the shipped `input.txt`.
 - [**T6.1**](./DECISIONS.md#t6-1) — Bad data warns; a broken invariant crashes.
+- [**T6.2**](./DECISIONS.md#t6-2) — `main` takes its streams; `bin.ts` stays logic-free.
+- [**T6.5**](./DECISIONS.md#t6-5) — `lines` and `warnings` are helpers of the cli layer.
+- [**T6.11**](./DECISIONS.md#t6-11) — Quoted input is escaped and bounded.
+- [**T6.12**](./DECISIONS.md#t6-12) — The reader names its own failures; a bug still crashes.
 
 ## 4. Questions and assumptions (document all in README)
 
 ### Open
 
-Each open question names the subtask that settles it, and that subtask in §6
-names the question back (see [DECISIONS T2.2](./DECISIONS.md#t2-2)). The
-question and its default live only here. When the subtask settles it, the
-question moves to DECISIONS and to the Decided list below. Listed in the order
-their subtasks are built.
-
-- **Q15 — Invalid invocation.** Q7 covers bad lines, not a bad command line.
-  **Default: a missing or unreadable file, or more than one argument, prints
-  an error to stderr, prints no report, and exits 1.** Settle in T6b.
-- **Q16 — A byte-order mark (BOM) at the start of the file.** Some editors
-  (Windows Notepad, Excel's UTF-8 CSV) begin a file with an invisible U+FEFF,
-  and Node does not remove it when reading, so line 1 arrives as
-  `\uFEFFPartner Chris` and is rejected as an unknown command (Q7, Q11).
-  **Default: not handled in the base; line 1 is discarded with the Q7
-  warning, even when it looks blank (a BOM alone is not a blank line, Q6),
-  and the README names the cause and how to remove it (T7d).
-  Stripping the BOM is [UPGRADES U2](./UPGRADES.md#u2).** Settle in T6c.
-- **Q17 — Failures that are neither bad data nor a bug.** Q7 covers a bad
-  line, Q15 a bad invocation, and [T6.1](./DECISIONS.md#t6-1) a broken
-  invariant. Left over: stdout closing early, as
-  `node dist/bin.js input.txt | head -1` gives (Node surfaces this as EPIPE
-  rather than dying on SIGPIPE), and a read that fails after the file opened.
-  **Default: a closed stdout ends the run quietly, with no stack trace and
-  exit 0, since the reader asked for less output; any other I/O failure
-  prints one line to stderr and exits 1, per T6.1's rule that exit 1 means no
-  report.** Settle in T6c.
+None. Every question raised while building is settled; each one's full text
+is in [DECISIONS](./DECISIONS.md), listed below. The cross-linking rule
+([T2.2](./DECISIONS.md#t2-2)) stands for any question a later task opens.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -109,6 +90,9 @@ their subtasks are built.
 - [**Q11**](./DECISIONS.md#q11) (T3.3) — Command keywords are case-sensitive.
 - [**Q1**](./DECISIONS.md#q1) (T5.3) — Ties go to the alphabetically first partner.
 - [**Q14**](./DECISIONS.md#q14) (T5.4) — "Sorted alphabetically" is code-unit order.
+- [**Q15**](./DECISIONS.md#q15) (T6.3) — One optional file argument; a bad invocation exits 1.
+- [**Q16**](./DECISIONS.md#q16) (T6.6) — A byte-order mark is stripped in the reader, silently.
+- [**Q17**](./DECISIONS.md#q17) (T6.9) — A closed stdout ends quietly; other I/O fails loudly.
 
 ## 5. Tooling
 
@@ -175,24 +159,25 @@ prefix).
   - [x] T5d — Add the brief's example as `input.txt` (its demo comment line
         removed, its trailing blank line kept) and a test asserting the exact
         output in §7.
-- [ ] T6 — `cli`: `async main(argv, stdin, stdout, stderr)` → exit code; file
+- [x] T6 — `cli`: `async main(argv, stdin, stdout, stderr)` → exit code; file
       arg, STDIN, interactive entry (T1.10); warnings on stderr; end-to-end
       tests.
-  - [ ] T6a — Replace the placeholder with `main(argv, stdin, stdout, stderr)`
+  - [x] T6a — Replace the placeholder with `main(argv, stdin, stdout, stderr)`
         returning an exit code; `bin.ts` passes the process streams and sets
         `process.exitCode`. No catch at the boundary (T6.1). Replace the
         scaffold smoke test.
-  - [ ] T6b — Choose the input source: file argument, else STDIN (T1.10).
+  - [x] T6b — Choose the input source: file argument, else STDIN (T1.10).
         Settles Q15.
-  - [ ] T6c — Stream lines through the parser, printing Q7 warnings as each
+  - [x] T6c — Stream lines through the parser, printing Q7 warnings as each
         line is read; at end of input print Q5/Q8 warnings, then the report on
         stdout; exit 0. Choose the line reader and how line numbers are
         counted: `readline` already strips `\r\n`, and treats a lone `\r` as a
         line break, which shifts every later line number (Q10). Settles Q16
         and Q17.
-  - [ ] T6d — When STDIN is a terminal, print the one-line hint to stderr
-        before reading (T1.10).
-  - [ ] T6e — Process-level test through `bin.ts`: file argument and a pipe
+  - [x] T6d — Dropped in the T6 review: no hint and no terminal check, so
+        typed input gets no greeting
+        ([T6.13](./DECISIONS.md#t6-13), [U6](./UPGRADES.md#u6)).
+  - [x] T6e — Process-level test through `bin.ts`: file argument and a pipe
         both produce §7's output with empty stderr.
 - [ ] T7 — README (build/run/test, approach, LLM usage, every §3 decision
       and Q).
@@ -211,7 +196,11 @@ prefix).
         `Globex: Abdi (2)` reads the same whether Abdi won outright or on
         the alphabetical rule (Q1, [U4](./UPGRADES.md#u4)); and that
         letters-only names keep control characters and terminal escapes out
-        of the report, which is an unstated dividend of Q9.
+        of the report, which is an unstated dividend of Q9. Also cover the
+        T6 review's additions: escaped and truncated quoting and its U+FFFD
+        limit ([T6.11](./DECISIONS.md#t6-11)), no output when no company is
+        declared ([T6.14](./DECISIONS.md#t6-14)), and a silent stderr
+        failure ([T6.15](./DECISIONS.md#t6-15)).
 - [ ] T8 — Final pass: naming, comments, tradeoff notes.
   - [ ] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
         no placeholder text or dead code.
@@ -231,7 +220,8 @@ prefix).
   Globex: Chris (2)
   Hooli: Molly (1)
   ```
-- Runs via file arg, STDIN, and interactive entry.
+- Runs via file arg, STDIN, and interactive entry (typed input is STDIN with
+  no argument; the base prints no hint, [T6.13](./DECISIONS.md#t6-13)).
 - Malformed and unresolved lines produce stderr warnings, the report still
   prints, and the exit code is 0 (Q5, Q7, Q8).
 - `npm run check` passes (typecheck, lint, format, tests).

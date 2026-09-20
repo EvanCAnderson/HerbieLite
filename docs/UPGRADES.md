@@ -27,28 +27,33 @@ Open questions:
 
 <a id="u2"></a>
 
-## U2 — Strip a byte-order mark
+## U2 — Strip a byte-order mark — **built in the base**
 
 Remove a U+FEFF byte-order mark from the start of line 1, so a file saved by
-Windows Notepad or as Excel's UTF-8 CSV doesn't lose its first line. The base
-rejects that line with the Q7 warning ([PLAN Q16](./PLAN.md#open)).
+Windows Notepad or as Excel's UTF-8 CSV doesn't lose its first line.
+
+Built in T6c rather than deferred; see
+[DECISIONS T6.6](./DECISIONS.md#t6-6) for why, and the answers this entry's
+open questions got:
+
+- **Reader or parser?** The reader (`lines.ts`), which is where a file's
+  encoding artifacts belong; the parser stays free of I/O concerns.
+- **Line 1 only, or any line?** Only at the very start of the stream. A
+  U+FEFF at the start of a later line — as `cat a.txt b.txt` produces — is
+  left alone and rejected by Q9, because there it is data, not an encoder's
+  mark.
+- **Silently, or noted on stderr?** Silently. There is nothing for the user
+  to fix once it is handled, and a note would be a stderr line that is not a
+  discarded line.
 
 - **Origin:** LLM-suggested, deferred here by me. Found while discussing how
   a warning would show a non-breaking space (Q10); Node's `readFileSync` and
-  `readline` both keep the BOM.
-
-Open questions:
-
-- Strip it in the cli's reader (a property of the file) or in the parser (so
-  `parseLine` handles any source)? The reader is the more accurate place
-  for a single file, but a BOM can also arrive mid-stream (next question).
-- Strip only at the start of line 1, or anywhere at the start of a line (for
-  example after files are concatenated with `cat a.txt b.txt`)?
-- Strip silently, or note it on stderr?
+  `readline` both keep the BOM. The LLM then recommended keeping it out of
+  the base; I chose to build it (T6.6).
 
 <a id="u3"></a>
 
-## U3 — Show invisible characters in quoted lines
+## U3 — Show invisible characters in quoted lines — **built in the base**
 
 Warnings quote the offending line, so a line broken by an invisible character
 (a non-breaking space, zero-width space, or BOM) looks valid in the warning.
@@ -64,16 +69,20 @@ is unaffected because every name in it is ASCII letters (Q9).
 - **Side benefit:** escaping control characters stops input from sending
   terminal escape codes to stderr, and shows a stray `\r` that the reader
   leaves in a line (T6c).
-- **Origin:** LLM-suggested, deferred here by me.
+- **Origin:** LLM-suggested, deferred here by me. Built in the T6 review
+  instead, once a mid-message quote was found to garble its own warning on a
+  CRLF file; see [DECISIONS T6.11](./DECISIONS.md#t6-11) for why, and the
+  answers this entry's open questions got:
 
-Open questions:
-
-- Show tabs as `\t`? They are valid separators (Q10), but invisible on
-  screen.
-- Escape all non-ASCII instead? Simpler to state and never touches a valid
-  line, but shows `Zoë` as `Zo\u00eb`.
-- Invalid UTF-8 reaches the program as U+FFFD, so the warning can't show the
-  original bytes; the README should say so.
+- **Show tabs as `\t`?** Yes. A tab is a valid separator (Q10), so it only
+  ever reaches a warning on a line that is already bad, where showing it
+  exactly is what helps. `\t` and `\r` keep their familiar short forms;
+  everything else is `\u` and its code point.
+- **Escape all non-ASCII instead?** No. `Zoë` stays as typed; only control,
+  format and separator characters are escaped.
+- **Invalid UTF-8** still reaches the program as U+FFFD, which is printable
+  and so survives escaping unchanged. The warning cannot show the original
+  bytes, and the README says so (T7d).
 
 <a id="u4"></a>
 
@@ -108,3 +117,61 @@ Open questions:
   rule as a last resort (it has to end somewhere deterministic).
 - Whether any of this belongs in the report layer or in a separate ranking
   module the report calls, once more than one rule exists.
+
+<a id="u5"></a>
+
+## U5 — `--help` and a usage line
+
+The base takes one optional file path and nothing else: a bad invocation
+prints what was wrong and exits 1, with no usage text and no `--help`
+([Q15](./DECISIONS.md#q15)). A `--help` / `-h` flag would print the run forms
+to stdout and exit 0, and the invocation error could end with a one-line
+`usage: herbie-lite [file]`.
+
+Neighbour: [U6](#u6) is the same explanation offered to someone who typed
+nothing at all, rather than to someone who asked for it.
+
+- **Origin:** Mine (raised when Q15 was settled in T6; the LLM offered both
+  as variants of the default and I chose to defer them rather than build
+  them).
+
+Open questions:
+
+- Where the usage text lives so it cannot drift from the README's run forms
+  (T7a) — generated from one source, or duplicated and checked by a test?
+- Whether `-` should mean STDIN, which is the conventional partner to a file
+  argument but adds a second non-path argument to handle.
+- Whether an unknown flag (`--verbose`) should be told apart from a file
+  named `--verbose`, which the letters-only rule (Q9) has no opinion about
+  since it governs input lines, not arguments.
+
+<a id="u6"></a>
+
+## U6 — An opening explanation for typed input
+
+The base prints nothing when commands are typed at a terminal: no hint, no
+banner, and no terminal check at all ([T6.13](./DECISIONS.md#t6-13)). A bare
+`node dist/bin.js` therefore looks frozen until Ctrl+D. What interactive entry
+actually wants is a short opening explanation on stderr — the four commands
+with their argument shapes, the three contact types, and how to finish — so a
+first-time user can type a working file without opening the README.
+
+Neighbours: [U5](#u5) covers `--help` and a usage line, which answers the same
+question from an explicit flag rather than from an empty invocation, and
+[U1](#u1) is the guided builder that would replace typing into a pipe
+altogether. Whatever is built here should share one source of text with both.
+
+- **Origin:** Mine (the base shipped a one-line hint; I removed it in the T6
+  review rather than ship the stub, and deferred the fuller version here).
+
+Open questions:
+
+- Where the text lives so it cannot drift from the README's run forms (T7a)
+  or from `COMMAND_SYNTAX`, which already holds the grammar as data — the
+  command shapes can be generated from it, the prose cannot.
+- stderr or stdout? stderr keeps stdout reserved for the report, so
+  `node dist/bin.js > out.txt` still produces a clean file; but a person
+  reading a help text on stderr is unusual, and U5's `--help` conventionally
+  goes to stdout.
+- Whether it reappears after the report, or on an empty run, when the user
+  typed nothing at all.

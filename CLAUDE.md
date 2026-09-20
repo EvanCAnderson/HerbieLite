@@ -43,6 +43,24 @@ Route each one:
 - **Reversed** — a new entry with **Supersedes:**, and **Superseded by** added
   to the old one. What an old entry says is never edited.
 
+### Citing a decision
+
+Outside DECISIONS itself — in conversation, in a review, in a commit message —
+never cite a `T<n>.<m>`, `Q<n>` or `U<n>` bare. Carry enough of the decision
+for the sentence to be read on its own: a clause summarising it, or a note of
+which part of it you are relying on. I should not have to open a file to
+follow what you just said.
+
+- No: "this follows T4.2."
+- Yes: "this follows T4.2, which asks for a decision to be logged when it is
+  made rather than at commit time."
+- Yes, when only part applies: "T3.4's check order — keyword, then word count
+  — is why the count is reported first here."
+
+Code comments are the exception: they sit beside the code the entry governs
+and a reader there already has the repository open, so a bare ID is fine
+(T8a asks for comments that cite IDs, not ones that reproduce them).
+
 ## Stack
 
 - **Language:** TypeScript 6 (Node.js 22.13+).
