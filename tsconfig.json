@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    /* Language & module: modern greenfield ESM (see PLAN §5, D-modules). */
+    /* Language & module: modern greenfield ESM (DECISIONS T0.2). */
     "target": "ES2022",
     "lib": ["ES2022"],
     "types": ["node"],

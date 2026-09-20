@@ -691,6 +691,83 @@ started.
   Mine. The named-alternative threshold, the exclusions, and the routing list:
   LLM-suggested, accepted.
 
+### <a id="t4-3"></a>T4.3 — `buildNetwork`: apply in one pass, resolve in two
+
+- **Decision:** The layer's entry point is
+  `buildNetwork(commands: Iterable<SourcedCommand>): NetworkResult`, a
+  function over the whole command stream rather than an object the cli feeds
+  line by line. It applies each `Company` as it arrives, holds partners,
+  employees, and contacts, then resolves people and contacts in that order
+  (Q5, Q12), and returns `{ network, warnings }` with the warnings sorted
+  back into input order by line number. One map of name → standing
+  declaration holds the people namespace; `partners` and `employers` are
+  derived from it once resolution ends. The tests build their input by
+  running text through `parseLine`.
+- **Context:** T4a–T4d. The subtasks are written as "apply" and "hold" steps,
+  which reads like a stateful accumulator.
+- **Why:** Nothing about a person or a contact can be decided until input
+  ends (Q5, Q8, Q12), so a builder object would answer every query wrongly
+  until `resolve` had been called; a function cannot be used in that order.
+  The cli already holds every contact in memory (T1.13), so taking the
+  commands as one iterable costs nothing extra: it collects them as it
+  streams, warning on each malformed line as that line is read (Q7), and
+  calls `buildNetwork` once input ends. `Iterable`, not `AsyncIterable`,
+  keeps the domain layer synchronous and testable without I/O (T1.11); the
+  cli's own reader is the only asynchronous part (T6c). A single namespace map
+  matches Q12: two containers would need a third index to answer "is this
+  name taken" and could drift apart, while deriving both views at the end
+  makes `Network`'s stated invariant — a name is never both a partner and an
+  employee — true by construction. Warnings are sorted because the passes run
+  by kind, so concatenating them would print a duplicate company from line 40
+  before an unknown company from line 4; a reader follows their file top to
+  bottom. The order is total: a line yields at most one command and a command
+  at most one warning, so no two warnings share a line. Driving the tests
+  through the parser lets each case be written as the input file a user would
+  type, with assertable line numbers, at the cost of a parser bug being able
+  to fail a network test. Rejected: a stateful builder with `apply` and
+  `resolve`; separate partner and employee maps; each pass's warnings
+  concatenated in pass order; and hand-built `SourcedCommand` literals in the
+  tests, which are three lines each and hide the line numbers the warnings
+  are asserted on.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t4-4"></a>T4.4 — Resolution checks: fixed order, first failure reported
+
+- **Decision:** In the people pass an `Employee` is checked against its
+  company before its name is checked against the people namespace, and the
+  first failure is the one reported. An `Employee` line with both an
+  undeclared company and a name already taken warns `unknown-company` only.
+  A contact's person slots report `wrong-role` when the name belongs to the
+  other kind of person (Q12); a company slot has no equivalent cause, so an
+  undeclared company is reported as undeclared even when a person of that
+  name is declared.
+- **Context:** T4 review. A line can break two rules at once, and names are
+  letters only (Q9), so a company is often named after a person:
+
+  ```
+  Partner Dell
+  Employee Laurie Dell    # meant the company Dell, never declared
+  ```
+
+- **Why:** A line naming no declared company describes no employee at all,
+  so its name claim never arises — the discard and the warning are the same
+  fact. Reporting a duplicate first would imply the line would otherwise
+  have stood, which is false. One failure per line also keeps the warning
+  ordering total (T4.3) and the result type simple, and it matches the
+  parser, which already reports the first failure in a fixed order (T3.4).
+  The asymmetry between the two slot kinds follows from Q12: partners and
+  employees share one namespace, so a name found there is the same person
+  in the wrong position and `wrong-role` says so; companies are their own
+  namespace, so a partner named Dell is not evidence about a company named
+  Dell, and the warning names the missing company and stops. **Rejected:**
+  checking the name claim first; reporting both problems, which puts two
+  warnings on one line and breaks T4.3's total order; and an `is-a-person`
+  cause on `unknown-company`, which treats the two namespaces as related,
+  against Q12.
+- **Origin:** LLM-suggested, accepted. The order was already in the T4
+  implementation; the T4 review surfaced it as an unrecorded choice with a
+  nameable alternative, and that T3.4 sets the same pattern for the parser.
+
 ---
 
 ## Open questions

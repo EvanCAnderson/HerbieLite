@@ -140,15 +140,15 @@ prefix).
         command's kind (Q7, T2.5).
   - [x] T3d — Contact type restricted to `email|call|coffee`; anything else →
         malformed (FR1, Q7).
-- [ ] T4 — `network`: apply commands, hold pending partners, employees, and
+- [x] T4 — `network`: apply commands, hold pending partners, employees, and
       contacts, resolve at end of input (Q5, Q8, Q12); unit tests.
-  - [ ] T4a — Apply `Company` at once; a repeated company is discarded with
+  - [x] T4a — Apply `Company` at once; a repeated company is discarded with
         the duplicate-declaration warning (Q13).
-  - [ ] T4b — Hold each `Partner` and `Employee` as pending with its line
+  - [x] T4b — Hold each `Partner` and `Employee` as pending with its line
         number (Q5, Q12).
-  - [ ] T4c — Hold each `Contact` as pending with its line number (Q8);
+  - [x] T4c — Hold each `Contact` as pending with its line number (Q8);
         every line is kept, repeats included (Q13).
-  - [ ] T4d — End-of-input resolution: partners and employees together in
+  - [x] T4d — End-of-input resolution: partners and employees together in
         input order, the first valid declaration of a name standing and any
         later one warned (Q12, Q13), unknown companies warned (Q5); then
         contacts (each failed slot warned as undeclared or wrong role, Q8,
