@@ -51,6 +51,14 @@ Route each one:
 
 ## Commits
 
+- **I make the commits, not the LLM.** Never run `git commit`, `git push`,
+  `git merge`, `git rebase`, or `git reset`, even after I've chosen how a
+  change should be split up or approved the work itself — deciding what a
+  commit contains is not the same as asking for it to be made. Leave the
+  changes in the working tree, say what's ready, and offer a subject line and
+  body if one would help. `git add` only when I ask for staging.
+- Everything below is how I write commits; follow it when drafting a message
+  for me.
 - Each commit belongs to exactly one PLAN task; never mix tasks. A task may
   take several commits, each prefixed `T<n>:` and each passing
   `npm run check`. Split when the body would need bullets with unrelated

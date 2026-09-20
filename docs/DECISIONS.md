@@ -24,8 +24,10 @@ When a decision changes, add a new entry with **Supersedes:** <old ID>, and add
 active. When only part of an entry changes, the new entry names that part
 (**Supersedes:** Q5, first bullet) and the old entry gets **Superseded in
 part by** <new ID>, naming the same part; the rest of the old entry stays
-active. What an old entry says is never edited; its heading and the IDs
-it cites may be updated when IDs are restructured (T3.1).
+active. Once the commit that adds an entry has landed, what it says is never
+edited; its heading and the IDs it cites may be updated when IDs are
+restructured (T3.1). Until that commit the entry is a draft, and revising it
+while reviewing the change it belongs to is ordinary editing (T5.6).
 
 ## Key
 
@@ -767,6 +769,208 @@ started.
 - **Origin:** LLM-suggested, accepted. The order was already in the T4
   implementation; the T4 review surfaced it as an unrecorded choice with a
   nameable alternative, and that T3.4 sets the same pattern for the parser.
+
+---
+
+## T5 — Report
+
+### <a id="t5-1"></a>T5.1 — One exported function; the tally stays private
+
+- **Decision:** `report.ts` exports `reportLines(network: Network): string[]`
+  and nothing else. The per-company, per-partner tally and the strongest-partner
+  pick are private functions, and the returned lines carry no trailing newline
+  — the cli decides how to join and terminate them (T6c).
+- **Context:** T5a. T1.13 leaves every tally to this layer, so the layer could
+  just as well expose the tallies it computes.
+- **Why:** The brief asks for one report, and one function is the whole
+  contract: give it a resolved network, get the lines. A public tally would be
+  a second contract to keep working and to test, with no caller — the other
+  product questions T1.13 mentions ("who do we know at ACME?") are not in the
+  brief, and the raw contacts they would need are already on `Network`.
+  Returning lines rather than one joined string keeps the layer free of the
+  choice between `\n` and `\r\n` and of whether output ends in a newline,
+  which belongs with the stream that writes it, and it lets tests assert an
+  array instead of matching text. Rejected: exporting the tally (`Strengths`)
+  as part of the API, and returning a single pre-joined string.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t5-2"></a>T5.2 — A network that breaks its own invariants throws
+
+- **Decision:** While tallying, a contact whose employee is not a key of
+  `employers` throws an `Error` naming the employee. The other two `Network`
+  invariants are not checked: a contact whose company was never declared simply
+  never reaches a line, because the company list drives the output.
+- **Context:** T5a. `noUncheckedIndexedAccess` (T1.5) types
+  `employers.get(employee)` as `string | undefined`, so the lookup has to be
+  narrowed even though `Network` documents that it cannot fail.
+- **Why:** Under Q7 and Q8 a lost contact lowers a strength and can change the
+  partner a line names, so the one thing the report must not do is drop a
+  contact quietly; every other discard in this program is announced. A throw
+  states the contract that `buildNetwork` already guarantees, and it is
+  reachable only by hand-building a `Network`, which the test does. The
+  unchecked invariants need no guard: FR4 says list all companies, so the
+  output is built from `companies`, and a tally under an undeclared company is
+  simply never read. Rejected: a non-null assertion, which silences the
+  compiler without saying why; and skipping the contact, which is the silent
+  data loss this program avoids everywhere else. A throw is not a retreat from
+  Q7's rule that the report is never withheld: Q7 and Q8 govern the data the
+  program was handed, while reaching here means the program has contradicted
+  itself, which is a bug. The two get different handling, and [T6.1](#t6-1)
+  states the split.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t5-3"></a><a id="q1"></a>T5.3 — Q1: Ties go to the alphabetically first partner
+
+- **Decision:** When two or more partners have equal, highest strength to a
+  company, the line names the alphabetically first of them, by the same order
+  used for companies (Q14).
+- **Context:** T5b. The brief's output format names exactly one partner per
+  company and says nothing about ties.
+- **Why:** Deterministic, independent of input order, and stated in one
+  sentence in the README. Rejected: earliest contact wins, which reads as
+  "longest-running relationship" but depends on input order — the brief never
+  says the file is chronological, and its own example declares a partner after
+  contacts (Q8), so line order is not time order. Also rejected: naming every
+  tied partner, which contradicts brief requirement 6.1's
+  `<CompanyName>: <PartnerName> (<RelationshipStrength>)`. **Known tradeoff:**
+  the winner is arbitrary in business terms — `Abdi` beats `Zoe` for no
+  relationship reason — and the output gives no sign a tie occurred. A tie
+  policy that means something (weighting contact types, recency, breadth of
+  employees contacted) is deferred to [UPGRADES U4](./UPGRADES.md#u4).
+- **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
+  confirmed when T5 started, after the alternatives above were put side by
+  side). Deferring a fuller tie policy to U4 rather than leaving the tradeoff
+  only in this entry: Mine.
+
+### <a id="t5-4"></a><a id="q14"></a>T5.4 — Q14: "Sorted alphabetically" is code-unit order
+
+- **Decision:** Companies are sorted by plain `<` on the name — UTF-16 code
+  unit order — so every uppercase letter sorts before every lowercase one
+  (`Zebra` before `acme`). The same comparison breaks partner ties (Q1).
+- **Context:** T5c. Names are case-sensitive (Q4), so `ACME` and `acme` can
+  both be declared, and the brief's example has no such input to imitate.
+- **Why:** The same input prints the same report on every machine. Names are
+  letters only (Q9), so code-unit and code-point order coincide, and for input
+  of one case — every example in the brief — this is ordinary alphabetical
+  order. The comparison is written out rather than left to `Array.sort()`'s
+  default so that a reader can see it is not locale-aware. Rejected:
+  `localeCompare`, which groups `acme` with `ACME` as a human would but depends
+  on the runtime's ICU data and default locale, so a submission graded by
+  running it could print a different order than it did here; and comparing
+  lowercased with a code-unit tie-break, which is machine-independent and
+  human-friendly but is a third rule to explain in the README for input the
+  brief never shows.
+- **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
+  confirmed when T5 started).
+
+### <a id="t5-5"></a>T5.5 — The example test reads the shipped `input.txt`
+
+- **Decision:** `input.txt` holds the brief's example verbatim, with the
+  demonstration comment line removed and the trailing blank line kept, and the
+  report test reads that file from disk rather than a copy inside the test.
+- **Context:** T5d. PLAN §7 makes this example the definition of done.
+- **Why:** The file a reviewer runs and the file the test asserts on are then
+  the same bytes, so the example cannot pass in the suite while the shipped
+  file has drifted. Keeping the trailing blank line means the fixture also
+  exercises Q6 on the input every reviewer will use. The comment line goes
+  because the brief itself says it is not part of the input. The cost is one
+  file read in a layer that is otherwise pure, which is the test's I/O, not the
+  report's. Rejected: an inline copy of the example (no I/O, but two copies to
+  keep in step); and leaving the example to T6e's process-level test alone,
+  which would not catch a broken fixture until the cli exists. **Known limit:**
+  the test drops malformed lines exactly as the cli will (Q7), so it asserts
+  the report but not that the fixture parses cleanly — a stray comment line in
+  `input.txt` would leave this test green while the program warned on stderr.
+  T6e closes that by asserting stderr is empty, which is a stronger check than
+  this layer could make; adding a second cleanliness assertion here was
+  rejected as duplicate coverage.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t5-6"></a>T5.6 — An entry is fixed once its commit lands, not once it is written
+
+- **Decision:** The log's never-edit rule binds from the commit that adds an
+  entry. Before that the entry is a draft and may be revised in place while
+  reviewing the change it belongs to; after it, only a superseding entry can
+  change what it says. The Key now states this.
+- **Context:** T5 review. T5.5 needed a **Known limit** sentence while it was
+  still staged, and the Key's "what an old entry says is never edited" read as
+  forbidding that.
+- **Why:** The rule exists so the record cannot be rewritten after the fact,
+  and an entry written minutes earlier in the same working tree is not yet a
+  record — reviewing a change and revising what it says is one act. Reading
+  the rule as binding on write would mean a typo, or a clarification found in
+  review, needs its own entry, filling the log with corrections that never
+  described a change of mind and burying the entries that did. The commit is
+  also the point where the entry becomes visible to anyone else, which is the
+  line the rule is really drawing. **Rejected:** never-edit from the moment of
+  writing (strictest, and it makes every review note a new entry); and leaving
+  the rule unstated, which leaves the next reader to guess and invites the
+  looser reading later, when it would matter.
+- **Origin:** LLM-suggested, accepted (raised when amending T5.5 ran into the
+  rule; recording the precedent rather than quietly editing: Mine).
+
+### <a id="t5-7"></a>T5.7 — PLAN §3 is a curated reading list
+
+- **Decision:** PLAN §3 lists the decisions a reviewer should read first,
+  chosen by judgment rather than by a rule. [T4.3](#t4-3) is added to it. This
+  log keeps the complete record, in task order.
+- **Context:** T5 review. The T5 changes had rewritten §3's header from "All
+  decided in T1" to "decisions that shape more than one layer" without
+  recording the change, and that rule did not match its own list: T4.3 sets
+  the cli↔network boundary exactly as T5.1 sets report↔cli and was missing,
+  while T5.5 is a decision about tests and fixtures and is not a layer
+  decision at all.
+- **Why:** §3's job is to get a reviewer to the load-bearing choices quickly,
+  and that is a judgment about what is worth reading, not a property of an
+  entry — a criterion precise enough to check mechanically would either admit
+  entries nobody needs first or exclude ones they do, as this one did in both
+  directions at once. Completeness is already covered: every decision is in
+  this log, in the section of the task that made it. **Rejected:** "shapes
+  more than one layer" (checkable, but it excludes T5.5 and leaves
+  cross-cutting non-layer decisions with nowhere to go); indexing every
+  decision, which duplicates this log's structure and stops being a reading
+  aid once it is thirty lines long; and reverting §3 to T1 only, which makes
+  it a historical accident and sends the reviewer through the whole log to
+  find what matters.
+- **Origin:** Curated list and adding T4.3: LLM-suggested, accepted. Catching
+  that the rewrite was an unrecorded decision, and that the rule contradicted
+  its own list: LLM-suggested (T5 review). The rewrite itself was unlogged,
+  which is the gap this entry closes.
+
+---
+
+## T6 — CLI
+
+### <a id="t6-1"></a>T6.1 — Bad data warns; a broken invariant crashes
+
+- **Decision:** `main` does not catch. Bad input data warns on stderr and the
+  report still prints, exit 0 (Q7, Q8). A broken invariant ([T5.2](#t5-2))
+  propagates: Node prints the stack trace and exits 1, the same code Q15 gives
+  a bad invocation, so **exit 1 means no report was produced**. Failures that
+  are neither — stdout closing early, a read failing after the file opened —
+  are their own question (PLAN §4, Q17), settled in T6c.
+- **Context:** T5 review, before T6 starts. T5.2 made `report` throw, but
+  nothing said what `main` does with it, and T6a's one-line plan entry
+  ("`main(argv, stdin, stdout, stderr)` → exit code") did not cover it.
+- **Why:** An uncaught throw and a deliberate `process.exitCode = 1` both exit
+  1, so the choice never affects the exit contract — it only decides what
+  stderr shows. For a bug, the stack trace naming `tallyStrengths` and the
+  employee is the most useful output available, and a one-line "Internal
+  error" is prettier and strictly less informative at the moment someone most
+  needs information. A catch at `main` also cannot be reached by any test that
+  goes through `main`, since `main` builds its own network from input, so it
+  would be an untested branch bought with a seam; the throw itself is already
+  covered, because T5.2's test hand-builds a `Network`. **Rejected:** catching
+  at `main` and printing one line — its real merit is netting EPIPE and
+  mid-read I/O errors, which folds a reachable failure into an unreachable one
+  and settles both without examining either, so Q17 takes them on their own
+  terms; and catching in order to print the stack, which is the same
+  observable behaviour as propagating, with more code.
+- **Origin:** LLM-suggested, accepted. Asking for the tradeoffs before
+  deciding changed the framing rather than the recommendation: it established
+  that the exit code is identical either way, and surfaced EPIPE as a separate
+  reachable case, which became Q17. Stating the data-versus-bug split in T5.2
+  as well as here: Mine.
 
 ---
 

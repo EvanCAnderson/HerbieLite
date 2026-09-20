@@ -74,3 +74,37 @@ Open questions:
   line, but shows `Zoë` as `Zo\u00eb`.
 - Invalid UTF-8 reaches the program as U+FFFD, so the warning can't show the
   original bytes; the README should say so.
+
+<a id="u4"></a>
+
+## U4 — A tie-break that means something
+
+Equal strengths are settled alphabetically ([Q1](./DECISIONS.md#q1)), which is
+deterministic but arbitrary in business terms: `Abdi` beats `Zoe` for no
+relationship reason, and the output gives no sign that a tie occurred. A
+system that reflects the relationship would rank the tied partners on
+something real.
+
+- **Origin:** Mine (raised when Q1 was settled in T5; the alphabetical rule was
+  kept for the base because the brief's output format names exactly one partner
+  and says nothing about ties).
+
+Directions to consider:
+
+- Weight contact types rather than counting each as 1 — a coffee plausibly
+  says more than an email. Departs from the brief's "total amount of
+  Contacts", so it would need to be an option rather than the default.
+- Recency: the most recent contact, or contacts decayed over time. The input
+  has no dates, so this needs a richer input format.
+- Breadth: the partner who knows more distinct employees of the company, or
+  who has reached more senior ones, over the partner with repeat contacts to
+  one person.
+- Surface the tie instead of hiding it — mark the line, or report the tied
+  partners on stderr while the line stays in the brief's format.
+
+Open questions:
+
+- Which signal ranks first, and whether the chain ends in the alphabetical
+  rule as a last resort (it has to end somewhere deterministic).
+- Whether any of this belongs in the report layer or in a separate ranking
+  module the report calls, once more than one rule exists.

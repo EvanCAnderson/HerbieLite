@@ -47,12 +47,20 @@ Four entity kinds, drawn straight from the four commands:
 
 ## 3. Design decisions (index)
 
-All decided in T1; full text in [DECISIONS — T1](./DECISIONS.md#t1).
+The decisions a reviewer should read first, chosen by judgment rather than by
+a rule ([T5.7](./DECISIONS.md#t5-7)); full text in
+[DECISIONS](./DECISIONS.md), in the section of the task that made each one.
+That log keeps the complete record, in task order.
 
 - [**T1.10**](./DECISIONS.md#t1-10) — Input: file argument, STDIN, and interactive entry.
 - [**T1.11**](./DECISIONS.md#t1-11) — Layers: `parser` / `network` / `report` / `cli`.
 - [**T1.12**](./DECISIONS.md#t1-12) — Commands as a discriminated union.
 - [**T1.13**](./DECISIONS.md#t1-13) — Store raw facts; compute strongest partner at report time.
+- [**T4.3**](./DECISIONS.md#t4-3) — `buildNetwork` takes the whole command stream; resolve in two passes.
+- [**T5.1**](./DECISIONS.md#t5-1) — `report` exports one function; the tally stays private.
+- [**T5.2**](./DECISIONS.md#t5-2) — A network that breaks its own invariants throws.
+- [**T5.5**](./DECISIONS.md#t5-5) — The example test reads the shipped `input.txt`.
+- [**T6.1**](./DECISIONS.md#t6-1) — Bad data warns; a broken invariant crashes.
 
 ## 4. Questions and assumptions (document all in README)
 
@@ -64,13 +72,6 @@ question and its default live only here. When the subtask settles it, the
 question moves to DECISIONS and to the Decided list below. Listed in the order
 their subtasks are built.
 
-- **Q1 — Tie-break between partners with equal strength.** Brief is silent.
-  **Default: alphabetical by partner name.** Deterministic and testable.
-  Settle in T5b.
-- **Q14 — What "sorted alphabetically" means.** Names are case-sensitive (Q4),
-  so `acme` and `ACME` can both exist. **Default: code-point order (every
-  uppercase letter before every lowercase one), which gives the same output
-  on any machine; locale-aware sorting varies by environment.** Settle in T5c.
 - **Q15 — Invalid invocation.** Q7 covers bad lines, not a bad command line.
   **Default: a missing or unreadable file, or more than one argument, prints
   an error to stderr, prints no report, and exits 1.** Settle in T6b.
@@ -82,6 +83,15 @@ their subtasks are built.
   warning, even when it looks blank (a BOM alone is not a blank line, Q6),
   and the README names the cause and how to remove it (T7d).
   Stripping the BOM is [UPGRADES U2](./UPGRADES.md#u2).** Settle in T6c.
+- **Q17 — Failures that are neither bad data nor a bug.** Q7 covers a bad
+  line, Q15 a bad invocation, and [T6.1](./DECISIONS.md#t6-1) a broken
+  invariant. Left over: stdout closing early, as
+  `node dist/bin.js input.txt | head -1` gives (Node surfaces this as EPIPE
+  rather than dying on SIGPIPE), and a read that fails after the file opened.
+  **Default: a closed stdout ends the run quietly, with no stack trace and
+  exit 0, since the reader asked for less output; any other I/O failure
+  prints one line to stderr and exits 1, per T6.1's rule that exit 1 means no
+  report.** Settle in T6c.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -97,6 +107,8 @@ their subtasks are built.
 - [**Q13**](./DECISIONS.md#q13) (T2.6) — Every `Contact` line counts; a repeated declaration is discarded with a warning.
 - [**Q10**](./DECISIONS.md#q10) (T3.2) — Words split on runs of spaces or tabs; edges and a CRLF `\r` ignored.
 - [**Q11**](./DECISIONS.md#q11) (T3.3) — Command keywords are case-sensitive.
+- [**Q1**](./DECISIONS.md#q1) (T5.3) — Ties go to the alphabetically first partner.
+- [**Q14**](./DECISIONS.md#q14) (T5.4) — "Sorted alphabetically" is code-unit order.
 
 ## 5. Tooling
 
@@ -153,14 +165,14 @@ prefix).
         later one warned (Q12, Q13), unknown companies warned (Q5); then
         contacts (each failed slot warned as undeclared or wrong role, Q8,
         Q12). Returns the resolved network and warnings in input order.
-- [ ] T5 — `report`: network → sorted lines; add the brief's
+- [x] T5 — `report`: network → sorted lines; add the brief's
       `input.txt` fixture; unit tests incl. the brief's example.
-  - [ ] T5a — Tally relationship strength per (company, partner) from resolved
+  - [x] T5a — Tally relationship strength per (company, partner) from resolved
         contacts; every contact counts 1 regardless of type (§1).
-  - [ ] T5b — Pick each company's strongest partner. Settles Q1.
-  - [ ] T5c — Sort all declared companies and format each line exactly as
+  - [x] T5b — Pick each company's strongest partner. Settles Q1.
+  - [x] T5c — Sort all declared companies and format each line exactly as
         FR4 (Q2, Q3). Settles Q14.
-  - [ ] T5d — Add the brief's example as `input.txt` (its demo comment line
+  - [x] T5d — Add the brief's example as `input.txt` (its demo comment line
         removed, its trailing blank line kept) and a test asserting the exact
         output in §7.
 - [ ] T6 — `cli`: `async main(argv, stdin, stdout, stderr)` → exit code; file
@@ -168,14 +180,16 @@ prefix).
       tests.
   - [ ] T6a — Replace the placeholder with `main(argv, stdin, stdout, stderr)`
         returning an exit code; `bin.ts` passes the process streams and sets
-        `process.exitCode`. Replace the scaffold smoke test.
+        `process.exitCode`. No catch at the boundary (T6.1). Replace the
+        scaffold smoke test.
   - [ ] T6b — Choose the input source: file argument, else STDIN (T1.10).
         Settles Q15.
   - [ ] T6c — Stream lines through the parser, printing Q7 warnings as each
         line is read; at end of input print Q5/Q8 warnings, then the report on
         stdout; exit 0. Choose the line reader and how line numbers are
         counted: `readline` already strips `\r\n`, and treats a lone `\r` as a
-        line break, which shifts every later line number (Q10). Settles Q16.
+        line break, which shifts every later line number (Q10). Settles Q16
+        and Q17.
   - [ ] T6d — When STDIN is a terminal, print the one-line hint to stderr
         before reading (T1.10).
   - [ ] T6e — Process-level test through `bin.ts`: file argument and a pipe
@@ -190,8 +204,14 @@ prefix).
   - [ ] T7c — How LLMs were used: workflow, what was accepted, modified, or
         rejected, citing DECISIONS Origin lines (brief 7.2.1).
   - [ ] T7d — Assumptions and edge cases: every Q, flagging where the brief
-        was interpreted (brief 7.3, 7.3.1). Note that a keyword may be used
-        as a name (`Company Contact`), which follows from Q9.
+        was interpreted (brief 7.3, 7.3.1). Note three things that follow
+        from decided questions rather than from any one of them: that a
+        keyword may be used as a name (`Company Contact`), which follows
+        from Q9; that a tie leaves no trace in the output, since
+        `Globex: Abdi (2)` reads the same whether Abdi won outright or on
+        the alphabetical rule (Q1, [U4](./UPGRADES.md#u4)); and that
+        letters-only names keep control characters and terminal escapes out
+        of the report, which is an unstated dividend of Q9.
 - [ ] T8 — Final pass: naming, comments, tradeoff notes.
   - [ ] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
         no placeholder text or dead code.
