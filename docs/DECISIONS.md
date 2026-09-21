@@ -1769,6 +1769,111 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Report only: LLM-suggested, accepted after the measurement
   above.
 
+### <a id="t9-4"></a>T9.4 — The remaining upgrades are built U5, U6, U4, then the UI, then U1
+
+- **Decision:** After U7 and U8, the upgrades are built in this order: `--help`
+  and a usage line ([U5](./UPGRADES.md#u5)), the opening explanation for typed
+  input ([U6](./UPGRADES.md#u6)), tie handling ([U4](./UPGRADES.md#u4)), the
+  local web UI ([U9](./UPGRADES.md#u9)), and last the file builder
+  ([U1](./UPGRADES.md#u1)) as a panel of that UI. PLAN §6 lists them as T9c
+  onward.
+- **Context:** Planning the rest of T9, when the web UI was added as an
+  upgrade and placed ahead of the builder.
+- **Why:** U5 and U6 come first because they write the one explanation of the
+  commands (Q18) that the UI's console and the builder then show; built after
+  the UI, that text would be written for the page and pulled back out. U4
+  comes before the UI because surfacing a tie adds a kind of stderr line
+  (Q21), and the console renders stderr, so the UI is built against the final
+  set of line shapes rather than chasing a new one. U1 comes after the UI
+  because it is now a panel of it ([T9.8](#t9-8)). **Rejected:** the UI
+  first, which reaches the visible feature soonest but builds its console
+  twice; and U4 last, which is independent of everything else but would add a
+  stderr shape after the console that displays them.
+- **Origin:** The UI before the builder: Mine. The order of U5, U6 and U4
+  around it: LLM-suggested, accepted.
+
+### <a id="t9-5"></a>T9.5 — A local web UI whose terminal runs Herbie, not a shell
+
+- **Decision:** [U9](./UPGRADES.md#u9) is a web page served on this machine
+  that lists input files, shows the report for one, and embeds a terminal
+  pane. The terminal is a Herbie console: it runs herbie-lite and nothing
+  else, taking typed commands the way the CLI's interactive entry does
+  (warnings as each line is typed, the report at the end) or a listed file. It
+  cannot start a shell or any other program. The limit is on the UI's
+  embedded pane alone: herbie-lite run from a user's own terminal stays an
+  ordinary command-line program, and nothing in the cli checks for, detects,
+  or restricts the shell it is run from.
+- **Context:** Planning U9. "Embed a terminal" could mean a real shell in the
+  page or a terminal-styled view of this program.
+- **Why:** Everything the UI is for — trying commands, running a file, seeing
+  warnings as they appear — is herbie-lite's own input and output, which the
+  cli already exposes as `main(args, stdin, stdout, stderr)` ([T6.2](#t6-2)).
+  A shell adds nothing the page needs, and it turns a local server into one
+  that runs arbitrary commands for any request that reaches it, so the whole
+  design would be about locking that down. It would also need `node-pty`, a
+  native module that has to compile on install. **Rejected:** a real shell
+  (`node-pty` and xterm.js), which is the most flexible and the most
+  dangerous thing a local server can offer.
+- **Origin:** A local web UI with an embedded terminal, placed before the
+  builder: Mine. Limiting the terminal to Herbie: LLM-suggested, accepted.
+  Confining that limit to the UI's pane, and leaving the cli in a real
+  terminal untouched: Mine.
+
+### <a id="t9-6"></a>T9.6 — The UI's files: examples read-only, a workspace for the rest
+
+- **Decision:** The UI lists two folders. `examples/` is shown read-only: its
+  files can be read and run but not edited or deleted. A new `inputs/` folder,
+  ignored by git, is the workspace, where files can be created, read, edited,
+  run and deleted. An example can be copied into `inputs/` to change it.
+- **Context:** Planning U9. Every file in `examples/` is asserted for exact
+  stdout and stderr ([T7.5](#t7-5)), and `examples/input.txt` is the file the
+  definition of done is judged by ([T5.5](#t5-5)).
+- **Why:** An edit or deletion in `examples/` would make `npm run check` fail,
+  and a UI that can quietly break the test suite from a browser tab is a trap.
+  Keeping the workspace out of git means experiments never show up as changes
+  to the submission. **Rejected:** `examples/` fully editable, which is one
+  folder and one rule but breaks the suite on the first save; and a folder
+  chosen at startup, which is the most flexible but leaves the examples out
+  unless the user names that folder, and makes path confinement depend on an
+  argument.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t9-7"></a>T9.7 — The page is plain TypeScript bundled by Vite, served by `node:http`
+
+- **Decision:** The browser code is TypeScript with no UI framework, bundled
+  by Vite (already a dev dependency, T1.9). The server is Node's own
+  `node:http`, with no Express or similar.
+- **Context:** Planning U9. The page has a few panels: a file list, a viewer
+  and editor, the console, and later the builder.
+- **Why:** A few panels do not need a framework's component model, and every
+  dependency added is one more thing for a reviewer to read past and to keep
+  current. Vite is already installed and type-checks nothing itself, so
+  `tsc` stays the gate for browser code as it is for the rest (T0.1). A small
+  router over `node:http` serves a handful of routes. **Rejected:** React and
+  Vite, which pays off if the builder grows complex and adds a framework to a
+  submission that has none; and hand-written JavaScript with no build, which
+  drops type checking from the one part of the project a browser runs.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t9-8"></a>T9.8 — The file builder is a panel of the UI, not a CLI mode
+
+- **Decision:** [U1](./UPGRADES.md#u1) is built as a panel of the web UI: lines
+  are typed into the page, each is checked with the same `parseLine` the CLI
+  uses, and the result is saved into `inputs/`. The CLI mode U1 first
+  described is dropped. This answers U1's third open question, _a separate
+  mode or command from the analyzer?_, as neither: a panel.
+- **Context:** Planning U9 and U1 together, once the UI was placed before the
+  builder.
+- **Why:** A builder is a form with live validation, which is what a page is
+  good at and a line-oriented terminal is not: a panel can mark one line as
+  bad without scrolling it away, and show which names are still waiting to be
+  declared (Q8) across the whole draft. Running the parser in both places
+  keeps one definition of a valid line. **Rejected:** a CLI mode shown in the
+  terminal pane, which also works without the UI but is limited to text
+  prompts; and both, which puts the same feature behind two interfaces to
+  test.
+- **Origin:** LLM-suggested, accepted.
+
 ---
 
 ## Open questions

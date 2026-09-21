@@ -70,9 +70,74 @@ That log keeps the complete record, in task order.
 
 ### Open
 
-None. Every question raised while building is settled; each one's full text
-is in [DECISIONS](./DECISIONS.md), listed below. The cross-linking rule
-([T2.2](./DECISIONS.md#t2-2)) stands for any question a later task opens.
+Every question the base raised is settled (listed below). These were opened by
+planning the rest of T9; each has its current default and the subtask that
+settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
+point here rather than repeating them.
+
+- **Q18** — One source for the help text shared by `--help` (U5), the opening
+  explanation (U6), and the UI's console. Default: a cli-layer module that
+  builds each command's shape from `COMMAND_SYNTAX` and the contact types from
+  `CONTACT_TYPES`, with the surrounding prose written once there; the README's
+  run forms stay hand-written, and a test checks that the usage line's forms
+  appear in the README. Settle in T9c.
+- **Q19** — Arguments other than a path (U5). Default: `--help` and `-h`
+  print the help to stdout and exit 0; any other argument starting with `-` is
+  an unknown option, reported with the usage line, exit 1 (Q15); `-` does not
+  mean STDIN; a file whose name starts with `-` is reached as `./-name`.
+  Settle in T9c.
+- **Q20** — When and where the opening explanation prints (U6). Default: on
+  stderr, once at startup, only when STDIN is a terminal (a terminal check
+  returns, superseding T6.13 in part), and not repeated after the report.
+  Settle in T9d.
+- **Q21** — What a tie does (U4). Default: the line keeps the brief's format
+  and the alphabetical winner (Q1), and the tie is surfaced as a note on
+  stderr naming the tied partners and the strength. That is a new kind of
+  stderr line, which T6.6 and T6.14 have so far avoided (a line that is not a
+  discarded line); weighting, recency and breadth stay deferred, since
+  weighting departs from the brief's count and recency needs dates. Settle in
+  T9e.
+- **Q22** — Where the UI's code lives and how it ships (U9). Default: the
+  server in `src/ui/`, under the existing tsconfig; the browser code in `web/`
+  with its own tsconfig for DOM types, bundled by Vite into `dist/web/`;
+  `npm run ui` builds and starts it. Packages the server needs at run time go
+  in `dependencies`, and the README's "no runtime dependencies" line is
+  revised. Settle in T9f.
+- **Q23** — How the UI is tested (U9). Default: the server in vitest against a
+  real server on an ephemeral port; browser logic kept in modules with no DOM,
+  tested in vitest; the DOM glue itself untested, with browser end-to-end
+  tests deferred to UPGRADES. Settle in T9f.
+- **Q24** — Keeping a local server local (U9). Default: listen on `127.0.0.1`
+  only; refuse any request whose `Host` is not that address or `localhost` at
+  the server's port (DNS rebinding), and any WebSocket or state-changing
+  request whose `Origin` is not the page's own (another site calling it); no
+  login or token. Settle in T9g.
+- **Q25** — Which workspace file names are allowed (U9). Default:
+  `[A-Za-z0-9_-]+\.txt` in one flat folder, no subfolders; anything else is
+  refused, and every resolved path must stay inside its folder; saves capped
+  at 1 MB. Settle in T9h.
+- **Q26** — A file edited in two places (U9). Default: a save carries the
+  modification time the file had when it was opened, and a mismatch refuses
+  the save and says so rather than overwriting; deletion is confirmed in the
+  page and is permanent. Settle in T9h.
+- **Q27** — How the console talks to the server (U9). Default: one WebSocket
+  per console session, using the `ws` package (Node has a WebSocket client
+  but no server); each typed line is sent as it is entered and each stdout or
+  stderr write comes back tagged with its stream. Settle in T9j.
+- **Q28** — How the console runs the analyzer (U9). Default: in the server's
+  process, calling `main` with streams bridged to the socket, which T6.2 made
+  possible by having `main` take its streams; a throw from `main` (a bug,
+  T6.1) ends that session and shows the stack in the pane, and the server
+  keeps running. Settle in T9j.
+- **Q29** — What the builder checks as a line is typed (U1's second question).
+  Default: each line is parsed at once with `parseLine`; references are
+  checked by running `buildNetwork` over the whole draft on every change and
+  shown as pending rather than errors, since a name may be declared later
+  (Q8); a draft with pending references can still be saved. Settle in T9k.
+- **Q30** — Where the builder saves, and what happens on a clash or failure
+  (U1's first question). Default: into `inputs/` only; an existing name needs
+  an explicit overwrite confirmation; the file is written to a temporary name
+  and renamed, so a failed save leaves the old file whole. Settle in T9k.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -232,6 +297,36 @@ prefix).
   - [x] T9b — [U8](./UPGRADES.md#u8): `npm run coverage` reports lines and
         branches; not a gate in `npm run check`
         ([T9.3](./DECISIONS.md#t9-3)).
+  - [ ] T9c — [U5](./UPGRADES.md#u5): `--help`, `-h`, and a usage line after
+        a bad invocation, with the shared help text. Settles Q18 and Q19.
+  - [ ] T9d — [U6](./UPGRADES.md#u6): the opening explanation when commands
+        are typed at a terminal, from the same text. Settles Q20.
+  - [ ] T9e — [U4](./UPGRADES.md#u4): surface a tie without changing the
+        report line. Settles Q21.
+  - [ ] T9f — [U9](./UPGRADES.md#u9), scaffold: layout, a second tsconfig for
+        the browser, the Vite build, `npm run ui`, and the test setup, with an
+        empty page served and `npm run check` covering the new code. Settles
+        Q22 and Q23.
+  - [ ] T9g — U9, server: `node:http` on `127.0.0.1`, serving the built page,
+        with the `Host` and `Origin` checks and their tests. Settles Q24.
+  - [ ] T9h — U9, file API: list `examples/` (read-only) and `inputs/`, read,
+        create, save, and delete, plus copying an example into the workspace
+        ([T9.6](./DECISIONS.md#t9-6)); `inputs/` added to `.gitignore`.
+        Settles Q25 and Q26.
+  - [ ] T9i — U9, files panel: the list, a viewer, an editor for workspace
+        files, deletion with confirmation, and "copy to workspace" on an
+        example.
+  - [ ] T9j — U9, console: an xterm.js pane running herbie-lite only
+        ([T9.5](./DECISIONS.md#t9-5)), with typed entry showing U6's
+        explanation and warnings as each line is typed, and a "run" action on
+        any listed file. Settles Q27 and Q28.
+  - [ ] T9k — [U1](./UPGRADES.md#u1), builder panel
+        ([T9.8](./DECISIONS.md#t9-8)): line-by-line entry checked as typed,
+        pending references across the draft, and saving into `inputs/`.
+        Settles Q29 and Q30.
+  - [ ] T9l — README: how to start the UI, what it can and cannot do (no
+        shell, examples read-only), the changed dependency line, and the
+        "Deliberately left out" section brought up to date.
 
 ## 7. Definition of done
 

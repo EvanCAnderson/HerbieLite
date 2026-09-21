@@ -14,16 +14,16 @@ entry, which only reads typed commands and prints a report.
 - **Origin:** Mine (raised during the T1 review; LLM recommended deferring it
   here rather than building it in the base).
 
-Open questions:
+Planned as T9k, a panel of the web UI ([U9](#u9)) rather than a CLI mode,
+which answers the third open question below; see
+[DECISIONS T9.8](./DECISIONS.md#t9-8). The other two are PLAN §4's Q30 and
+Q29, with their defaults there.
 
-- Where the file is saved, and what happens if it already exists (overwrite,
-  append, or refuse), or if saving fails partway.
-- Live validation can check syntax (Q7, Q9) immediately, but not references: a
-  contact for a partner declared later is valid under Q8. Accept lines that
-  can't be fully checked yet, or require names to be declared first in this
-  mode?
-- A separate mode or command from the analyzer, with its own tests and README
-  section?
+- ~~Where the file is saved, and what happens on a clash or a failed save~~ —
+  Q30.
+- ~~Accept lines whose references can't be checked yet?~~ — Q29.
+- ~~A separate mode or command from the analyzer?~~ — Neither: a UI panel
+  (T9.8).
 
 <a id="u2"></a>
 
@@ -111,12 +111,9 @@ Directions to consider:
 - Surface the tie instead of hiding it — mark the line, or report the tied
   partners on stderr while the line stays in the brief's format.
 
-Open questions:
-
-- Which signal ranks first, and whether the chain ends in the alphabetical
-  rule as a last resort (it has to end somewhere deterministic).
-- Whether any of this belongs in the report layer or in a separate ranking
-  module the report calls, once more than one rule exists.
+Planned as T9e. Its open question — which signal, if any, ranks first, and
+where a ranking would live — is PLAN §4's Q21, whose default is to surface the
+tie and keep the ranking as it is.
 
 <a id="u5"></a>
 
@@ -135,15 +132,9 @@ nothing at all, rather than to someone who asked for it.
   as variants of the default and I chose to defer them rather than build
   them).
 
-Open questions:
-
-- Where the usage text lives so it cannot drift from the README's run forms
-  (T7a) — generated from one source, or duplicated and checked by a test?
-- Whether `-` should mean STDIN, which is the conventional partner to a file
-  argument but adds a second non-path argument to handle.
-- Whether an unknown flag (`--verbose`) should be told apart from a file
-  named `--verbose`, which the letters-only rule (Q9) has no opinion about
-  since it governs input lines, not arguments.
+Planned as T9c. Its open questions are PLAN §4's Q18 (one source for the
+text, shared with U6 and the UI) and Q19 (`-`, unknown flags, and files whose
+names start with `-`), with their defaults there.
 
 <a id="u6"></a>
 
@@ -164,17 +155,9 @@ altogether. Whatever is built here should share one source of text with both.
 - **Origin:** Mine (the base shipped a one-line hint; I removed it in the T6
   review rather than ship the stub, and deferred the fuller version here).
 
-Open questions:
-
-- Where the text lives so it cannot drift from the README's run forms (T7a)
-  or from `COMMAND_SYNTAX`, which already holds the grammar as data — the
-  command shapes can be generated from it, the prose cannot.
-- stderr or stdout? stderr keeps stdout reserved for the report, so
-  `node dist/bin.js > out.txt` still produces a clean file; but a person
-  reading a help text on stderr is unusual, and U5's `--help` conventionally
-  goes to stdout.
-- Whether it reappears after the report, or on an empty run, when the user
-  typed nothing at all.
+Planned as T9d. Its open questions are PLAN §4's Q18 (where the text lives,
+shared with U5) and Q20 (stderr or stdout, and when it prints), with their
+defaults there.
 
 <a id="u7"></a>
 
@@ -220,3 +203,32 @@ answers this entry's open questions got:
 - **Measure first?** Yes: 96.75% of lines and 93.66% of branches, before
   anything was decided.
 - **Lines or branches?** Both, in the same table.
+
+<a id="u9"></a>
+
+## U9 — A local web UI
+
+A web page served on this machine for working with input files: list them,
+read them, edit and delete the ones in a workspace, run the report on any of
+them, and type commands into an embedded terminal. It is where the file
+builder ([U1](#u1)) lives once built.
+
+- **Terminal:** the page's embedded pane is a Herbie console that runs
+  herbie-lite and nothing else, not a shell. The limit belongs to the UI
+  alone; herbie-lite run from a real terminal is unchanged
+  ([DECISIONS T9.5](./DECISIONS.md#t9-5)).
+- **Files:** `examples/` listed read-only, since the tests assert every one;
+  a git-ignored `inputs/` workspace for everything editable
+  ([T9.6](./DECISIONS.md#t9-6)).
+- **Stack:** plain TypeScript bundled by Vite, served by `node:http`
+  ([T9.7](./DECISIONS.md#t9-7)).
+- **Order:** built after U5, U6 and U4, and before U1
+  ([T9.4](./DECISIONS.md#t9-4)).
+- **Origin:** Mine (a local page with an embedded terminal, file management,
+  and the builder, placed before U1). Limiting the terminal to Herbie, the
+  workspace split, and the stack: LLM-suggested, accepted.
+
+Planned as T9f–T9j, with T9l for the README. Its open questions are PLAN §4's
+Q22–Q28: layout and packaging, testing, keeping the server local, workspace
+file names, two edits of one file, the console's transport, and how the
+console runs the analyzer.
