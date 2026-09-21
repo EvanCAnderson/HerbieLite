@@ -19,9 +19,9 @@ export default tseslint.config(
       },
     },
   },
-  // The config file itself is plain JS, outside the TS project.
+  // The config files are plain JS, outside the TS project.
   {
-    files: ["eslint.config.js"],
+    files: ["eslint.config.js", "vitest.config.js"],
     ...tseslint.configs.disableTypeChecked,
   },
   prettier,

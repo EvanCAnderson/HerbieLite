@@ -14,7 +14,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "test:watch": "vitest",
-    "coverage": "vitest run --coverage --coverage.include=\"src/**\" --coverage.exclude=\"src/**/*.test.ts\" --coverage.reporter=text --coverage.reporter=html",
+    "coverage": "vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -1770,6 +1770,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   cheapest option and leaves nothing to re-measure with.
 - **Origin:** Report only: LLM-suggested, accepted after the measurement
   above.
+- **Superseded in part by** [T9.11](#t9-11) (flags in the script rather than
+  a config file; coverage as a report, not a gate, stands).
 
 #### <a id="t9-4"></a>T9.4 — The remaining upgrades are built U5, U6, U4, then the UI, then U1
 
@@ -1944,6 +1946,37 @@ Laurie Globex`: the program name, the line number and the name are gone.
   usage naming `node dist/bin.js`: LLM-suggested, accepted. The usage on the
   error's line rather than below it: LLM-suggested, accepted (raised while
   building T9c, chosen over a separate line with or without the prefix).
+
+#### <a id="t9-11"></a>T9.11 — Coverage settings live in `vitest.config.js`, and the table lists every file
+
+- **Decision:** The coverage options move from flags in the `coverage` script
+  into a new `vitest.config.js`, which also sets the text reporter's
+  `skipFull: false`, so the table lists every file in `src/`, including those
+  at 100%. The script becomes `vitest run --coverage`. The file is plain
+  JavaScript and ESLint lints it without type information, as it already
+  does `eslint.config.js`.
+- **Context:** T9 follow-up to T9b, found while checking T9c's coverage:
+  `help.ts` was missing from the table. Vitest's text reporter leaves out
+  fully covered files, so `help.ts` and `assert-never.ts` were missing from a
+  report T9.3 describes as covering every file. The option is per reporter,
+  and no command-line flag can set it (`--coverage.skipFull` changes
+  nothing); only a config file can.
+- **Why:** A coverage table that silently drops files answers "is this file
+  tested?" with nothing, and the files it drops are the best-covered ones, so
+  a reader looking for them finds only confusion. T9.3 chose flags over a
+  config file because the suite needed no other configuration; that stopped
+  being true once the one setting that fixes the table turned out to be
+  unreachable by flags. Plain JavaScript because the TypeScript project's
+  `rootDir` is `src/`, and a `.ts` config at the root would need the tsconfig
+  reworked for one file of settings. **Rejected:** a README sentence
+  pointing at the HTML report, which lists every file but leaves the table
+  misleading; leaving the table as it was; and `vitest.config.ts`, typed but
+  outside the TypeScript project as it stands.
+- **Supersedes:** [T9.3](#t9-3), in part: its choice of flags in the script
+  over a `vitest.config.ts`. Coverage as a report rather than a gate stands.
+- **Origin:** LLM-suggested, accepted (the gap was found while verifying T9c).
+  Plain JavaScript following `eslint.config.js`: LLM-suggested, as part of
+  the change.
 
 ---
 
