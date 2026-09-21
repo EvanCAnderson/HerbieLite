@@ -75,17 +75,6 @@ planning the rest of T9; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q18** — One source for the help text shared by `--help` (U5), the opening
-  explanation (U6), and the UI's console. Default: a cli-layer module that
-  builds each command's shape from `COMMAND_SYNTAX` and the contact types from
-  `CONTACT_TYPES`, with the surrounding prose written once there; the README's
-  run forms stay hand-written, and a test checks that the usage line's forms
-  appear in the README. Settle in T9c.
-- **Q19** — Arguments other than a path (U5). Default: `--help` and `-h`
-  print the help to stdout and exit 0; any other argument starting with `-` is
-  an unknown option, reported with the usage line, exit 1 (Q15); `-` does not
-  mean STDIN; a file whose name starts with `-` is reached as `./-name`.
-  Settle in T9c.
 - **Q20** — When and where the opening explanation prints (U6). Default: on
   stderr, once at startup, only when STDIN is a terminal (a terminal check
   returns, superseding T6.13 in part), and not repeated after the report.
@@ -158,6 +147,8 @@ point here rather than repeating them.
 - [**Q15**](./DECISIONS.md#q15) (T6.3) — One optional file argument; a bad invocation exits 1.
 - [**Q16**](./DECISIONS.md#q16) (T6.6) — A byte-order mark is stripped in the reader, silently.
 - [**Q17**](./DECISIONS.md#q17) (T6.9) — A closed stdout ends quietly; other I/O fails loudly.
+- [**Q18**](./DECISIONS.md#q18) (T9.9) — The help text is built from the grammar table.
+- [**Q19**](./DECISIONS.md#q19) (T9.10) — `--help` and `-h` are the only options, and win wherever they appear.
 
 ## 5. Tooling
 
@@ -297,7 +288,7 @@ prefix).
   - [x] T9b — [U8](./UPGRADES.md#u8): `npm run coverage` reports lines and
         branches; not a gate in `npm run check`
         ([T9.3](./DECISIONS.md#t9-3)).
-  - [ ] T9c — [U5](./UPGRADES.md#u5): `--help`, `-h`, and a usage line after
+  - [x] T9c — [U5](./UPGRADES.md#u5): `--help`, `-h`, and a usage line after
         a bad invocation, with the shared help text. Settles Q18 and Q19.
   - [ ] T9d — [U6](./UPGRADES.md#u6): the opening explanation when commands
         are typed at a terminal, from the same text. Settles Q20.

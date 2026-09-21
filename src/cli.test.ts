@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { Readable, Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { main } from "./cli.js";
+import { HELP } from "./help.js";
 
 const ROOT = join(import.meta.dirname, "..");
 const EXAMPLES = join(ROOT, "examples");
@@ -77,7 +78,7 @@ describe("invalid invocation (Q15)", () => {
     expect(code).toBe(1);
     expect(out).toBe("");
     expect(err).toBe(
-      "herbie-lite: expected at most one file argument, got 2\n",
+      "herbie-lite: expected at most one file argument, got 2; usage: node dist/bin.js [--help | file]\n",
     );
   });
 
@@ -99,6 +100,57 @@ describe("invalid invocation (Q15)", () => {
     expect(code).toBe(1);
     expect(err).toMatch(/^herbie-lite: cannot read "bad\\u001b\[31m": /);
     expect(err).not.toContain("");
+  });
+});
+
+describe("help and options (Q19)", () => {
+  it("prints the help to stdout for --help and exits 0", async () => {
+    expect(await run(["--help"])).toEqual({ code: 0, out: HELP, err: "" });
+  });
+
+  it("treats -h as --help", async () => {
+    expect(await run(["-h"])).toEqual({ code: 0, out: HELP, err: "" });
+  });
+
+  it("prints the help wherever --help appears, ignoring the rest", async () => {
+    expect(await run([INPUT, INPUT, "--help"])).toEqual({
+      code: 0,
+      out: HELP,
+      err: "",
+    });
+  });
+
+  it("refuses any other option, with the usage, and prints no report", async () => {
+    expect(await run(["--verbose", INPUT])).toEqual({
+      code: 1,
+      out: "",
+      err: 'herbie-lite: unknown option "--verbose"; usage: node dist/bin.js [--help | file]\n',
+    });
+  });
+
+  it("does not take - to mean STDIN", async () => {
+    const { code, err } = await run(["-"], "Company ACME\n");
+    expect(code).toBe(1);
+    expect(err).toMatch(/^herbie-lite: unknown option "-"; usage: /);
+  });
+
+  it("reads a file whose name starts with - when written as ./-name", async () => {
+    const { code, err } = await run(["./-nosuch.txt"]);
+    expect(code).toBe(1);
+    expect(err).toMatch(/^herbie-lite: cannot read "\.\/-nosuch\.txt": /);
+  });
+
+  it("escapes a terminal escape sequence in an option (T8.4)", async () => {
+    const { err } = await run(["-\u001b[31m"]);
+    expect(err).toMatch(/^herbie-lite: unknown option "-\\u001b\[31m"; /);
+    expect(err).not.toContain("\u001b");
+  });
+
+  it("ends quietly with exit 0 when --help meets a closed pipe (Q17)", async () => {
+    const { code, err } = await run(["--help"], "", {
+      stdout: failingSink("EPIPE"),
+    });
+    expect({ code, err }).toEqual({ code: 0, err: "" });
   });
 });
 

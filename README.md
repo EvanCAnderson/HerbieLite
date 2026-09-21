@@ -63,6 +63,18 @@ npm start -- examples/input.txt            # the same, from source, no build
 cat examples/input.txt | npm start
 ```
 
+The general form is `node dist/bin.js [--help | file]`, and `--help` (or
+`-h`) prints it with the four commands and the contact types
+([Q19](docs/DECISIONS.md#q19)):
+
+```bash
+node dist/bin.js --help
+npm start -- --help   # from source
+```
+
+From source, the `--` matters: `npm start --help` is read by npm, which prints
+its own help instead.
+
 Typing input directly is the STDIN form with nothing piped in:
 
 ```bash
@@ -79,7 +91,8 @@ rather than an oversight ([T6.13](docs/DECISIONS.md#t6-13), and see
 
 - **0** — a report was produced. Bad lines in the input never change this:
   they are reported on stderr and the report still prints.
-- **1** — no report was produced: more than one argument, a file that could not
+- **1** — no report was produced: more than one argument, an unknown option, a
+  file that could not
   be read, or an I/O failure.
 
 Warnings go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
@@ -182,9 +195,10 @@ The program is four layers, each testable without the one above it
 | `report.ts`  | Pure function: a resolved network → the lines of the report.                     |
 | `cli.ts`     | The only module that touches a stream: picks a source, wires the layers, prints. |
 
-`cli.ts` has two helpers of its own: `lines.ts` reads a stream as numbered
-lines, and `warnings.ts` holds every word the program writes to stderr
-([T6.5](docs/DECISIONS.md#t6-5)). `bin.ts` is the executable entry and contains
+`cli.ts` has three helpers of its own: `lines.ts` reads a stream as numbered
+lines, `warnings.ts` holds every word the program writes to stderr
+([T6.5](docs/DECISIONS.md#t6-5)), and `help.ts` builds the usage line and
+`--help` from the parser's grammar table ([Q18](docs/DECISIONS.md#q18)). `bin.ts` is the executable entry and contains
 no logic, so nothing has to detect how it was loaded
 ([T1.6](docs/DECISIONS.md#t1-6)).
 
@@ -361,11 +375,14 @@ Visible non-ASCII such as `Zoë` is left as typed. **Known limit:** invalid
 UTF-8 arrives as the replacement character U+FFFD, which is printable and so is
 not escaped — the warning shows `�` and cannot recover the original bytes.
 
-**The command line takes one optional file path and nothing else** (Q15). Zero
-arguments reads STDIN, two or more is an error, and a file that cannot be read
-is an error; both print one line and exit 1 with no report. The path is
-quoted and escaped in that line like any other input
-([T8.4](docs/DECISIONS.md#t8-4)). There is no `--help` and no usage line.
+**The command line takes one optional file path, or `--help`** (Q15, Q19).
+Zero arguments reads STDIN. `--help` or `-h` prints the help and exits 0,
+wherever it appears. Two or more paths, any other argument starting with `-`
+(including `-` alone, which does not mean STDIN), and a file that cannot be
+read are each an error: one line on stderr, ending with the usage when the
+invocation itself was wrong, and exit 1 with no report. A file whose name
+starts with `-` is reached as `./-name`. The path or option is quoted and
+escaped in that line like any other input ([T8.4](docs/DECISIONS.md#t8-4)).
 
 **A closed stdout ends the run quietly** (Q17). `node dist/bin.js examples/input.txt |
 head -1` is a correct pipeline, and `head` closing the pipe is not a failure:
@@ -429,6 +446,8 @@ anything counting lines would otherwise see one report where there is none.
 | Q15   | One optional file argument; a bad invocation exits 1                      | [T6.3](docs/DECISIONS.md#t6-3)   |
 | Q16   | A byte-order mark is stripped in the reader, silently                     | [T6.6](docs/DECISIONS.md#t6-6)   |
 | Q17   | A closed stdout ends quietly; other I/O fails loudly                      | [T6.9](docs/DECISIONS.md#t6-9)   |
+| Q18   | The help text is built from the parser's grammar table                    | [T9.9](docs/DECISIONS.md#t9-9)   |
+| Q19   | `--help` and `-h` are the only options, and win wherever they appear      | [T9.10](docs/DECISIONS.md#t9-10) |
 
 † The brief was open to more than one reading here.
 
@@ -440,7 +459,9 @@ The brief grades how quality software is built rather than how much of it there
 is, so anything it does not ask for was written down in
 [UPGRADES](docs/UPGRADES.md) instead of being built: a guided input-file builder
 (U1), a tie-break that reflects the relationship rather than the alphabet (U4),
-`--help` and a usage line (U5), and an opening explanation for typed input (U6).
+and an opening explanation for typed input (U6). `--help` and a usage line (U5)
+were deferred the same way and built after the base was tagged
+([T9.10](docs/DECISIONS.md#t9-10)).
 Each entry carries the open questions it would have to answer, so what was
 deferred is the work, not the thinking.
 

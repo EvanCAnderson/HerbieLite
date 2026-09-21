@@ -5,15 +5,17 @@
 //
 // The executable entry is bin.ts; this module only exports main (T1.6).
 import { createReadStream } from "node:fs";
+import { HELP } from "./help.js";
 import { ReadError, readLines } from "./lines.js";
 import { buildNetwork } from "./network.js";
 import { parseLine, type SourcedCommand } from "./parser.js";
 import { reportLines } from "./report.js";
 import {
-  errorMessage,
   malformedWarning,
   networkWarning,
   readFailure,
+  tooManyArguments,
+  unknownOption,
   writeFailure,
 } from "./warnings.js";
 
@@ -43,6 +45,31 @@ function isBrokenPipe(error: unknown): boolean {
 }
 
 /**
+ * Writes the program's output to stdout and returns the exit code: 0 once it
+ * is written, or when the reader closed the pipe early, which is the reader
+ * asking for less (Q17); 1, with the cause on stderr, for any other failure.
+ */
+async function print(
+  stdout: NodeJS.WritableStream,
+  stderr: NodeJS.WritableStream,
+  text: string,
+): Promise<number> {
+  try {
+    await flush(stdout, text);
+    return 0;
+  } catch (error) {
+    if (isBrokenPipe(error)) return 0;
+    writeLine(stderr, writeFailure(messageOf(error)));
+    return 1;
+  }
+}
+
+/** `--help` and `-h` are the only options; `-` alone is not STDIN (Q19). */
+function isHelp(arg: string): boolean {
+  return arg === "--help" || arg === "-h";
+}
+
+/**
  * Runs the program and returns its exit code: 0 whenever a report was
  * produced, 1 when none was (T6.1). Bad input data never costs the report —
  * it warns on stderr and the run still ends 0 (Q7, Q8). A broken invariant
@@ -55,14 +82,6 @@ export async function main(
   stdout: NodeJS.WritableStream,
   stderr: NodeJS.WritableStream,
 ): Promise<number> {
-  if (args.length > 1) {
-    writeLine(
-      stderr,
-      errorMessage(`expected at most one file argument, got ${args.length}`),
-    );
-    return 1;
-  }
-
   // A failing stream emits 'error' as well as reporting to the callback in
   // `flush`; without a listener that event would end the process before the
   // callback could decide what to do with it (Q17). On stderr the listener is
@@ -70,6 +89,20 @@ export async function main(
   // the run still ends on whatever stdout did (T6.15).
   stdout.on("error", () => undefined);
   stderr.on("error", () => undefined);
+
+  // `--help` wins wherever it appears, as it does in most tools; any other
+  // argument starting with `-` is an option this program does not have, so a
+  // file named that way is reached as `./-name` (Q19).
+  if (args.some(isHelp)) return print(stdout, stderr, HELP);
+  const option = args.find((arg) => arg.startsWith("-"));
+  if (option !== undefined) {
+    writeLine(stderr, unknownOption(option));
+    return 1;
+  }
+  if (args.length > 1) {
+    writeLine(stderr, tooManyArguments(args.length));
+    return 1;
+  }
 
   // Typing commands at a terminal is just STDIN with no file argument, so it
   // needs no branch of its own; the program prints nothing extra for it
@@ -106,14 +139,5 @@ export async function main(
   // FR4 lists companies, and there are none to list.
   const lines = reportLines(network);
   if (lines.length === 0) return 0;
-  try {
-    await flush(stdout, `${lines.join("\n")}\n`);
-  } catch (error) {
-    // A closed stdout means the reader asked for less output, so the run
-    // ends quietly; any other write failure is reported (Q17).
-    if (isBrokenPipe(error)) return 0;
-    writeLine(stderr, writeFailure(messageOf(error)));
-    return 1;
-  }
-  return 0;
+  return print(stdout, stderr, `${lines.join("\n")}\n`);
 }

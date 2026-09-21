@@ -1018,6 +1018,8 @@ started.
 - **Origin:** The rule: LLM-suggested, accepted (the default recorded in PLAN
   §4, confirmed when T6 started). Deferring `--help` to UPGRADES rather than
   leaving it unrecorded: Mine.
+- **Superseded in part by** [T9.10](#t9-10) (no `--help` and no usage line;
+  the one optional path and the exit code stand).
 
 #### <a id="t6-4"></a>T6.4 — Reading lines: our own `\n` splitter
 
@@ -1873,6 +1875,75 @@ Laurie Globex`: the program name, the line number and the name are gone.
   prompts; and both, which puts the same feature behind two interfaces to
   test.
 - **Origin:** LLM-suggested, accepted.
+
+#### <a id="t9-9"></a><a id="q18"></a>T9.9 — Q18: The help text is built from the grammar table
+
+- **Decision:** A new cli helper, `help.ts`, holds the usage string, the
+  `--help` text, and `commandSyntax`, which moves there from `warnings.ts`.
+  Each command's shape in the help is built from `COMMAND_SYNTAX`, and the
+  contact types from `CONTACT_TYPES`; only prose is written out, including a
+  one-line description of each command in the brief's terms, held in a
+  `Record` over every command kind so a new command cannot reach the help
+  without one. `warnings.ts` imports `commandSyntax` and the usage string, so every
+  line of stderr is still worded there ([T6.5](#t6-5)). The README's run forms
+  stay hand-written, and a test asserts that the README contains the usage
+  string verbatim. The help's full text is also asserted exactly.
+- **Context:** T9c, building [U5](./UPGRADES.md#u5). U6's opening explanation
+  and the UI's console will show the same commands, so the text needed one
+  home before any of them was written.
+- **Why:** The grammar already has one source ([T2.5](#t2-5)), and the parser
+  and the warnings both read it; help written out by hand would be a third
+  description free to disagree with the first two. `help.ts` rather than
+  `warnings.ts` because `--help` goes to stdout and is not a warning; the
+  dependency runs one way, from `warnings.ts` to `help.ts` to `parser.ts`.
+  The README test catches the one drift the table cannot prevent: the usage
+  string changing without the README following. **Rejected:** generating the
+  README's run section from code, which removes the drift entirely but makes
+  the README a build output; help text written by hand beside a test that
+  checks it against `COMMAND_SYNTAX`, which catches drift after the fact
+  rather than making it impossible; and putting the help in `warnings.ts`,
+  which would make that module about more than stderr.
+- **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
+  confirmed when T9c started).
+
+#### <a id="t9-10"></a><a id="q19"></a>T9.10 — Q19: `--help` and `-h` are the only options
+
+- **Decision:** `--help` or `-h` anywhere in the arguments prints the help to
+  stdout and exits 0, whatever else is there. Any other argument starting with
+  `-`, including `-` alone, is an unknown option: one line on stderr,
+  `herbie-lite: unknown option "--verbose"; usage: node dist/bin.js [--help | file]`,
+  and exit 1. `-` does not mean STDIN, and a file whose name starts with `-`
+  is reached as `./-name`. The existing too-many-arguments error gains the
+  same usage ending. The usage names `node dist/bin.js`, the command a user
+  types, not the `herbie-lite` prefix, and the option is escaped like any
+  other text the user supplied ([T8.4](#t8-4)). Writing the help follows the
+  same closed-pipe rule as the report (Q17), so `--help | head -1` ends
+  quietly.
+- **Context:** T9c, building [U5](./UPGRADES.md#u5). [Q15](#q15) allowed one
+  optional path and nothing else, and deferred `--help` to U5.
+- **Why:** `--help` winning wherever it appears matches most command-line
+  tools, so someone who appends it to a failing command gets help rather than
+  a second error. Treating every other dash argument as unknown keeps the
+  argument rule as small as Q15's: a path or `--help`, nothing else. `-` for
+  STDIN is the conventional partner of a file argument, but STDIN is already
+  what no argument means, so it would be a second way to say the same thing.
+  The usage goes on the error's own line, because [T6.7](#t6-7) makes every
+  stderr line one prefixed line per problem, and a second, unprefixed usage
+  line would be the first exception. `herbie-lite` is not a command anyone
+  can run, since there is no `bin` entry ([T1.4](#t1-4)), so a usage line
+  naming it would be wrong the first time it was followed. **Rejected:**
+  `--help` accepted only as the sole argument, which is stricter and turns
+  `node dist/bin.js input.txt --help` into an error; `-` as STDIN; an unknown
+  option read as a file name, which turns `--verbose` into
+  `cannot read "--verbose"` and hides the mistake; and a separate usage line
+  after the error.
+- **Supersedes:** [Q15](#q15), in part: its "no `--help`, no usage line".
+  One optional path, and exit 1 with no report for a bad invocation, stand.
+- **Origin:** The rule itself: LLM-suggested, accepted (the default recorded
+  in PLAN §4, confirmed when T9c started). `--help` winning anywhere, and the
+  usage naming `node dist/bin.js`: LLM-suggested, accepted. The usage on the
+  error's line rather than below it: LLM-suggested, accepted (raised while
+  building T9c, chosen over a separate line with or without the prefix).
 
 ---
 

@@ -3,10 +3,10 @@
 // layers return data (T2.5), so the wording lives here, in one place,
 // testable without streams.
 import { assertNever } from "./assert-never.js";
+import { commandSyntax, USAGE } from "./help.js";
 import {
   COMMAND_SYNTAX,
   CONTACT_TYPES,
-  type CommandKind,
   type MalformedLine,
   type SourceLine,
 } from "./parser.js";
@@ -16,7 +16,7 @@ import type { ContactFailure, Declaration, NetworkWarning } from "./network.js";
 const PROGRAM = "herbie-lite";
 
 /** An invocation or I/O failure (Q15, Q17). Not tied to an input line. */
-export function errorMessage(problem: string): string {
+function errorMessage(problem: string): string {
   return `${PROGRAM}: ${problem}`;
 }
 
@@ -67,6 +67,27 @@ export function readFailure(file: string | undefined, cause: string): string {
   return errorMessage(`cannot read ${what}: ${escaped(cause)}`);
 }
 
+/**
+ * An invocation the program cannot run (Q15, Q19), with the usage on the same
+ * line so each problem is still one prefixed line (T6.7).
+ */
+function badInvocation(problem: string): string {
+  return errorMessage(`${problem}; usage: ${USAGE}`);
+}
+
+/** More than one file argument (Q15). */
+export function tooManyArguments(count: number): string {
+  return badInvocation(`expected at most one file argument, got ${count}`);
+}
+
+/**
+ * An argument that looks like an option but is not `--help` or `-h` (Q19).
+ * It is escaped like any other text the user supplied (T8.4).
+ */
+export function unknownOption(option: string): string {
+  return badInvocation(`unknown option "${escaped(option)}"`);
+}
+
 /** Output that could not be written (Q17); the cause is escaped (T8.4). */
 export function writeFailure(cause: string): string {
   return errorMessage(`cannot write output: ${escaped(cause)}`);
@@ -87,11 +108,6 @@ function quoted(text: string): string {
     out += escape(character);
   }
   return out;
-}
-
-/** One command's expected format, from the grammar table (T2.5). */
-function syntax(kind: CommandKind): string {
-  return [kind, ...COMMAND_SYNTAX[kind].map((name) => `<${name}>`)].join(" ");
 }
 
 /**
@@ -115,17 +131,17 @@ export function malformedWarning(line: MalformedLine): string {
     case "wrong-word-count":
       return discarded(
         line.source,
-        `wrong number of words; expected "${syntax(line.kind)}"`,
+        `wrong number of words; expected "${commandSyntax(line.kind)}"`,
       );
     case "invalid-word":
       return discarded(
         line.source,
-        `names must be letters only; expected "${syntax(line.kind)}"`,
+        `names must be letters only; expected "${commandSyntax(line.kind)}"`,
       );
     case "invalid-contact-type":
       return discarded(
         line.source,
-        `contact type must be one of ${CONTACT_TYPES.join(", ")}; expected "${syntax(line.kind)}"`,
+        `contact type must be one of ${CONTACT_TYPES.join(", ")}; expected "${commandSyntax(line.kind)}"`,
       );
     default:
       return assertNever(line);

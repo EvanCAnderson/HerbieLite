@@ -117,7 +117,7 @@ tie and keep the ranking as it is.
 
 <a id="u5"></a>
 
-## U5 — `--help` and a usage line
+## U5 — `--help` and a usage line — **built**
 
 The base takes one optional file path and nothing else: a bad invocation
 prints what was wrong and exits 1, with no usage text and no `--help`
@@ -132,9 +132,16 @@ nothing at all, rather than to someone who asked for it.
   as variants of the default and I chose to defer them rather than build
   them).
 
-Planned as T9c. Its open questions are PLAN §4's Q18 (one source for the
-text, shared with U6 and the UI) and Q19 (`-`, unknown flags, and files whose
-names start with `-`), with their defaults there.
+Built in T9c; see [DECISIONS T9.9](./DECISIONS.md#t9-9) and
+[T9.10](./DECISIONS.md#t9-10) for why, and the answers this entry's open
+questions got:
+
+- **Where does the usage text live?** In `help.ts`, which builds each
+  command's shape from `COMMAND_SYNTAX`; a test holds the README to the usage
+  string (Q18).
+- **Should `-` mean STDIN?** No; no argument already means STDIN (Q19).
+- **An unknown flag, or a file of that name?** An unknown flag. A file whose
+  name starts with `-` is reached as `./-name` (Q19).
 
 <a id="u6"></a>
 
