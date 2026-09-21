@@ -14,6 +14,7 @@
     "test": "vitest run",
     "check": "npm run typecheck && npm run lint && npm run format:check && npm test",
     "test:watch": "vitest",
+    "coverage": "vitest run --coverage --coverage.include=\"src/**\" --coverage.exclude=\"src/**/*.test.ts\" --coverage.reporter=text --coverage.reporter=html",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.7.0",
+    "@vitest/coverage-v8": "^5.0.1",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.3.0",

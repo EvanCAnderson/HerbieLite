@@ -1689,6 +1689,86 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted (found and measured in an audit of the
   codebase).
 
+## T9 — Upgrades
+
+### <a id="t9-1"></a>T9.1 — Upgrade work is one PLAN task, subtasks per upgrade
+
+- **Decision:** Work on [UPGRADES](./UPGRADES.md) entries is PLAN task T9,
+  with lettered subtasks in the order built: one per upgrade when it fits a
+  single commit (T9a is U7, T9b is U8), several when it does not, each naming
+  the upgrade it builds. Its decisions go in this section and its commits are
+  prefixed `T9:`. A `U<n>` keeps naming the idea; the subtask names the work
+  of building it, and the upgrade's entry in UPGRADES is marked built with a
+  pointer here, as U2 and U3 already are.
+- **Context:** Before starting U7 and U8, the first upgrades built after the
+  base. `CLAUDE.md` ties every commit prefix and every DECISIONS section to a
+  PLAN task, and T0–T8 are complete.
+- **Why:** The rules already in place then apply unchanged: one task per
+  commit, decisions in the section of the task in progress, subtasks as commit
+  boundaries ([T2.1](#t2-1)). **Rejected:** a PLAN task per upgrade (T9, T10,
+  …), which gives each its own commit prefix but grows the task list with
+  every idea, most of them small; and keeping upgrades outside the task scheme
+  with `chore:` commits and a section keyed by U ID, which leaves PLAN §6
+  closed at the base but adds a second ID scheme for decisions to the Key.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t9-2"></a>T9.2 — The base is tagged `base-submission`, and the README says so
+
+- **Decision:** An annotated tag, `base-submission`, marks `c8fc833`, the T8
+  commit that completes the brief. Its message says what it marks. The README
+  names the tag in one sentence near the top. The tag is created locally;
+  pushing it (`git push origin base-submission`) is mine to do, as every push
+  is.
+- **Context:** T9a, building [U7](./UPGRADES.md#u7). The hand-in email
+  promises that the submitted version stays on its own tagged commit, so the
+  tag has to exist before the email is sent and before any upgrade lands.
+- **Why:** A name that says what the commit is serves a reviewer better than a
+  version number: `v1.0.0` implies a release line this repository does not
+  have, while `base-submission` reads the same way the email and the README
+  describe it. Annotated, because an annotated tag carries its own date,
+  author and message, which is what makes it a record rather than a bookmark,
+  and `git describe` ignores lightweight tags by default. The README names it
+  because a reviewer who opens the repository after upgrades have landed would
+  otherwise read a README describing features the brief never asked for, with
+  no sign that an earlier, exact answer exists. **Rejected:** `v1.0.0`, for the
+  reason above; a lightweight tag; and leaving the tag to the email alone,
+  which the reviewer may not have open when they read the repository.
+- **Origin:** Tag name and annotation: LLM-suggested, accepted. Naming it in
+  the README: LLM-suggested, accepted.
+
+### <a id="t9-3"></a>T9.3 — Coverage is a report, not a gate
+
+- **Decision:** `@vitest/coverage-v8` is a dev dependency, and
+  `npm run coverage` runs the suite with coverage over every file in `src/`
+  except tests, printing a text table and writing an HTML report to
+  `coverage/` (already ignored by git, ESLint and Prettier). `npm run check`
+  is unchanged and has no threshold. The options are flags in the script
+  rather than a `vitest.config.ts`, since this is the only configuration the
+  suite needs.
+- **Context:** T9b, building [U8](./UPGRADES.md#u8). A one-off measurement
+  with `npm install --no-save`, taken before deciding as U8 suggested, gave
+  96.75% of lines and 93.66% of branches. Every one of the 15 uncovered spots
+  is one of four kinds: five `assertNever` defaults, which the types make
+  unreachable; `bin.ts`, which the process-level tests run in a child process
+  that V8 does not count ([T6.10](#t6-10)); `compareNames` returning 0, which
+  is only ever given two different names (company names are unique, and
+  people's names are unique by Q12); and two fallbacks for a thrown value that
+  is not an `Error`.
+- **Why:** The measurement found no untested path, so a gate would guard a
+  number rather than behaviour: the only way to raise it is tests aimed at
+  code the compiler proves unreachable, or ignore comments that exist to
+  satisfy the threshold. A report still does the job U8 set out, replacing
+  "the tests cover the core logic" with a figure anyone can reproduce, and it
+  shows a new untested branch the next time someone runs it. `include` is set
+  to all of `src/` so a file no test imports shows up as 0% rather than being
+  left out. Lines and branches, as U8 asked, because branch coverage is the
+  one that shows an untested failure path. **Rejected:** a gate in `check`
+  with a threshold at today's floor, for the reason above; and measuring once,
+  recording the figures here, and not adding the dependency, which is the
+  cheapest option and leaves nothing to re-measure with.
+- **Origin:** Report only: LLM-suggested, accepted after the measurement
+  above.
+
 ---
 
 ## Open questions

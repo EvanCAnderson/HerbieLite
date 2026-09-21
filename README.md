@@ -15,6 +15,9 @@ Hooli: Molly (1)
 `examples/input.txt` is that example, verbatim from the brief and the same
 file the test suite asserts against; four more examples sit beside it.
 
+The submission that answers the brief is tagged `base-submission`; any later
+commit is an upgrade beyond it ([T9.2](docs/DECISIONS.md#t9-2)).
+
 ---
 
 ## Build, run, and test
@@ -39,6 +42,14 @@ npm run build
 
 Compiles to `dist/`. Individual scripts are `npm run typecheck`, `npm run lint`,
 `npm run format:check`, `npm test`, and `npm run test:watch`.
+
+```bash
+npm run coverage
+```
+
+Runs the tests with line and branch coverage over `src/`, printing a table and
+writing an HTML report to `coverage/`. It is a report, not part of `check`
+([T9.3](docs/DECISIONS.md#t9-3)).
 
 ### Running it
 

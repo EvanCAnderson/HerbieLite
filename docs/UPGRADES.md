@@ -178,7 +178,7 @@ Open questions:
 
 <a id="u7"></a>
 
-## U7 — Tag the base submission before any upgrade
+## U7 — Tag the base submission before any upgrade — **built**
 
 Before work starts on any upgrade in this file, tag the commit that completes
 the base submission, so a reviewer can check out exactly what answers the
@@ -188,21 +188,19 @@ the tag has to exist before that email is sent.
 
 - **Origin:** Mine (raised while drafting the hand-in email).
 
-Open questions:
+Built in T9a; see [DECISIONS T9.2](./DECISIONS.md#t9-2) for why, and the
+answers this entry's open questions got:
 
-- Which commit: the tag belongs on the last `T8:` commit, after the final-pass
-  changes still in the working tree are committed, not on the T7 commit that
-  is the latest today.
-- The name — `base-submission`, `v1.0.0`, or similar — and whether it is
-  annotated, with a message saying what it marks, rather than lightweight.
-- Whether the README names the tag, so a reviewer who opens the repository
-  after the upgrades land knows it exists.
-- Pushing it: `git push` does not send tags unless asked, so the tag needs
-  `git push origin <tag>` or it exists only on this machine.
+- **Which commit?** `c8fc833`, the `T8:` commit that completes the brief.
+- **Name and kind?** `base-submission`, annotated, with a message saying what
+  it marks.
+- **Does the README name it?** Yes, in one sentence near the top.
+- **Pushing it:** left to me, with `git push origin base-submission`; until
+  then it exists only on this machine.
 
 <a id="u8"></a>
 
-## U8 — Measure test coverage
+## U8 — Measure test coverage — **built**
 
 Nothing measures how much of `src/` the tests reach; the claim that they cover
 the core logic rests on reading them. Add `@vitest/coverage-v8`, matched to
@@ -212,12 +210,13 @@ the installed vitest, and a script that reports coverage.
   audit of the codebase, which could not produce a figure without the
   dependency).
 
-Open questions:
+Built in T9b; see [DECISIONS T9.3](./DECISIONS.md#t9-3) for why, and the
+answers this entry's open questions got:
 
-- A report only, or a gate in `npm run check` with a threshold — and if a
-  threshold, which number, given that a threshold invites tests written to
-  reach it.
-- Whether a one-off measurement with `npm install --no-save` should come first,
-  so any gap it shows is known before deciding on a gate.
-- Lines, branches, or both: branch coverage is the one that shows an untested
-  failure path, and most of this program's care is in its failure paths.
+- **Report or gate?** A report, `npm run coverage`; `npm run check` is
+  unchanged. The measurement found no untested path, only code the types make
+  unreachable and `bin.ts` running in a child process, so a threshold would
+  reward tests aimed at the number.
+- **Measure first?** Yes: 96.75% of lines and 93.66% of branches, before
+  anything was decided.
+- **Lines or branches?** Both, in the same table.

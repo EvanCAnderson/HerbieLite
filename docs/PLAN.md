@@ -222,6 +222,16 @@ prefix).
         recorded ([T8.5](./DECISIONS.md#t8-5)); the ESLint version in
         `eslint.config.js`'s comment corrected; coverage deferred to
         [U8](./UPGRADES.md#u8).
+- [ ] T9 — Upgrades: work beyond the brief, one or more subtasks per
+      [UPGRADES](./UPGRADES.md) entry, in the order built
+      ([T9.1](./DECISIONS.md#t9-1)). The base submission is tagged
+      `base-submission`, and nothing below changes what it answers.
+  - [x] T9a — [U7](./UPGRADES.md#u7): tag the base submission, and name the
+        tag in the README ([T9.2](./DECISIONS.md#t9-2)). Pushing the tag is
+        left to me.
+  - [x] T9b — [U8](./UPGRADES.md#u8): `npm run coverage` reports lines and
+        branches; not a gate in `npm run check`
+        ([T9.3](./DECISIONS.md#t9-3)).
 
 ## 7. Definition of done
 
