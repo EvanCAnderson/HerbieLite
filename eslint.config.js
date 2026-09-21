@@ -1,4 +1,4 @@
-// Flat config (ESLint 9). Type-checked rules via typescript-eslint's project
+// Flat config (ESLint 10). Type-checked rules via typescript-eslint's project
 // service — correctness only; formatting is delegated to Prettier (the
 // eslint-config-prettier entry disables any rules that would fight it).
 import js from "@eslint/js";

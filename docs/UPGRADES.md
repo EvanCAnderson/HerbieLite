@@ -175,3 +175,49 @@ Open questions:
   goes to stdout.
 - Whether it reappears after the report, or on an empty run, when the user
   typed nothing at all.
+
+<a id="u7"></a>
+
+## U7 — Tag the base submission before any upgrade
+
+Before work starts on any upgrade in this file, tag the commit that completes
+the base submission, so a reviewer can check out exactly what answers the
+brief and diff the upgrades against it. The email handing in the sample
+promises this ("the current version will stay on its own tagged commit"), so
+the tag has to exist before that email is sent.
+
+- **Origin:** Mine (raised while drafting the hand-in email).
+
+Open questions:
+
+- Which commit: the tag belongs on the last `T8:` commit, after the final-pass
+  changes still in the working tree are committed, not on the T7 commit that
+  is the latest today.
+- The name — `base-submission`, `v1.0.0`, or similar — and whether it is
+  annotated, with a message saying what it marks, rather than lightweight.
+- Whether the README names the tag, so a reviewer who opens the repository
+  after the upgrades land knows it exists.
+- Pushing it: `git push` does not send tags unless asked, so the tag needs
+  `git push origin <tag>` or it exists only on this machine.
+
+<a id="u8"></a>
+
+## U8 — Measure test coverage
+
+Nothing measures how much of `src/` the tests reach; the claim that they cover
+the core logic rests on reading them. Add `@vitest/coverage-v8`, matched to
+the installed vitest, and a script that reports coverage.
+
+- **Origin:** LLM-suggested, deferred here rather than built (raised in an
+  audit of the codebase, which could not produce a figure without the
+  dependency).
+
+Open questions:
+
+- A report only, or a gate in `npm run check` with a threshold — and if a
+  threshold, which number, given that a threshold invites tests written to
+  reach it.
+- Whether a one-off measurement with `npm install --no-save` should come first,
+  so any gap it shows is known before deciding on a gate.
+- Lines, branches, or both: branch coverage is the one that shows an untested
+  failure path, and most of this program's care is in its failure paths.

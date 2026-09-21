@@ -1556,6 +1556,139 @@ Laurie Globex`: the program name, the line number and the name are gone.
   declaration and every warning: Mine. The other two, and asserting stdout and
   stderr for each: LLM-suggested, accepted.
 
+## T8 — Final pass
+
+### <a id="t8-1"></a>T8.1 — The read-through removes what nothing reads, and one invisible character
+
+- **Decision:** Four changes from T8a's read-through. `EmployeeCommand` is
+  deleted: it was exported and referenced nowhere, in production or in tests.
+  `MalformedReason` loses its `export`, since only `parser.ts` uses it.
+  `lines.ts` writes the byte-order mark as `"\uFEFF"` instead of the
+  character itself. And `sameDeclaration` in `warnings.ts` narrows both
+  declarations instead of asserting one from the other
+  (`(b as typeof a).company`). `ParsedLine` and `NetworkResult` keep their
+  exports although nothing outside their modules imports them: each is the
+  return type of its layer's entry point, and a caller narrowing a result
+  needs to be able to name it. `ContactCommand` stays, and is moved up beside
+  the union it derives from: `network` names it three times, once to define
+  the other three kinds as `Declaration`.
+- **Context:** T8a, which asks for no dead code and no placeholder text.
+- **Why:** An exported name is a promise that something depends on it, so one
+  that nothing reads misleads the next person to change the module — while the
+  two return types are read by anyone calling the function, whether or not this
+  repository happens to import them today. The byte-order mark is the sharper
+  find: the constant held a real U+FEFF, so the line read as `= "";` and the
+  value could only be confirmed by running the file through a hex dump. That is
+  the same failure the program itself refuses to ship — [T6.11](#t6-11) escapes
+  invisible characters precisely so a reader is never asked to trust one — and
+  a codebase that quotes input safely should not hide a character in its own
+  source. The type assertion went because TypeScript can narrow both operands
+  once asked; an assertion is a claim the compiler cannot check, kept here only
+  to save one line. The remaining asymmetry between `ContactCommand` and the
+  three kinds with no alias is the domain's own: a contact is an event and
+  every line counts, while a declaration may not repeat (Q13), and no rule
+  treats Partner, Company or Employee alone. Where a finer cut is needed,
+  `network` makes it privately (`CompanyDeclaration`, `PersonDeclaration`, per
+  Q12). **Rejected:** keeping `EmployeeCommand` against a future caller, which
+  is dead code with an alibi; restoring all four aliases for symmetry, which
+  names three subsets nothing refers to; un-exporting `ParsedLine` and
+  `NetworkResult` for symmetry, which would leave `parseLine`'s own result
+  unnameable outside the parser; and leaving the literal mark with a comment
+  explaining it, which documents the hazard rather than removing it.
+- **Origin:** LLM-suggested, accepted (all four surfaced by the read-through;
+  the byte-order mark was found by scanning the source for non-ASCII
+  characters, which is how it should have been found).
+
+### <a id="t8-2"></a>T8.2 — The requirement walk is a table in PLAN §8
+
+- **Decision:** T8c's walk of brief requirements 1–7 and PLAN §7 is recorded as
+  a table in [PLAN](./PLAN.md) §8: one row per requirement, naming the test or
+  the command that shows it is met. The README does not repeat it.
+- **Context:** T8c. Nothing said where the walk should be written down, and an
+  audit that lives only in a conversation is not a record.
+- **Why:** PLAN already owns the requirements — §2 restates them as FR1–FR6 and
+  §7 is the definition of done — so the evidence belongs beside them, where
+  anyone changing a requirement sees what proves it. Keeping it out of the
+  README follows [T7.1](#t7-1), which settled that the README answers the
+  brief's questions and does not carry the working record: thirty rows of test
+  names would bury the answers a reviewer came for. **Rejected:** a separate
+  `VERIFICATION.md`, which is a fifth document holding one table that PLAN has
+  the context for; a README section, for the reason above; and reporting the
+  walk in conversation only, which leaves the strongest evidence of coverage
+  nowhere a reviewer can find it.
+- **Origin:** Mine (the LLM offered PLAN, a new document, the README, and no
+  file at all; the reasoning for PLAN over a new document was its own).
+
+### <a id="t8-3"></a>T8.3 — The reader tests keep their literal byte-order marks
+
+- **Decision:** The five U+FEFF characters in `lines.test.ts` (the byte-order
+  mark tests for Q16, at lines 87, 93, 99, 106 and 108) stay as literal
+  characters rather than `﻿` escapes.
+- **Context:** T8e, from an audit of the codebase. [T8.1](#t8-1) replaced the
+  literal mark in `lines.ts` with an escape, on the grounds that a codebase
+  which escapes invisible characters in its output should not hide one in its
+  own source; the audit found the same characters in the tests.
+- **Why:** T8.1 was a change to production source, where a reader needs the
+  constant's value to follow the code; in the tests the character is the input
+  under test, the bytes a real file would hold, and each test's name already
+  says a byte-order mark is present. **Accepted cost:** read on screen, the
+  inputs of these tests look the same as ordinary lines, so what they assert
+  can only be confirmed with a hex dump or an editor that shows the character.
+  **Rejected:** escaping them, which the audit recommended, to match T8.1.
+- **Origin:** Mine (the LLM recommended replacing them with `﻿`).
+
+### <a id="t8-4"></a>T8.4 — File paths and I/O errors are escaped too
+
+- **Decision:** An error about reading or writing names the file in quotes, and
+  the path and the cause are both escaped by the same rule as quoted input
+  ([T6.11](#t6-11)): `cannot read "": ENOENT: ...`,
+  `cannot read "bad[31m": ...`. Standard input is still named in words,
+  unquoted. These messages are escaped but not capped at 200 characters.
+  `warnings.ts` gains `readFailure` and `writeFailure` for them, so every line
+  of stderr is still worded there ([T6.5](#t6-5)).
+- **Context:** T8e, from an audit of the codebase. `cli.ts` put the file
+  argument into the message as given, so an empty argument read
+  `cannot read : ENOENT`, and a path holding a terminal escape sequence sent
+  the raw ESC byte to stderr twice: once from our message and once inside
+  Node's, which repeats the path.
+- **Why:** T6.11's point is that nothing a user or a file supplies reaches the
+  terminal unescaped, and a path is supplied by the user just as a line is —
+  often by a script that did not choose it (`find ... -exec`). Escaping the
+  cause as well is what closes it, since Node's message carries the path a
+  second time. Quoting makes an empty path visible as `""`, so one change
+  fixes both problems. No cap, because an error message cut short loses its
+  cause, and a path is bounded by the operating system anyway. **Rejected:**
+  treating an empty argument as a bad invocation, which adds a rule to Q15 and
+  leaves escape sequences in paths untouched; fixing the empty path alone, for
+  the same reason; and reusing the capped quote from T6.11, which could cut a
+  long path's error before its cause.
+- **Origin:** LLM-suggested, accepted (the escape sequence found while
+  reviewing the empty-path fix from an audit).
+
+### <a id="t8-5"></a>T8.5 — Warnings held in memory by a slow stderr: accepted
+
+- **Decision:** No change to how warnings are written. When stderr drains
+  slower than warnings are produced, every pending warning is held in memory
+  until it is written; this is recorded as a known cost of
+  [T6.15](#t6-15), which writes warnings without waiting so that typed input
+  is answered at once, and which did not state it.
+- **Context:** T8e, from an audit of the codebase. Measured on macOS with
+  500,000 malformed lines: about 95 MB with stderr sent to a file, and about
+  500 MB when the reader of a stderr pipe stalled. Per Node's documentation,
+  writes to a pipe on stdout or stderr are synchronous on Linux and Windows,
+  so there a slow reader makes the program wait instead.
+- **Why:** The cost needs input that is almost all bad lines and a reader that
+  stops reading, on a platform where pipe writes are asynchronous. The fix
+  would wait for `drain` when a write reports a full buffer, and it has to
+  stop waiting on `close` and `error` too, or a stderr that dies mid-run hangs
+  the program — a hang is worse than memory use, and T6.15 already accepts
+  losing warnings silently when stderr fails. **Rejected:** waiting for
+  `drain` when the buffer is full, for the hang risk above and the edge-case
+  test it would need; and leaving the cost unrecorded, which leaves T6.15
+  claiming a policy without its price.
+- **Origin:** LLM-suggested, accepted (found and measured in an audit of the
+  codebase).
+
 ---
 
 ## Open questions

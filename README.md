@@ -136,11 +136,12 @@ fails on an unknown employee, an unknown partner, or two names in swapped roles.
 $ node dist/bin.js examples/warnings.txt
 Globex: Chris (2)
 
-$ node dist/bin.js examples/warnings.txt 2>&1 >/dev/null | head -4
+$ node dist/bin.js examples/warnings.txt >/dev/null   # drop the report, keep the warnings
 herbie-lite: line 6: unknown command; expected one of Partner, Company, Employee, Contact; discarded: # A comment is not a command
 herbie-lite: line 7: unknown command; expected one of Partner, Company, Employee, Contact; discarded: partner Rezzan
 herbie-lite: line 8: wrong number of words; expected "Company <Name>"; discarded: Company Drive Capital
 herbie-lite: line 9: names must be letters only; expected "Partner <Name>"; discarded: Partner Jean-Luc
+... and eight more, through line 18
 ```
 
 Three things in that file are worth pointing at:
@@ -351,8 +352,9 @@ not escaped — the warning shows `�` and cannot recover the original bytes.
 
 **The command line takes one optional file path and nothing else** (Q15). Zero
 arguments reads STDIN, two or more is an error, and a file that cannot be read
-is an error; both print one line and exit 1 with no report. There is no
-`--help` and no usage line.
+is an error; both print one line and exit 1 with no report. The path is
+quoted and escaped in that line like any other input
+([T8.4](docs/DECISIONS.md#t8-4)). There is no `--help` and no usage line.
 
 **A closed stdout ends the run quietly** (Q17). `node dist/bin.js examples/input.txt |
 head -1` is a correct pipeline, and `head` closing the pipe is not a failure:

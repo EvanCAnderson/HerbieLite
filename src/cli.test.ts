@@ -85,7 +85,20 @@ describe("invalid invocation (Q15)", () => {
     const { code, out, err } = await run([join(ROOT, "nosuch.txt")]);
     expect(code).toBe(1);
     expect(out).toBe("");
-    expect(err).toMatch(/^herbie-lite: cannot read .*nosuch\.txt: .*ENOENT/);
+    expect(err).toMatch(/^herbie-lite: cannot read ".*nosuch\.txt": .*ENOENT/);
+  });
+
+  it("shows an empty path as an empty quote (T8.4)", async () => {
+    const { code, err } = await run([""]);
+    expect(code).toBe(1);
+    expect(err).toMatch(/^herbie-lite: cannot read "": /);
+  });
+
+  it("escapes a terminal escape sequence in the path (T8.4)", async () => {
+    const { code, err } = await run(["bad[31m"]);
+    expect(code).toBe(1);
+    expect(err).toMatch(/^herbie-lite: cannot read "bad\\u001b\[31m": /);
+    expect(err).not.toContain("");
   });
 });
 

@@ -206,16 +206,22 @@ prefix).
         output cannot — late declarations, ties and sort order, namespaces and
         repeats, and every warning. Each asserted for exact stdout and stderr,
         and listed in the README ([T7.5](./DECISIONS.md#t7-5)).
-- [ ] T8 — Final pass: naming, comments, tradeoff notes.
-  - [ ] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
+- [x] T8 — Final pass: naming, comments, tradeoff notes.
+  - [x] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
         no placeholder text or dead code.
-  - [ ] T8b — Docs consistency: PLAN §3–§4 index matches DECISIONS, no
+  - [x] T8b — Docs consistency: PLAN §3–§4 index matches DECISIONS, no
         questions left open, README covers every §3 decision and Q,
         deferred ideas are in UPGRADES.
-  - [ ] T8c — Walk BRIEF requirements 1–7 and §7, recording the test or
+  - [x] T8c — Walk BRIEF requirements 1–7 and §7, recording the test or
         command that shows each is met.
-  - [ ] T8d — Clean-clone check: `npm ci`, `npm run check`, `npm run build`,
+  - [x] T8d — Clean-clone check: `npm ci`, `npm run check`, `npm run build`,
         then run `node dist/bin.js examples/input.txt` and the piped form.
+  - [x] T8e — Audit follow-up: literal byte-order marks kept in the reader
+        tests ([T8.3](./DECISIONS.md#t8-3)); file paths and I/O errors
+        escaped ([T8.4](./DECISIONS.md#t8-4)); a slow stderr's memory cost
+        recorded ([T8.5](./DECISIONS.md#t8-5)); the ESLint version in
+        `eslint.config.js`'s comment corrected; coverage deferred to
+        [U8](./UPGRADES.md#u8).
 
 ## 7. Definition of done
 
@@ -233,3 +239,36 @@ prefix).
 - Tests cover parser, network, report, and `cli` end-to-end, and every file in
   `examples/` is asserted for exact stdout and stderr ([T7.5](./DECISIONS.md#t7-5)).
 - README covers every entry in §3–§4.
+
+---
+
+## 8. Requirements → evidence (T8c)
+
+Every requirement in the [brief](./BRIEF.md), with the test or command that
+shows it is met. Test names are as `npm test -- --reporter=verbose` prints
+them. Recorded here rather than in the README ([T8.2](./DECISIONS.md#t8-2)).
+
+| Brief | Requirement                                                           | Evidence                                                                                                                                                                      |
+| ----- | --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | One command per line, space-separated words                           | `parser.test.ts` › "parseLine › each command"; whitespace (Q10) and letters-only (Q9) groups                                                                                  |
+| 1.1   | `Partner <Name>`                                                      | `parser.test.ts` › `parses "Partner Chris"`                                                                                                                                   |
+| 1.2   | `Company <Name>`                                                      | `parser.test.ts` › `parses "Company Globex"`                                                                                                                                  |
+| 1.3   | `Employee <Name> <CompanyName>`                                       | `parser.test.ts` › `parses "Employee Laurie Globex"`                                                                                                                          |
+| 1.3.2 | Company declared before its employees (assumable)                     | Accepted in either order: `network.test.ts` › "resolves an employee declared before their company (Q5)"; `examples/late-declarations.txt`                                     |
+| 1.3.3 | Employee names are globally unique                                    | `network.test.ts` › "keeps the first of two declarations of one name (Q12, Q13)"; `warnings.test.ts` › "treats the same employee at another company as a claim, not a repeat" |
+| 1.4   | `Contact <EmployeeName> <PartnerName> <ContactType>`                  | `parser.test.ts` › `parses "Contact Laurie Chris email"`, and one per contact type                                                                                            |
+| 1.4.3 | Only `email`, `call`, `coffee` are accepted                           | `parser.test.ts` › "contact types (FR1)" (5 rejections); `warnings.test.ts` › "lists the contact types for a bad one (FR1)"                                                   |
+| 2     | Error handling as appropriate                                         | `cli.test.ts` › "warns on stderr, prints the report, and exits 0"; `examples/warnings.txt`, whose every warning is asserted                                                   |
+| 3     | Executable from the command line, file and/or STDIN                   | `cli.test.ts` › "the program as a process (brief 3, PLAN §7)", both tests; run forms in the README, checked on a clean clone (T8d)                                            |
+| 4     | Output printed to the console                                         | The same two process tests capture stdout; `cli.test.ts` › "ends the report with exactly one newline"                                                                         |
+| 5     | All companies, sorted alphabetically                                  | `report.test.ts` › "company order (Q14)", both tests                                                                                                                          |
+| 5     | Each company lists its strongest partner and the strength             | `report.test.ts` › "names the strongest partner, not the first or the last"; equal strengths in `examples/ties.txt`                                                           |
+| 5.1   | Strength = all contacts between a partner and the company's employees | `report.test.ts` › "sums a partner's contacts across all employees of the company"; "counts every contact as 1, whatever its type"                                            |
+| 6.1   | `<CompanyName>: <PartnerName> (<RelationshipStrength>)`               | `report.test.ts` › "produces the expected output from the shipped examples/input.txt"                                                                                         |
+| 6.2   | `<CompanyName>: No current relationship`                              | `report.test.ts` › "companies with no relationship (Q2)", 3 tests; `examples/names-and-repeats.txt`                                                                           |
+| 7.1   | README: build, run, and test instructions                             | [README](../README.md) § "Build, run, and test"; verified on a clean clone (T8d)                                                                                              |
+| 7.2   | README: approach and design decisions                                 | [README](../README.md) § "How it works", with [DECISIONS](./DECISIONS.md) behind it                                                                                           |
+| 7.2.1 | README: how LLM tools were used                                       | [README](../README.md) § "How I used LLM tools", and the **Origin** line on every entry in [DECISIONS](./DECISIONS.md)                                                        |
+| 7.3   | README: assumptions and edge cases                                    | [README](../README.md) § "Assumptions and edge cases", covering Q1–Q17                                                                                                        |
+| 7.3.1 | README: interpretations where the brief was unclear                   | The five rows marked † in that section: Q1, Q9, Q12, Q13, Q14                                                                                                                 |
+| §7    | The brief's example produces the expected three lines                 | `report.test.ts` › "the brief's example (PLAN §7)"; `cli.test.ts` › both process tests; `node dist/bin.js examples/input.txt`                                                 |

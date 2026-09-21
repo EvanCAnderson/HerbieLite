@@ -48,6 +48,31 @@ function escape(character: string): string {
 }
 
 /**
+ * Text made safe to print but not bounded (T8.4): for a file path or an I/O
+ * error, where cutting the message short would lose the cause.
+ */
+function escaped(text: string): string {
+  let out = "";
+  for (const character of text) out += escape(character);
+  return out;
+}
+
+/**
+ * Input that could not be read (Q15, Q17). A path is quoted and escaped like
+ * any other text the user supplied (T8.4), and so is the cause, since Node's
+ * message repeats the path.
+ */
+export function readFailure(file: string | undefined, cause: string): string {
+  const what = file === undefined ? "standard input" : `"${escaped(file)}"`;
+  return errorMessage(`cannot read ${what}: ${escaped(cause)}`);
+}
+
+/** Output that could not be written (Q17); the cause is escaped (T8.4). */
+export function writeFailure(cause: string): string {
+  return errorMessage(`cannot write output: ${escaped(cause)}`);
+}
+
+/**
  * One line of input, made safe to print and bounded in length (T6.11). The
  * loop stops at the limit rather than escaping the whole line first, so a
  * multi-megabyte line costs nothing to quote and no escape is ever cut in
@@ -114,7 +139,10 @@ export function malformedWarning(line: MalformedLine): string {
  */
 function sameDeclaration(a: Declaration, b: Declaration): boolean {
   if (a.kind !== b.kind || a.name !== b.name) return false;
-  return a.kind !== "Employee" || a.company === (b as typeof a).company;
+  if (a.kind === "Employee" && b.kind === "Employee") {
+    return a.company === b.company;
+  }
+  return true;
 }
 
 /** Why one name in a Contact line didn't resolve (Q8, Q12). */

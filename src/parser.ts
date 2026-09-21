@@ -30,6 +30,15 @@ export type Command =
 export type CommandKind = Command["kind"];
 
 /**
+ * The one variant named on its own, because it is the one the rules treat
+ * apart: a contact is an event and every line counts, while the other three
+ * declare that something exists and may not repeat (Q13). `network` names it
+ * three times, once to define the rest as `Declaration`; no rule applies to
+ * Partner, Company or Employee alone, so none of them has an alias.
+ */
+export type ContactCommand = Extract<Command, { kind: "Contact" }>;
+
+/**
  * The grammar as data (DECISIONS T2.5): each command's argument names, in
  * input order. The parser's word count and the cli's warnings (expected
  * format, list of valid commands) are both derived from it.
@@ -40,10 +49,6 @@ export const COMMAND_SYNTAX = {
   Employee: ["Name", "CompanyName"],
   Contact: ["EmployeeName", "PartnerName", "ContactType"],
 } as const satisfies Record<CommandKind, readonly string[]>;
-
-export type EmployeeCommand = Extract<Command, { kind: "Employee" }>;
-
-export type ContactCommand = Extract<Command, { kind: "Contact" }>;
 
 /** Where a line came from, kept so later warnings can quote it (Q5, Q7, Q8). */
 export interface SourceLine {
@@ -78,7 +83,8 @@ export type MalformedLine =
       readonly kind: CommandKind;
     };
 
-export type MalformedReason = MalformedLine["reason"];
+/** Used to name the reasons a recognised command can fail on, below. */
+type MalformedReason = MalformedLine["reason"];
 
 /** The result of parsing one line. */
 export type ParsedLine =

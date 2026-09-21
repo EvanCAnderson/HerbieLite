@@ -9,7 +9,13 @@ import { ReadError, readLines } from "./lines.js";
 import { buildNetwork } from "./network.js";
 import { parseLine, type SourcedCommand } from "./parser.js";
 import { reportLines } from "./report.js";
-import { errorMessage, malformedWarning, networkWarning } from "./warnings.js";
+import {
+  errorMessage,
+  malformedWarning,
+  networkWarning,
+  readFailure,
+  writeFailure,
+} from "./warnings.js";
 
 function writeLine(stream: NodeJS.WritableStream, text: string): void {
   stream.write(`${text}\n`);
@@ -89,10 +95,7 @@ export async function main(
     // and neither leaves a report, so both exit 1. Anything else thrown in
     // this loop is a bug in another layer and must crash (T6.1, T6.12).
     if (!(error instanceof ReadError)) throw error;
-    writeLine(
-      stderr,
-      errorMessage(`cannot read ${file ?? "standard input"}: ${error.message}`),
-    );
+    writeLine(stderr, readFailure(file, error.message));
     return 1;
   }
 
@@ -109,7 +112,7 @@ export async function main(
     // A closed stdout means the reader asked for less output, so the run
     // ends quietly; any other write failure is reported (Q17).
     if (isBrokenPipe(error)) return 0;
-    writeLine(stderr, errorMessage(`cannot write output: ${messageOf(error)}`));
+    writeLine(stderr, writeFailure(messageOf(error)));
     return 1;
   }
   return 0;

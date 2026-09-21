@@ -16,8 +16,9 @@ export class ReadError extends Error {
   }
 }
 
-/** Removed once, at the very start of the stream (Q16). */
-const BYTE_ORDER_MARK = "﻿";
+/** Removed once, at the very start of the stream (Q16). Written as an
+ * escape: the character itself is invisible in a source file. */
+const BYTE_ORDER_MARK = "\uFEFF";
 
 /**
  * Yields each line of `stream` with its 1-based number, as the parser's
