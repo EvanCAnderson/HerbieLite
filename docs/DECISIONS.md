@@ -62,9 +62,9 @@ Every entry has one ID, and its heading starts with it.
 
 ---
 
-## T0 — Tooling
+### T0 — Tooling
 
-### <a id="t0-1"></a>T0.1 — Toolchain: `tsx` + `vitest` + `tsc`, npm
+#### <a id="t0-1"></a>T0.1 — Toolchain: `tsx` + `vitest` + `tsc`, npm
 
 - **Decision:** `tsx` to run `.ts` directly, `tsc` to build `dist/` and to
   type-check (`--noEmit`), `vitest` for tests, `npm` as package manager.
@@ -74,7 +74,7 @@ Every entry has one ID, and its heading starts with it.
   Jest-style. Alternatives (ts-node, jest+ts-jest) are slower/heavier to config.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t0-2"></a>T0.2 — Modules: ESM with `NodeNext`
+#### <a id="t0-2"></a>T0.2 — Modules: ESM with `NodeNext`
 
 - **Decision:** `"type": "module"`; tsconfig `module` + `moduleResolution` =
   `NodeNext`.
@@ -88,12 +88,12 @@ Every entry has one ID, and its heading starts with it.
 
 <a id="t1"></a>
 
-## T1 — Scaffold
+### T1 — Scaffold
 
 T1.10–T1.21 were decided while reviewing T1, before implementation
 started.
 
-### <a id="t1-1"></a>T1.1 — Test layout: colocated
+#### <a id="t1-1"></a>T1.1 — Test layout: colocated
 
 - **Decision:** Tests sit next to the unit under test (`src/foo.test.ts` beside
   `src/foo.ts`).
@@ -102,7 +102,7 @@ started.
   `src/` tidier but adds indirection for a 4-module codebase.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-2"></a>T1.2 — Lint + format: ESLint (type-checked) + Prettier
+#### <a id="t1-2"></a>T1.2 — Lint + format: ESLint (type-checked) + Prettier
 
 - **Decision:** ESLint for correctness (type-checked rules via `projectService`),
   Prettier for formatting, reconciled with `eslint-config-prettier`.
@@ -117,7 +117,7 @@ started.
   `_italic_`, blank lines after headings.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-3"></a>T1.3 — Build vs. type-check split
+#### <a id="t1-3"></a>T1.3 — Build vs. type-check split
 
 - **Decision:** Base `tsconfig.json` includes `*.test.ts` (so tests are
   type-checked); `tsconfig.build.json` excludes them so they don't reach `dist/`.
@@ -128,7 +128,7 @@ started.
   left out, since typecheck already catches anything that would break it.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-4"></a>T1.4 — Dropped `package.json` `bin` field
+#### <a id="t1-4"></a>T1.4 — Dropped `package.json` `bin` field
 
 - **Decision:** Removed the `bin: { herbie-lite → dist/cli.js }` entry.
 - **Context:** Surfaced in the T1 review — the entry promised an executable but
@@ -139,7 +139,7 @@ started.
   brief doesn't use.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-5"></a>T1.5 — Compiler strictness
+#### <a id="t1-5"></a>T1.5 — Compiler strictness
 
 - **Decision:** `strict`, plus `noUncheckedIndexedAccess`,
   `noFallthroughCasesInSwitch`, `verbatimModuleSyntax`, and `noImplicitOverride`.
@@ -161,7 +161,7 @@ started.
   `noImplicitOverride`; asking for its reasoning led it to revise that and keep
   it.
 
-### <a id="t1-6"></a>T1.6 — Separate executable entry (`bin.ts`) from `cli.ts`
+#### <a id="t1-6"></a>T1.6 — Separate executable entry (`bin.ts`) from `cli.ts`
 
 - **Decision:** `src/cli.ts` exports `main` and runs nothing on import.
   `src/bin.ts` is the executable entry and only calls `main`. `start` runs
@@ -176,7 +176,7 @@ started.
   subtle check that every reader has to reason about.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-7"></a>T1.7 — Supported Node version: 22.13 and later
+#### <a id="t1-7"></a>T1.7 — Supported Node version: 22.13 and later
 
 - **Decision:** `engines.node` is `>=22.13` (was `>=20`). The `.13` comes from
   the T1.9 upgrade: eslint 10 needs 22.13 and vitest 5 needs 22.12.
@@ -192,7 +192,7 @@ started.
   (listing `>=22` as an alternative); asking about the risk of `>=22` led it to
   recommend 22.
 
-### <a id="t1-8"></a>T1.8 — Package and build settings
+#### <a id="t1-8"></a>T1.8 — Package and build settings
 
 - **Decision:** `package.json` gets `"private": true` and loses
   `"license": "MIT"`. `tsconfig.json` drops `"declaration": true`; `sourceMap`
@@ -206,7 +206,7 @@ started.
   maps stay because they point stack traces at the TypeScript source.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-9"></a>T1.9 — Dependencies on current major versions
+#### <a id="t1-9"></a>T1.9 — Dependencies on current major versions
 
 - **Decision:** vitest 5 (with `vite` 8 as an explicit dev dependency), eslint
   and `@eslint/js` 10, `eslint-config-prettier` 10, `typescript-eslint` 8.70,
@@ -224,7 +224,7 @@ started.
   behind and force a migration later.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-10"></a>T1.10 — Input: file argument, STDIN, and interactive entry
+#### <a id="t1-10"></a>T1.10 — Input: file argument, STDIN, and interactive entry
 
 - **Decision:** Accept a file path argument, or read STDIN when none is given.
   When STDIN is a terminal (no file, nothing piped), print a one-line hint to
@@ -251,7 +251,7 @@ started.
 - **Superseded in part by** [T6.13](#t6-13) (the terminal hint only; the file
   and STDIN run commands, and interactive entry itself, stand).
 
-### <a id="t1-11"></a>T1.11 — Layered architecture
+#### <a id="t1-11"></a>T1.11 — Layered architecture
 
 - **Decision:** Four layers, pure logic separate from I/O:
   1. `parser` — line → typed `Command` (a discriminated union), or a
@@ -263,14 +263,14 @@ started.
 - **Why:** Every layer except `cli` is testable without files or processes.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-12"></a>T1.12 — Commands as a discriminated union
+#### <a id="t1-12"></a>T1.12 — Commands as a discriminated union
 
 - **Decision:** `Command` is a TypeScript discriminated union on the command kind.
 - **Why:** Exhaustiveness checking means adding a command type makes the compiler
   flag every place that must handle it.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-13"></a>T1.13 — Store raw facts; compute at report time
+#### <a id="t1-13"></a>T1.13 — Store raw facts; compute at report time
 
 - **Decision:** `network` holds partners, companies, employee → company, and the
   list of contacts. After input ends, pending employees and contacts are
@@ -283,14 +283,14 @@ started.
   pass; O(lines) with map lookups.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-14"></a><a id="q2"></a>T1.14 — Q2: Companies with no relationship
+#### <a id="t1-14"></a><a id="q2"></a>T1.14 — Q2: Companies with no relationship
 
 - **Decision:** A company whose employees have zero contacts, or that has no
   employees, prints `<CompanyName>: No current relationship`.
 - **Why:** Strength 0 is not a relationship.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-15"></a><a id="q3"></a>T1.15 — Q3: Drive Capital never appears in the output
+#### <a id="t1-15"></a><a id="q3"></a>T1.15 — Q3: Drive Capital never appears in the output
 
 - **Decision:** Only `Company`-declared companies are listed, so Drive Capital
   never appears.
@@ -300,14 +300,14 @@ started.
 - **Origin:** LLM-suggested, accepted (the conclusion and, later, the
   single-word argument).
 
-### <a id="t1-16"></a><a id="q4"></a>T1.16 — Q4: Names are case-sensitive
+#### <a id="t1-16"></a><a id="q4"></a>T1.16 — Q4: Names are case-sensitive
 
 - **Decision:** `Chris` and `chris` are different names.
 - **Why:** The brief gives no reason to fold case; exact matching is the least
   surprising and simplest rule.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-17"></a><a id="q5"></a>T1.17 — Q5: Duplicate and conflicting declarations
+#### <a id="t1-17"></a><a id="q5"></a>T1.17 — Q5: Duplicate and conflicting declarations
 
 - **Decision:**
   - An exact repeat (same command, same words) is ignored without a warning.
@@ -333,7 +333,7 @@ started.
   [Q12](#q12) (second and fourth bullets: name conflicts now span partners
   and employees, so partners are resolved with employees).
 
-### <a id="t1-18"></a><a id="q6"></a>T1.18 — Q6: Error handling depth
+#### <a id="t1-18"></a><a id="q6"></a>T1.18 — Q6: Error handling depth
 
 - **Decision:** Every malformed line gets the Q7 handling. Blank lines are
   skipped without a warning.
@@ -342,7 +342,7 @@ started.
   and test than a rule per case.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-19"></a><a id="q7"></a>T1.19 — Q7: Malformed lines: discard, warn, continue
+#### <a id="t1-19"></a><a id="q7"></a>T1.19 — Q7: Malformed lines: discard, warn, continue
 
 - **Decision:** A malformed line (unknown command, wrong number of words, a word
   that isn't letters-only per Q9, or a contact type other than
@@ -363,7 +363,7 @@ started.
   each bad line immediately, warn with the expected format, and never withhold
   the report. Exit code 0: LLM-suggested, accepted.
 
-### <a id="t1-20"></a><a id="q8"></a>T1.20 — Q8: Contacts resolved after all input
+#### <a id="t1-20"></a><a id="q8"></a>T1.20 — Q8: Contacts resolved after all input
 
 - **Decision:** Contacts are resolved after all input is read, so declaration
   order doesn't matter. A contact still unresolved at the end is discarded with
@@ -377,7 +377,7 @@ started.
   feedback but can misread valid input.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t1-21"></a><a id="q9"></a>T1.21 — Q9: A word is letters only
+#### <a id="t1-21"></a><a id="q9"></a>T1.21 — Q9: A word is letters only
 
 - **Decision:** Words match `[A-Za-z]+`. The README notes this interpretation.
 - **Context:** The brief says "the upper- and lowercase characters A thru z".
@@ -388,9 +388,9 @@ started.
 
 ---
 
-## T2 — Types
+### T2 — Types
 
-### <a id="t2-1"></a>T2.1 — Break T2–T8 into lettered subtasks
+#### <a id="t2-1"></a>T2.1 — Break T2–T8 into lettered subtasks
 
 - **Decision:** Each of T2–T8 in PLAN §6 gets 2–5 subtasks, ordered by when they
   are built and grouped by subject. Subtasks are lettered (`T2a`, `T2b`, …),
@@ -407,7 +407,7 @@ started.
 - **Origin:** Breakdown and its 2–5 subtask shape: Mine. Subtask contents and
   lettered IDs: LLM-suggested, accepted.
 
-### <a id="t2-2"></a>T2.2 — Open questions live in PLAN §4, cross-linked to subtasks
+#### <a id="t2-2"></a>T2.2 — Open questions live in PLAN §4, cross-linked to subtasks
 
 - **Decision:** Every open question is a numbered Q in PLAN §4 with a default
   and the subtask that settles it ("Settle in T3a"); that subtask in §6 names
@@ -426,7 +426,7 @@ started.
 - **Origin:** Adding them to §4: Mine. Cross-link format: LLM-suggested,
   accepted.
 
-### <a id="t2-3"></a>T2.3 — Types live in the layer that owns them
+#### <a id="t2-3"></a>T2.3 — Types live in the layer that owns them
 
 - **Decision:** `Command`, `ContactType`, and the per-line parse result are
   exported from `parser.ts`; `Network` and the resolution warnings from
@@ -440,7 +440,7 @@ started.
   tends to collect unrelated types over time.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t2-4"></a>T2.4 — Command and contact-type shapes
+#### <a id="t2-4"></a>T2.4 — Command and contact-type shapes
 
 - **Decision:** `CONTACT_TYPES` is a `const` list; `ContactType` is derived from
   it, and `isContactType` checks against it. `Command` is discriminated on
@@ -456,7 +456,7 @@ started.
   so it doesn't read like TypeScript's `type`.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t2-5"></a>T2.5 — Parser and network return data; cli writes text
+#### <a id="t2-5"></a>T2.5 — Parser and network return data; cli writes text
 
 - **Decision:** A parsed line is `command`, `malformed`, or `blank`
   (discriminated on `outcome`), and carries its `SourceLine` (1-based line
@@ -492,7 +492,7 @@ started.
   return the expected format as text and the network list unknown names
   without their role.
 
-### <a id="t2-6"></a><a id="q13"></a>T2.6 — Q13: Repeated commands: contacts count, declarations warn
+#### <a id="t2-6"></a><a id="q13"></a>T2.6 — Q13: Repeated commands: contacts count, declarations warn
 
 - **Decision:** Every `Contact` line is one interaction and counts toward
   strength, even when it repeats an earlier line word for word. A
@@ -518,7 +518,7 @@ started.
   standing declaration, replacing `employee-conflict`: LLM-suggested,
   accepted.
 
-### <a id="t2-7"></a><a id="q12"></a>T2.7 — Q12: One name, one person
+#### <a id="t2-7"></a><a id="q12"></a>T2.7 — Q12: One name, one person
 
 - **Decision:** Partners and employees share one namespace: a name belongs
   to at most one person. Companies have their own namespace: each company
@@ -547,9 +547,9 @@ started.
 
 ---
 
-## T3 — Parser
+### T3 — Parser
 
-### <a id="t3-1"></a>T3.1 — Decision IDs: one T ID per entry, Q kept as a tag
+#### <a id="t3-1"></a>T3.1 — Decision IDs: one T ID per entry, Q kept as a tag
 
 - **Decision:** Every entry's ID is `T<n>.<m>`, in the section of the task
   that decided it (Key). D1–D4 become T1.10–T1.13 and the D prefix is
@@ -575,7 +575,7 @@ started.
   and the Key: LLM-suggested, accepted. Recording it as a decision made
   before T3 started: Mine.
 
-### <a id="t3-2"></a><a id="q10"></a>T3.2 — Q10: Whitespace within a line
+#### <a id="t3-2"></a><a id="q10"></a>T3.2 — Q10: Whitespace within a line
 
 - **Decision:** Words are separated by runs of spaces or tabs. Leading and
   trailing spaces and tabs are ignored, as is a trailing `\r` left by a CRLF
@@ -594,7 +594,7 @@ started.
 - **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
   confirmed when T3 started).
 
-### <a id="t3-3"></a><a id="q11"></a>T3.3 — Q11: Command keywords are case-sensitive
+#### <a id="t3-3"></a><a id="q11"></a>T3.3 — Q11: Command keywords are case-sensitive
 
 - **Decision:** A keyword must match exactly: `Partner`, `Company`,
   `Employee`, `Contact`. `partner Chris` is an unknown command, discarded
@@ -609,7 +609,7 @@ started.
 - **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
   confirmed when T3 started).
 
-### <a id="t3-4"></a>T3.4 — Parser checks: fixed order, first failure reported
+#### <a id="t3-4"></a>T3.4 — Parser checks: fixed order, first failure reported
 
 - **Decision:** `parseLine(source)` takes a `SourceLine` and returns it
   unchanged in its result. Checks run in this order, and the first that
@@ -638,9 +638,9 @@ started.
   LLM-suggested, accepted. Reason only, without the word: LLM-suggested,
   accepted when asked.
 
-## T4 — Network
+### T4 — Network
 
-### <a id="t4-1"></a>T4.1 — Project docs imported into every session's context
+#### <a id="t4-1"></a>T4.1 — Project docs imported into every session's context
 
 - **Decision:** `CLAUDE.md` pulls in [BRIEF](./BRIEF.md), [PLAN](./PLAN.md)
   and this log with `@` import lines, so every session starts with all three
@@ -667,7 +667,7 @@ started.
   UPGRADES out, and the note about dropping the DECISIONS import if it grows
   too large were its suggestions.
 
-### <a id="t4-2"></a>T4.2 — Log a decision when it is made, on a named threshold
+#### <a id="t4-2"></a>T4.2 — Log a decision when it is made, on a named threshold
 
 - **Decision:** `CLAUDE.md` gains a **Decisions** section: an entry is written
   when the decision is made, including one made in conversation that changes
@@ -695,7 +695,7 @@ started.
   Mine. The named-alternative threshold, the exclusions, and the routing list:
   LLM-suggested, accepted.
 
-### <a id="t4-3"></a>T4.3 — `buildNetwork`: apply in one pass, resolve in two
+#### <a id="t4-3"></a>T4.3 — `buildNetwork`: apply in one pass, resolve in two
 
 - **Decision:** The layer's entry point is
   `buildNetwork(commands: Iterable<SourcedCommand>): NetworkResult`, a
@@ -735,7 +735,7 @@ started.
   are asserted on.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t4-4"></a>T4.4 — Resolution checks: fixed order, first failure reported
+#### <a id="t4-4"></a>T4.4 — Resolution checks: fixed order, first failure reported
 
 - **Decision:** In the people pass an `Employee` is checked against its
   company before its name is checked against the people namespace, and the
@@ -774,9 +774,9 @@ started.
 
 ---
 
-## T5 — Report
+### T5 — Report
 
-### <a id="t5-1"></a>T5.1 — One exported function; the tally stays private
+#### <a id="t5-1"></a>T5.1 — One exported function; the tally stays private
 
 - **Decision:** `report.ts` exports `reportLines(network: Network): string[]`
   and nothing else. The per-company, per-partner tally and the strongest-partner
@@ -796,7 +796,7 @@ started.
   as part of the API, and returning a single pre-joined string.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t5-2"></a>T5.2 — A network that breaks its own invariants throws
+#### <a id="t5-2"></a>T5.2 — A network that breaks its own invariants throws
 
 - **Decision:** While tallying, a contact whose employee is not a key of
   `employers` throws an `Error` naming the employee. The other two `Network`
@@ -821,7 +821,7 @@ started.
   states the split.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t5-3"></a><a id="q1"></a>T5.3 — Q1: Ties go to the alphabetically first partner
+#### <a id="t5-3"></a><a id="q1"></a>T5.3 — Q1: Ties go to the alphabetically first partner
 
 - **Decision:** When two or more partners have equal, highest strength to a
   company, the line names the alphabetically first of them, by the same order
@@ -844,7 +844,7 @@ started.
   side). Deferring a fuller tie policy to U4 rather than leaving the tradeoff
   only in this entry: Mine.
 
-### <a id="t5-4"></a><a id="q14"></a>T5.4 — Q14: "Sorted alphabetically" is code-unit order
+#### <a id="t5-4"></a><a id="q14"></a>T5.4 — Q14: "Sorted alphabetically" is code-unit order
 
 - **Decision:** Companies are sorted by plain `<` on the name — UTF-16 code
   unit order — so every uppercase letter sorts before every lowercase one
@@ -865,7 +865,7 @@ started.
 - **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
   confirmed when T5 started).
 
-### <a id="t5-5"></a>T5.5 — The example test reads the shipped `input.txt`
+#### <a id="t5-5"></a>T5.5 — The example test reads the shipped `input.txt`
 
 - **Decision:** `input.txt` holds the brief's example verbatim, with the
   demonstration comment line removed and the trailing blank line kept, and the
@@ -888,7 +888,7 @@ started.
   rejected as duplicate coverage.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t5-6"></a>T5.6 — An entry is fixed once its commit lands, not once it is written
+#### <a id="t5-6"></a>T5.6 — An entry is fixed once its commit lands, not once it is written
 
 - **Decision:** The log's never-edit rule binds from the commit that adds an
   entry. Before that the entry is a draft and may be revised in place while
@@ -911,7 +911,7 @@ started.
 - **Origin:** LLM-suggested, accepted (raised when amending T5.5 ran into the
   rule; recording the precedent rather than quietly editing: Mine).
 
-### <a id="t5-7"></a>T5.7 — PLAN §3 is a curated reading list
+#### <a id="t5-7"></a>T5.7 — PLAN §3 is a curated reading list
 
 - **Decision:** PLAN §3 lists the decisions a reviewer should read first,
   chosen by judgment rather than by a rule. [T4.3](#t4-3) is added to it. This
@@ -941,9 +941,9 @@ started.
 
 ---
 
-## T6 — CLI
+### T6 — CLI
 
-### <a id="t6-1"></a>T6.1 — Bad data warns; a broken invariant crashes
+#### <a id="t6-1"></a>T6.1 — Bad data warns; a broken invariant crashes
 
 - **Decision:** `main` does not catch. Bad input data warns on stderr and the
   report still prints, exit 0 (Q7, Q8). A broken invariant ([T5.2](#t5-2))
@@ -974,7 +974,7 @@ started.
   reachable case, which became Q17. Stating the data-versus-bug split in T5.2
   as well as here: Mine.
 
-### <a id="t6-2"></a>T6.2 — `main` takes its streams; `bin.ts` stays logic-free
+#### <a id="t6-2"></a>T6.2 — `main` takes its streams; `bin.ts` stays logic-free
 
 - **Decision:** `main(args, stdin, stdout, stderr): Promise<number>`, over
   Node's own stream types, returning the exit code rather than setting one.
@@ -998,7 +998,7 @@ started.
   nowhere to attach the `error` listener Q17 needs.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t6-3"></a><a id="q15"></a>T6.3 — Q15: One optional file argument
+#### <a id="t6-3"></a><a id="q15"></a>T6.3 — Q15: One optional file argument
 
 - **Decision:** Zero arguments reads STDIN; one names a file; two or more is
   an error. An argument that cannot be read is an error. Both print one line
@@ -1019,7 +1019,7 @@ started.
   §4, confirmed when T6 started). Deferring `--help` to UPGRADES rather than
   leaving it unrecorded: Mine.
 
-### <a id="t6-4"></a>T6.4 — Reading lines: our own `\n` splitter
+#### <a id="t6-4"></a>T6.4 — Reading lines: our own `\n` splitter
 
 - **Decision:** `readLines(stream)` is an async generator that decodes the
   stream as UTF-8, buffers partial lines across chunks, splits on `\n` alone,
@@ -1055,7 +1055,7 @@ started.
 - **Origin:** LLM-suggested, accepted. Leaving `\r` to the parser: raised as
   a question by me, recommended and reasoned by the LLM, accepted.
 
-### <a id="t6-5"></a>T6.5 — `lines.ts` and `warnings.ts` are helpers of the cli layer
+#### <a id="t6-5"></a>T6.5 — `lines.ts` and `warnings.ts` are helpers of the cli layer
 
 - **Decision:** The reader (T6.4) lives in `lines.ts` and every line of
   stderr text in `warnings.ts`. Neither is a fifth layer: T1.11's four layers
@@ -1084,7 +1084,7 @@ started.
   LLM-suggested, accepted after I asked what it would contain and why it beat
   inlining.
 
-### <a id="t6-6"></a><a id="q16"></a>T6.6 — Q16: Strip a byte-order mark, silently
+#### <a id="t6-6"></a><a id="q16"></a>T6.6 — Q16: Strip a byte-order mark, silently
 
 - **Decision:** `readLines` removes one U+FEFF at the very start of the
   stream, and says nothing about it. A BOM anywhere else — including at the
@@ -1119,7 +1119,7 @@ started.
   it, which is a deliberate inclusion beyond the brief in the sense T1.10
   set.
 
-### <a id="t6-7"></a>T6.7 — Warning text: one prefixed line, the input quoted last
+#### <a id="t6-7"></a>T6.7 — Warning text: one prefixed line, the input quoted last
 
 - **Decision:** Every stderr line is
   `herbie-lite: line <n>: <problem>; discarded: <the line as written>`, with
@@ -1151,7 +1151,7 @@ started.
   until Ctrl+D.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t6-8"></a>T6.8 — Q13's warning: a repeat reads differently from a claim
+#### <a id="t6-8"></a>T6.8 — Q13's warning: a repeat reads differently from a claim
 
 - **Decision:** A repeated declaration warns in one of two wordings. When the
   two commands say the same thing, `repeats the declaration on line 1`. When
@@ -1176,7 +1176,7 @@ started.
   rather than a T6 one.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t6-9"></a><a id="q17"></a>T6.9 — Q17: A closed stdout ends quietly; other I/O fails loudly
+#### <a id="t6-9"></a><a id="q17"></a>T6.9 — Q17: A closed stdout ends quietly; other I/O fails loudly
 
 - **Decision:** A write to stdout that fails with `EPIPE` ends the run with no
   message and exit 0. Any other write failure, and any failure while reading,
@@ -1205,7 +1205,7 @@ started.
 - **Origin:** LLM-suggested, accepted (the default recorded in PLAN §4,
   confirmed when T6 started).
 
-### <a id="t6-10"></a>T6.10 — The process-level test runs the source through `tsx`
+#### <a id="t6-10"></a>T6.10 — The process-level test runs the source through `tsx`
 
 - **Decision:** T6e spawns `node_modules/.bin/tsx src/bin.ts`, not
   `node dist/bin.js`, and asserts the brief's output with empty stderr for
@@ -1224,7 +1224,7 @@ started.
   is a test that can be green because it quietly skipped.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t6-11"></a>T6.11 — Quoted input is escaped and bounded
+#### <a id="t6-11"></a>T6.11 — Quoted input is escaped and bounded
 
 - **Decision:** Wherever a warning quotes input, the text is escaped and
   capped at 200 characters of output. Escaped: every control, format and
@@ -1279,7 +1279,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   a cap, and documenting the behaviour as it stood. Capping the warning count
   was offered and rejected.
 
-### <a id="t6-12"></a>T6.12 — The reader names its own failures
+#### <a id="t6-12"></a>T6.12 — The reader names its own failures
 
 - **Decision:** `readLines` wraps a failure of the stream in a `ReadError`
   carrying it as `cause`. `cli`'s read loop catches only `ReadError` and
@@ -1311,7 +1311,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted (raised in the T6 review, with the
   manual-iterator form and a reworded T6.9 as the alternatives).
 
-### <a id="t6-13"></a>T6.13 — No interactive hint, and no terminal check
+#### <a id="t6-13"></a>T6.13 — No interactive hint, and no terminal check
 
 - **Decision:** The program prints nothing extra when input is typed at a
   terminal. `INTERACTIVE_HINT` and the `isTerminal` check are removed, PLAN's
@@ -1343,7 +1343,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Mine. The LLM recommended keeping the hint and extending T6.7 to
   cover its wording; I chose to remove it and defer the fuller version.
 
-### <a id="t6-14"></a>T6.14 — No declared companies prints nothing
+#### <a id="t6-14"></a>T6.14 — No declared companies prints nothing
 
 - **Decision:** When no `Company` was declared, the program writes nothing at
   all to stdout and exits 0, rather than the single newline that joining an
@@ -1363,7 +1363,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted. Recording it as a decision rather than
   leaving the code comment as the only record: Mine (T6 review).
 
-### <a id="t6-15"></a>T6.15 — A stderr that cannot be written to is silent
+#### <a id="t6-15"></a>T6.15 — A stderr that cannot be written to is silent
 
 - **Decision:** Warnings are written to stderr without waiting for the write
   to be acknowledged, and the no-op `error` listener on stderr is the whole
@@ -1384,7 +1384,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted (raised in the T6 review as an
   exit-code edge case Q17 had not covered).
 
-### <a id="t6-16"></a>T6.16 — A cited decision is explained where it is cited
+#### <a id="t6-16"></a>T6.16 — A cited decision is explained where it is cited
 
 - **Decision:** `CLAUDE.md` gains a rule: whenever a decision or task ID is
   cited outside this log — in conversation, in a commit message, in a review —
@@ -1408,9 +1408,9 @@ Laurie Globex`: the program name, the line number and the name are gone.
   is what happens today and is what prompted the rule.
 - **Origin:** Mine (the LLM was citing IDs bare and I asked for the rule).
 
-## T7 — README
+### T7 — README
 
-### <a id="t7-1"></a>T7.1 — The README answers the brief; this log holds the reasoning
+#### <a id="t7-1"></a>T7.1 — The README answers the brief; this log holds the reasoning
 
 - **Decision:** The README is short and each of brief requirement 7's
   questions is answered in full on the page — a reviewer never has to open
@@ -1443,7 +1443,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   answered in place, which is neither of the first two as offered). Themed
   prose followed by a coverage table: LLM-suggested, accepted.
 
-### <a id="t7-2"></a>T7.2 — The LLM account describes the workflow, not every decision
+#### <a id="t7-2"></a>T7.2 — The LLM account describes the workflow, not every decision
 
 - **Decision:** The README's LLM section explains the working method — the
   frozen brief, the plan, this log with an **Origin** line on every entry, and
@@ -1465,7 +1465,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   unexplained and wastes the record.
 - **Origin:** Mine (the LLM recommended the full account with named examples).
 
-### <a id="t7-3"></a>T7.3 — The README says what was deliberately left out
+#### <a id="t7-3"></a>T7.3 — The README says what was deliberately left out
 
 - **Decision:** A short section names what is deferred to
   [UPGRADES](./UPGRADES.md) and why the line fell there, including the two
@@ -1485,7 +1485,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   document so that no one place shows it was drawn on purpose.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t7-4"></a>T7.4 — Example inputs live in `examples/`, the brief's among them
+#### <a id="t7-4"></a>T7.4 — Example inputs live in `examples/`, the brief's among them
 
 - **Decision:** Every input file the submission ships sits in `examples/`,
   including the brief's own, which moves from the repository root to
@@ -1513,7 +1513,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   LLM recommended `brief.txt`, with `examples/input.txt` offered as the
   alternative).
 
-### <a id="t7-5"></a>T7.5 — Five examples, each asserted exactly
+#### <a id="t7-5"></a>T7.5 — Five examples, each asserted exactly
 
 - **Decision:** `examples/` holds the brief's example and four more, each
   chosen to show behaviour a reader cannot see in the output of the brief's
@@ -1556,9 +1556,9 @@ Laurie Globex`: the program name, the line number and the name are gone.
   declaration and every warning: Mine. The other two, and asserting stdout and
   stderr for each: LLM-suggested, accepted.
 
-## T8 — Final pass
+### T8 — Final pass
 
-### <a id="t8-1"></a>T8.1 — The read-through removes what nothing reads, and one invisible character
+#### <a id="t8-1"></a>T8.1 — The read-through removes what nothing reads, and one invisible character
 
 - **Decision:** Four changes from T8a's read-through. `EmployeeCommand` is
   deleted: it was exported and referenced nowhere, in production or in tests.
@@ -1599,7 +1599,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   the byte-order mark was found by scanning the source for non-ASCII
   characters, which is how it should have been found).
 
-### <a id="t8-2"></a>T8.2 — The requirement walk is a table in PLAN §8
+#### <a id="t8-2"></a>T8.2 — The requirement walk is a table in PLAN §8
 
 - **Decision:** T8c's walk of brief requirements 1–7 and PLAN §7 is recorded as
   a table in [PLAN](./PLAN.md) §8: one row per requirement, naming the test or
@@ -1619,7 +1619,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Mine (the LLM offered PLAN, a new document, the README, and no
   file at all; the reasoning for PLAN over a new document was its own).
 
-### <a id="t8-3"></a>T8.3 — The reader tests keep their literal byte-order marks
+#### <a id="t8-3"></a>T8.3 — The reader tests keep their literal byte-order marks
 
 - **Decision:** The five U+FEFF characters in `lines.test.ts` (the byte-order
   mark tests for Q16, at lines 87, 93, 99, 106 and 108) stay as literal
@@ -1637,7 +1637,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   **Rejected:** escaping them, which the audit recommended, to match T8.1.
 - **Origin:** Mine (the LLM recommended replacing them with `﻿`).
 
-### <a id="t8-4"></a>T8.4 — File paths and I/O errors are escaped too
+#### <a id="t8-4"></a>T8.4 — File paths and I/O errors are escaped too
 
 - **Decision:** An error about reading or writing names the file in quotes, and
   the path and the cause are both escaped by the same rule as quoted input
@@ -1665,7 +1665,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted (the escape sequence found while
   reviewing the empty-path fix from an audit).
 
-### <a id="t8-5"></a>T8.5 — Warnings held in memory by a slow stderr: accepted
+#### <a id="t8-5"></a>T8.5 — Warnings held in memory by a slow stderr: accepted
 
 - **Decision:** No change to how warnings are written. When stderr drains
   slower than warnings are produced, every pending warning is held in memory
@@ -1689,9 +1689,9 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted (found and measured in an audit of the
   codebase).
 
-## T9 — Upgrades
+### T9 — Upgrades
 
-### <a id="t9-1"></a>T9.1 — Upgrade work is one PLAN task, subtasks per upgrade
+#### <a id="t9-1"></a>T9.1 — Upgrade work is one PLAN task, subtasks per upgrade
 
 - **Decision:** Work on [UPGRADES](./UPGRADES.md) entries is PLAN task T9,
   with lettered subtasks in the order built: one per upgrade when it fits a
@@ -1712,7 +1712,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   closed at the base but adds a second ID scheme for decisions to the Key.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t9-2"></a>T9.2 — The base is tagged `base-submission`, and the README says so
+#### <a id="t9-2"></a>T9.2 — The base is tagged `base-submission`, and the README says so
 
 - **Decision:** An annotated tag, `base-submission`, marks `c8fc833`, the T8
   commit that completes the brief. Its message says what it marks. The README
@@ -1736,7 +1736,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Tag name and annotation: LLM-suggested, accepted. Naming it in
   the README: LLM-suggested, accepted.
 
-### <a id="t9-3"></a>T9.3 — Coverage is a report, not a gate
+#### <a id="t9-3"></a>T9.3 — Coverage is a report, not a gate
 
 - **Decision:** `@vitest/coverage-v8` is a dev dependency, and
   `npm run coverage` runs the suite with coverage over every file in `src/`
@@ -1769,7 +1769,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Report only: LLM-suggested, accepted after the measurement
   above.
 
-### <a id="t9-4"></a>T9.4 — The remaining upgrades are built U5, U6, U4, then the UI, then U1
+#### <a id="t9-4"></a>T9.4 — The remaining upgrades are built U5, U6, U4, then the UI, then U1
 
 - **Decision:** After U7 and U8, the upgrades are built in this order: `--help`
   and a usage line ([U5](./UPGRADES.md#u5)), the opening explanation for typed
@@ -1792,7 +1792,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** The UI before the builder: Mine. The order of U5, U6 and U4
   around it: LLM-suggested, accepted.
 
-### <a id="t9-5"></a>T9.5 — A local web UI whose terminal runs Herbie, not a shell
+#### <a id="t9-5"></a>T9.5 — A local web UI whose terminal runs Herbie, not a shell
 
 - **Decision:** [U9](./UPGRADES.md#u9) is a web page served on this machine
   that lists input files, shows the report for one, and embeds a terminal
@@ -1819,7 +1819,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   Confining that limit to the UI's pane, and leaving the cli in a real
   terminal untouched: Mine.
 
-### <a id="t9-6"></a>T9.6 — The UI's files: examples read-only, a workspace for the rest
+#### <a id="t9-6"></a>T9.6 — The UI's files: examples read-only, a workspace for the rest
 
 - **Decision:** The UI lists two folders. `examples/` is shown read-only: its
   files can be read and run but not edited or deleted. A new `inputs/` folder,
@@ -1838,7 +1838,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   argument.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t9-7"></a>T9.7 — The page is plain TypeScript bundled by Vite, served by `node:http`
+#### <a id="t9-7"></a>T9.7 — The page is plain TypeScript bundled by Vite, served by `node:http`
 
 - **Decision:** The browser code is TypeScript with no UI framework, bundled
   by Vite (already a dev dependency, T1.9). The server is Node's own
@@ -1855,7 +1855,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   drops type checking from the one part of the project a browser runs.
 - **Origin:** LLM-suggested, accepted.
 
-### <a id="t9-8"></a>T9.8 — The file builder is a panel of the UI, not a CLI mode
+#### <a id="t9-8"></a>T9.8 — The file builder is a panel of the UI, not a CLI mode
 
 - **Decision:** [U1](./UPGRADES.md#u1) is built as a panel of the web UI: lines
   are typed into the page, each is checked with the same `parseLine` the CLI
