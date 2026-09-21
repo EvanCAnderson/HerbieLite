@@ -6,7 +6,8 @@ import { describe, expect, it } from "vitest";
 import { main } from "./cli.js";
 
 const ROOT = join(import.meta.dirname, "..");
-const INPUT = join(ROOT, "input.txt");
+const EXAMPLES = join(ROOT, "examples");
+const INPUT = join(EXAMPLES, "input.txt");
 
 /** The brief's expected output (PLAN §7), as the program writes it. */
 const EXPECTED =
@@ -240,6 +241,65 @@ describe("an I/O failure and a bug are told apart (T6.12)", () => {
 });
 
 /**
+ * T7e: every shipped example, asserted exactly. The file a reviewer runs and
+ * the output this suite asserts are then the same bytes, which is what T5.5
+ * asks of the brief's example; warnings.txt doubles as a regression test for
+ * the wording of every warning (T6.7, T6.8, T6.11). The brief's own example
+ * is asserted above and in report.test.ts.
+ */
+describe("the shipped examples (T7e)", () => {
+  function example(name: string): Promise<Run> {
+    return run([join(EXAMPLES, name)]);
+  }
+
+  it("resolves names declared after the lines that use them", async () => {
+    expect(await example("late-declarations.txt")).toEqual({
+      code: 0,
+      out: "ACME: Molly (2)\nGlobex: Chris (1)\n",
+      err: "",
+    });
+  });
+
+  it("breaks a tie alphabetically and sorts by code unit", async () => {
+    expect(await example("ties.txt")).toEqual({
+      code: 0,
+      out: "Zebra: Al (1)\nacme: Bo (2)\n",
+      err: "",
+    });
+  });
+
+  it("keeps people and companies apart, and counts a repeated contact", async () => {
+    expect(await example("names-and-repeats.txt")).toEqual({
+      code: 0,
+      out: "Contact: Dell (2)\nDell: No current relationship\nHooli: No current relationship\n",
+      err: "",
+    });
+  });
+
+  it("warns once per bad line and still prints the report", async () => {
+    const warnings = [
+      "line 6: unknown command; expected one of Partner, Company, Employee, Contact; discarded: # A comment is not a command",
+      "line 7: unknown command; expected one of Partner, Company, Employee, Contact; discarded: partner Rezzan",
+      'line 8: wrong number of words; expected "Company <Name>"; discarded: Company Drive Capital',
+      'line 9: names must be letters only; expected "Partner <Name>"; discarded: Partner Jean-Luc',
+      'line 10: names must be letters only; expected "Partner <Name>"; discarded: Partner Chris\\u00a0Smith',
+      'line 11: contact type must be one of email, call, coffee; expected "Contact <EmployeeName> <PartnerName> <ContactType>"; discarded: Contact Laurie Chris text',
+      "line 13: repeats the declaration on line 1; discarded: Company Globex",
+      'line 14: Laurie is already declared on line 2 as "Employee Laurie Globex"; discarded: Partner Laurie',
+      "line 15: no company named Hooli was declared; discarded: Employee Sam Hooli",
+      "line 16: no employee named Nobody was declared; discarded: Contact Nobody Chris call",
+      "line 17: no partner named Zoe was declared; discarded: Contact Laurie Zoe email",
+      "line 18: Chris is declared as a partner, not an employee, and Laurie is declared as an employee, not a partner; discarded: Contact Chris Laurie email",
+    ];
+    expect(await example("warnings.txt")).toEqual({
+      code: 0,
+      out: "Globex: Chris (2)\n",
+      err: warnings.map((warning) => `herbie-lite: ${warning}\n`).join(""),
+    });
+  });
+});
+
+/**
  * T6e: the program as a reviewer runs it, through bin.ts. It runs the source
  * with tsx rather than the built dist/, so `npm test` needs no build step
  * (T1.3); the clean-clone check (T8d) covers the built artifact.
@@ -265,7 +325,7 @@ describe("the program as a process (brief 3, PLAN §7)", () => {
   }
 
   it("prints the brief's output for a file argument", async () => {
-    expect(await herbie(["input.txt"])).toEqual({
+    expect(await herbie([join("examples", "input.txt")])).toEqual({
       code: 0,
       out: EXPECTED,
       err: "",

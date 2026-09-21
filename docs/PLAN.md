@@ -59,7 +59,7 @@ That log keeps the complete record, in task order.
 - [**T4.3**](./DECISIONS.md#t4-3) — `buildNetwork` takes the whole command stream; resolve in two passes.
 - [**T5.1**](./DECISIONS.md#t5-1) — `report` exports one function; the tally stays private.
 - [**T5.2**](./DECISIONS.md#t5-2) — A network that breaks its own invariants throws.
-- [**T5.5**](./DECISIONS.md#t5-5) — The example test reads the shipped `input.txt`.
+- [**T5.5**](./DECISIONS.md#t5-5) — The example test reads the shipped `examples/input.txt`.
 - [**T6.1**](./DECISIONS.md#t6-1) — Bad data warns; a broken invariant crashes.
 - [**T6.2**](./DECISIONS.md#t6-2) — `main` takes its streams; `bin.ts` stays logic-free.
 - [**T6.5**](./DECISIONS.md#t6-5) — `lines` and `warnings` are helpers of the cli layer.
@@ -179,16 +179,16 @@ prefix).
         ([T6.13](./DECISIONS.md#t6-13), [U6](./UPGRADES.md#u6)).
   - [x] T6e — Process-level test through `bin.ts`: file argument and a pipe
         both produce §7's output with empty stderr.
-- [ ] T7 — README (build/run/test, approach, LLM usage, every §3 decision
-      and Q).
-  - [ ] T7a — Build, run, and test: Node 22.13+, `npm install`,
+- [x] T7 — README (build/run/test, approach, LLM usage, every §3 decision
+      and Q) and the shipped examples.
+  - [x] T7a — Build, run, and test: Node 22.13+, `npm install`,
         `npm run check`, `npm run build`, and every run form in T1.10, including
         interactive entry (brief 3, 7.1).
-  - [ ] T7b — Approach and design: the four layers and T1.10–T1.13 with
+  - [x] T7b — Approach and design: the four layers and T1.10–T1.13 with
         their tradeoffs, linking to DECISIONS (brief 7.2).
-  - [ ] T7c — How LLMs were used: workflow, what was accepted, modified, or
+  - [x] T7c — How LLMs were used: workflow, what was accepted, modified, or
         rejected, citing DECISIONS Origin lines (brief 7.2.1).
-  - [ ] T7d — Assumptions and edge cases: every Q, flagging where the brief
+  - [x] T7d — Assumptions and edge cases: every Q, flagging where the brief
         was interpreted (brief 7.3, 7.3.1). Note three things that follow
         from decided questions rather than from any one of them: that a
         keyword may be used as a name (`Company Contact`), which follows
@@ -201,6 +201,11 @@ prefix).
         limit ([T6.11](./DECISIONS.md#t6-11)), no output when no company is
         declared ([T6.14](./DECISIONS.md#t6-14)), and a silent stderr
         failure ([T6.15](./DECISIONS.md#t6-15)).
+  - [x] T7e — Example inputs: one home in `examples/`, the brief's file moved
+        there ([T7.4](./DECISIONS.md#t7-4)), and four more showing what its
+        output cannot — late declarations, ties and sort order, namespaces and
+        repeats, and every warning. Each asserted for exact stdout and stderr,
+        and listed in the README ([T7.5](./DECISIONS.md#t7-5)).
 - [ ] T8 — Final pass: naming, comments, tradeoff notes.
   - [ ] T8a — Code read-through: naming, comments that cite DECISIONS IDs,
         no placeholder text or dead code.
@@ -210,11 +215,11 @@ prefix).
   - [ ] T8c — Walk BRIEF requirements 1–7 and §7, recording the test or
         command that shows each is met.
   - [ ] T8d — Clean-clone check: `npm ci`, `npm run check`, `npm run build`,
-        then run `node dist/bin.js input.txt` and the piped form.
+        then run `node dist/bin.js examples/input.txt` and the piped form.
 
 ## 7. Definition of done
 
-- `input.txt` from the brief produces exactly:
+- `examples/input.txt` from the brief produces exactly:
   ```
   ACME: No current relationship
   Globex: Chris (2)
@@ -225,5 +230,6 @@ prefix).
 - Malformed and unresolved lines produce stderr warnings, the report still
   prints, and the exit code is 0 (Q5, Q7, Q8).
 - `npm run check` passes (typecheck, lint, format, tests).
-- Tests cover parser, network, report, and `cli` end-to-end.
+- Tests cover parser, network, report, and `cli` end-to-end, and every file in
+  `examples/` is asserted for exact stdout and stderr ([T7.5](./DECISIONS.md#t7-5)).
 - README covers every entry in §3–§4.

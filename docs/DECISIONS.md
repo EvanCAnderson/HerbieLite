@@ -1408,6 +1408,154 @@ Laurie Globex`: the program name, the line number and the name are gone.
   is what happens today and is what prompted the rule.
 - **Origin:** Mine (the LLM was citing IDs bare and I asked for the rule).
 
+## T7 — README
+
+### <a id="t7-1"></a>T7.1 — The README answers the brief; this log holds the reasoning
+
+- **Decision:** The README is short and each of brief requirement 7's
+  questions is answered in full on the page — a reviewer never has to open
+  another file to learn how to run the program, how it is built, or what it
+  assumes — while the reasoning behind each answer, and the alternatives
+  rejected, stay here. Links point at specific entries (`docs/DECISIONS.md#q9`)
+  rather than at the file. The assumptions section is themed prose followed by
+  a one-row-per-question table, so it reads top to bottom and can also be
+  checked for coverage at a glance.
+- **Context:** T7a–T7d. This log is now about 85KB and ships with the
+  submission, so the README could lean on it as heavily or as lightly as it
+  liked.
+- **Why:** The brief asks for a README, not for a documentation set, and the
+  reviewer's first read is the one that has to work — an answer that is only a
+  link is not an answer. Length is the cost of the reasoning, not of the
+  answers, and the reasoning already has a home: restating a decision's
+  rejected alternatives in the README would duplicate the entry that exists to
+  hold them, and the two copies would drift. The table exists because T7d asks
+  for every question to be covered and prose alone makes that claim
+  unverifiable; the prose exists because the questions reinforce each other —
+  letters-only names (Q9) are what make one-name-one-person (Q12) sound, and a
+  table of seventeen rows cannot say so. **Rejected:** a standalone README that
+  carries the reasoning inline, which is the most complete single document and
+  duplicates most of this log; a concise README that answers a brief question
+  with a link, which makes the reviewer assemble the answer; and a table with
+  no prose, which is complete and says nothing about how the decisions fit
+  together.
+- **Origin:** Mine (the LLM offered standalone, concise-with-links, and full
+  write-up; I took the concise shape and required that each brief question be
+  answered in place, which is neither of the first two as offered). Themed
+  prose followed by a coverage table: LLM-suggested, accepted.
+
+### <a id="t7-2"></a>T7.2 — The LLM account describes the workflow, not every decision
+
+- **Decision:** The README's LLM section explains the working method — the
+  frozen brief, the plan, this log with an **Origin** line on every entry, and
+  all three imported into every session (T4.1) — and characterises the pattern
+  of what was accepted, modified, and rejected, without walking through
+  individual decisions. It points at the Origin lines as the evidence.
+- **Context:** T7c. Brief 7.2.1 asks how LLM tools were used, and the Origin
+  lines are an unusually specific record to be able to offer.
+- **Why:** The reviewer can read the pattern in one page or audit it in the
+  log, and the log is the better auditor: it is complete, dated by task, and
+  names what the LLM recommended in the cases where I chose otherwise. A
+  README walkthrough of those cases would be a hand-picked selection of the
+  same material, which reads as advocacy where the log reads as a record.
+  **Rejected:** a full account naming each case — where the LLM recommended
+  failing fast on a bad line (Q7), keeping the byte-order mark out of the base
+  (T6.6), and keeping the interactive hint (T6.13) — which is the strongest
+  single-page evidence and is also the longest section in a README whose shape
+  is concise (T7.1); and a two-sentence disclaimer, which leaves the method
+  unexplained and wastes the record.
+- **Origin:** Mine (the LLM recommended the full account with named examples).
+
+### <a id="t7-3"></a>T7.3 — The README says what was deliberately left out
+
+- **Decision:** A short section names what is deferred to
+  [UPGRADES](./UPGRADES.md) and why the line fell there, including the two
+  ideas pulled into the base instead — stripping a byte-order mark
+  ([T6.6](#t6-6)) and escaping quoted input ([T6.11](#t6-11)) — and what each
+  had to show to earn it.
+- **Context:** T7d. The brief grades how quality software is built, not scope,
+  and `CLAUDE.md` makes deferral the default for anything the brief does not
+  ask for.
+- **Why:** Scope discipline is invisible in a diff: an absent feature and an
+  unconsidered one look identical, and the two exceptions are only defensible
+  if the rule they are exceptions to is stated. Naming the boundary also
+  answers the question a reviewer would otherwise ask in the interview.
+  **Rejected:** leaving it out, which keeps the README strictly about what was
+  built and lets a deliberate omission read as an oversight; and mentioning
+  each deferral where it is relevant, which scatters the boundary across the
+  document so that no one place shows it was drawn on purpose.
+- **Origin:** LLM-suggested, accepted.
+
+### <a id="t7-4"></a>T7.4 — Example inputs live in `examples/`, the brief's among them
+
+- **Decision:** Every input file the submission ships sits in `examples/`,
+  including the brief's own, which moves from the repository root to
+  `examples/input.txt` and keeps its name. `report.test.ts` and `cli.test.ts`
+  follow it there; [T5.5](#t5-5)'s rule — that the test reads the shipped file
+  rather than a copy — is unchanged, only the path.
+- **Context:** T7e. The brief's example had been the only input file, so the
+  root was a defensible home for it; adding four more made the root the wrong
+  place for any of them.
+- **Why:** One kind of thing belongs in one place, and a directory named for
+  what it holds tells a reviewer that the extra files are part of the
+  submission rather than scratch left behind. The brief's file keeps the name
+  `input.txt` because that is the name the brief itself uses, so the run
+  command in the prompt still reads across to this repository. **Accepted
+  cost:** every run command grows by nine characters, and the shortest
+  invocation in the brief (`analyze_network.rb input.txt`) no longer matches a
+  path here. **Rejected:** keeping `input.txt` at the root and putting only the
+  new files in `examples/`, which preserves the shortest command and leaves two
+  homes for one kind of file, so the split reads as an oversight unless the
+  README explains it; `fixtures/`, which names them for the test suite when
+  their first audience is a reviewer at a command line; and renaming the
+  brief's file to `brief.txt`, which is more descriptive beside its siblings
+  and drops the one name the prompt already taught the reader.
+- **Origin:** A single directory: Mine. Keeping the name `input.txt`: Mine (the
+  LLM recommended `brief.txt`, with `examples/input.txt` offered as the
+  alternative).
+
+### <a id="t7-5"></a>T7.5 — Five examples, each asserted exactly
+
+- **Decision:** `examples/` holds the brief's example and four more, each
+  chosen to show behaviour a reader cannot see in the output of the brief's
+  file alone:
+  - `late-declarations.txt` — every name used before it is declared (Q5, Q8,
+    Q12), which the brief's guarantee does not require any implementation to
+    accept.
+  - `ties.txt` — an alphabetical tie-break (Q1) and code-unit ordering, where
+    `Zebra` precedes `acme` (Q14).
+  - `names-and-repeats.txt` — a keyword used as a name (Q9), a person and a
+    company sharing one (Q12), a repeated contact counting twice (Q13), and a
+    company with no employees (Q2).
+  - `warnings.txt` — every warning the program can produce, including both
+    wordings of a repeated declaration ([T6.8](#t6-8)) and a line broken by a
+    literal non-breaking space, so the escaping in
+    [T6.11](#t6-11) is shown rather than described.
+
+  Each file is asserted through `main` for both its exact stdout and its exact
+  stderr, and the README says what each one shows.
+
+- **Context:** T7e. The brief asks for a README, not for examples, so this is
+  scope beyond it, in the sense `CLAUDE.md` allows when an entry records the
+  choice.
+- **Why:** Most of the decisions in this log are invisible in the brief's
+  example: it declares everything in order, has no tie, produces no warning,
+  and never exercises a namespace. A reader can take the README's word for that
+  behaviour, read the tests for it, or run it — and running it is the only one
+  that costs them nothing and cannot be out of date. Asserting stderr as well
+  as stdout is what makes `warnings.txt` worth shipping: its subject _is_ the
+  wording, so a test that checked only the report would let every message drift
+  while the example claimed to demonstrate them. Four files rather than two
+  because each mixes a theme's decisions without mixing themes: putting the
+  tie-break into the namespace file would leave a reader unsure which rule
+  produced which line. **Rejected:** examples as documentation only, with no
+  test, which is how an example quietly stops matching the program; asserting
+  stdout alone, which leaves the warning wording — the point of one of the
+  files — uncovered; and one combined file per theme pair, which halves the
+  file count and makes each output harder to attribute.
+- **Origin:** Examples, and the two the set had to include — a late
+  declaration and every warning: Mine. The other two, and asserting stdout and
+  stderr for each: LLM-suggested, accepted.
+
 ---
 
 ## Open questions

@@ -193,9 +193,9 @@ describe("a network that breaks its own invariants", () => {
 });
 
 describe("the brief's example (PLAN §7)", () => {
-  it("produces the expected output from the shipped input.txt", () => {
+  it("produces the expected output from the shipped examples/input.txt", () => {
     const file = readFileSync(
-      join(import.meta.dirname, "..", "input.txt"),
+      join(import.meta.dirname, "..", "examples", "input.txt"),
       "utf8",
     );
     expect(report(file)).toEqual([

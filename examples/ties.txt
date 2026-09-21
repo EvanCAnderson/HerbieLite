@@ -1,0 +1,10 @@
+Partner Bo
+Partner Al
+Company Zebra
+Company acme
+Employee Ada Zebra
+Employee Ida acme
+Contact Ada Bo call
+Contact Ada Al email
+Contact Ida Bo coffee
+Contact Ida Bo email

@@ -1,0 +1,22 @@
+Company Globex
+Employee Laurie Globex
+Partner Chris
+Partner Molly
+
+# A comment is not a command
+partner Rezzan
+Company Drive Capital
+Partner Jean-Luc
+Partner Chris Smith
+Contact Laurie Chris text
+
+Company Globex
+Partner Laurie
+Employee Sam Hooli
+Contact Nobody Chris call
+Contact Laurie Zoe email
+Contact Chris Laurie email
+
+Contact Laurie Chris email
+Contact Laurie Chris coffee
+Contact Laurie Molly call
