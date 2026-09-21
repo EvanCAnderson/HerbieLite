@@ -145,7 +145,7 @@ questions got:
 
 <a id="u6"></a>
 
-## U6 — An opening explanation for typed input
+## U6 — An opening explanation for typed input — **built, reshaped**
 
 The base prints nothing when commands are typed at a terminal: no hint, no
 banner, and no terminal check at all ([T6.13](./DECISIONS.md#t6-13)). A bare
@@ -162,9 +162,20 @@ altogether. Whatever is built here should share one source of text with both.
 - **Origin:** Mine (the base shipped a one-line hint; I removed it in the T6
   review rather than ship the stub, and deferred the fuller version here).
 
-Planned as T9d. Its open questions are PLAN §4's Q18 (where the text lives,
-shared with U5) and Q20 (stderr or stdout, and when it prints), with their
-defaults there.
+Built in T9d, and reshaped in the same subtask: once the explanation was
+seen, typing commands into the program stopped being a way to write them at
+all. Commands now come from a file, named or piped, and never typed. The
+explanation stays, as what a run at a terminal with no file prints: how to
+give a file, and the commands to write in it. See
+[DECISIONS T9.12](./DECISIONS.md#t9-12), which also answers this entry's
+open questions:
+
+- **Where does the text live?** In `help.ts`, sharing its command section
+  with `--help` (Q18).
+- **stderr or stdout?** stdout, where help goes, with exit 1 because no
+  report was produced (Q20).
+- **When does it print?** Only when no file is named and STDIN is a
+  terminal, and then instead of reading anything (Q20).
 
 <a id="u7"></a>
 
@@ -216,14 +227,16 @@ answers this entry's open questions got:
 ## U9 — A local web UI
 
 A web page served on this machine for working with input files: list them,
-read them, edit and delete the ones in a workspace, run the report on any of
-them, and type commands into an embedded terminal. It is where the file
+read them, edit and delete the ones in a workspace with the command reference
+beside the editor, and run the report on any of them in an embedded terminal
+pane. It is where the file
 builder ([U1](#u1)) lives once built.
 
 - **Terminal:** the page's embedded pane is a Herbie console that runs
-  herbie-lite and nothing else, not a shell. The limit belongs to the UI
-  alone; herbie-lite run from a real terminal is unchanged
-  ([DECISIONS T9.5](./DECISIONS.md#t9-5)).
+  herbie-lite and nothing else, not a shell; the shell limit belongs to the
+  UI alone ([DECISIONS T9.5](./DECISIONS.md#t9-5)). It runs files and shows
+  their output, and takes no typed commands
+  ([T9.12](./DECISIONS.md#t9-12)).
 - **Files:** `examples/` listed read-only, since the tests assert every one;
   a git-ignored `inputs/` workspace for everything editable
   ([T9.6](./DECISIONS.md#t9-6)).

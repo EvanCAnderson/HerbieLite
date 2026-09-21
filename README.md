@@ -75,25 +75,20 @@ npm start -- --help   # from source
 From source, the `--` matters: `npm start --help` is read by npm, which prints
 its own help instead.
 
-Typing input directly is the STDIN form with nothing piped in:
-
-```bash
-node dist/bin.js
-```
-
-Type one command per line and press **Ctrl+D** to finish; the report prints
-then. Note that the program says nothing on startup and prints nothing until
-you finish — there is no prompt or banner, which is a deliberate omission
-rather than an oversight ([T6.13](docs/DECISIONS.md#t6-13), and see
-[Deliberately left out](#deliberately-left-out)).
+Commands come from a file: write them in any editor, then name the file or
+pipe it in. Running `node dist/bin.js` with neither, at a terminal, does not
+wait for typed commands. It prints a short welcome, how to give a file, and
+the four commands with what each one declares, then exits 1, since no report
+was produced ([Q20](docs/DECISIONS.md#q20)). A file can be read again, fixed
+at the line a warning names, and rerun, which a typed session cannot.
 
 ### Exit codes
 
 - **0** — a report was produced. Bad lines in the input never change this:
   they are reported on stderr and the report still prints.
-- **1** — no report was produced: more than one argument, an unknown option, a
-  file that could not
-  be read, or an I/O failure.
+- **1** — no report was produced: more than one argument, an unknown option,
+  no file at a terminal (which prints the opening instead), a file that could
+  not be read, or an I/O failure.
 
 Warnings go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
 report.txt` gives a clean file with the warnings still on screen.
@@ -177,7 +172,7 @@ Three things in that file are worth pointing at:
   `Partner Chris\u00a0Smith` ([T6.11](docs/DECISIONS.md#t6-11)) — which is the
   whole reason quoted input is escaped.
 - **The warnings are not in line order.** Lines 6 to 11 are reported as they are
-  read, so typed input is answered immediately; lines 13 to 18 wait until the
+  read; lines 13 to 18 wait until the
   whole file is in, because a name cannot be judged before then
   ([T6.7](docs/DECISIONS.md#t6-7)).
 
@@ -196,9 +191,10 @@ The program is four layers, each testable without the one above it
 | `cli.ts`     | The only module that touches a stream: picks a source, wires the layers, prints. |
 
 `cli.ts` has three helpers of its own: `lines.ts` reads a stream as numbered
-lines, `warnings.ts` holds every word the program writes to stderr
-([T6.5](docs/DECISIONS.md#t6-5)), and `help.ts` builds the usage line and
-`--help` from the parser's grammar table ([Q18](docs/DECISIONS.md#q18)). `bin.ts` is the executable entry and contains
+lines, `warnings.ts` holds every warning and error the program writes to stderr
+([T6.5](docs/DECISIONS.md#t6-5)), and `help.ts` builds the usage line,
+`--help`, and the opening for a run with no file from the parser's grammar
+table ([Q18](docs/DECISIONS.md#q18)). `bin.ts` is the executable entry and contains
 no logic, so nothing has to detect how it was loaded
 ([T1.6](docs/DECISIONS.md#t1-6)).
 
@@ -235,7 +231,7 @@ The design decisions behind that, each with what it costs:
   ([T6.2](docs/DECISIONS.md#t6-2)), so every test drives the real entry point
   with no stubbing and `process` is named in exactly one file.
 - **Input is streamed, not slurped** ([T6.4](docs/DECISIONS.md#t6-4)), which is
-  what lets a mistyped line be answered as it is typed. Lines are split on `\n`
+  what lets a bad line be warned about as soon as it is read. Lines are split on `\n`
   alone: `readline` also breaks on a lone `\r`, which would silently renumber
   every later line and make every later warning point at the wrong one.
 
@@ -362,7 +358,7 @@ The alternative — refusing to report until the file is clean — withholds the
 answer over a typo. The tradeoff is that a discarded contact lowers that
 partner's strength and a close result can then name a different partner; the
 warning is the signal that the report may be affected. Warnings for malformed
-lines appear as each line is read, so typed input is answered immediately, while
+lines appear as each line is read, while
 warnings that need the whole file appear at the end; stderr is therefore in two
 passes rather than one run of line order ([T6.7](docs/DECISIONS.md#t6-7)).
 
@@ -448,6 +444,7 @@ anything counting lines would otherwise see one report where there is none.
 | Q17   | A closed stdout ends quietly; other I/O fails loudly                      | [T6.9](docs/DECISIONS.md#t6-9)   |
 | Q18   | The help text is built from the parser's grammar table                    | [T9.9](docs/DECISIONS.md#t9-9)   |
 | Q19   | `--help` and `-h` are the only options, and win wherever they appear      | [T9.10](docs/DECISIONS.md#t9-10) |
+| Q20   | Commands come from a file; a bare run explains how, and exits 1           | [T9.12](docs/DECISIONS.md#t9-12) |
 
 † The brief was open to more than one reading here.
 
@@ -458,10 +455,11 @@ anything counting lines would otherwise see one report where there is none.
 The brief grades how quality software is built rather than how much of it there
 is, so anything it does not ask for was written down in
 [UPGRADES](docs/UPGRADES.md) instead of being built: a guided input-file builder
-(U1), a tie-break that reflects the relationship rather than the alphabet (U4),
-and an opening explanation for typed input (U6). `--help` and a usage line (U5)
-were deferred the same way and built after the base was tagged
-([T9.10](docs/DECISIONS.md#t9-10)).
+(U1), and a tie-break that reflects the relationship rather than the alphabet
+(U4). `--help` and a usage line (U5) were deferred the same way and built after
+the base was tagged ([T9.10](docs/DECISIONS.md#t9-10)). An opening explanation
+(U6) was built too, and became what a run with no file prints once typed input
+was dropped ([T9.12](docs/DECISIONS.md#t9-12)).
 Each entry carries the open questions it would have to answer, so what was
 deferred is the work, not the thinking.
 

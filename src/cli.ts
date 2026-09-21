@@ -5,7 +5,7 @@
 //
 // The executable entry is bin.ts; this module only exports main (T1.6).
 import { createReadStream } from "node:fs";
-import { HELP } from "./help.js";
+import { HELP, OPENING } from "./help.js";
 import { ReadError, readLines } from "./lines.js";
 import { buildNetwork } from "./network.js";
 import { parseLine, type SourcedCommand } from "./parser.js";
@@ -64,6 +64,15 @@ async function print(
   }
 }
 
+/**
+ * Whether STDIN is a terminal, where commands would be typed (Q20). Only a
+ * TTY stream carries `isTTY`, so a pipe or a test's stream is never taken
+ * for one.
+ */
+function isTerminal(stream: NodeJS.ReadableStream): boolean {
+  return (stream as { isTTY?: boolean }).isTTY === true;
+}
+
 /** `--help` and `-h` are the only options; `-` alone is not STDIN (Q19). */
 function isHelp(arg: string): boolean {
   return arg === "--help" || arg === "-h";
@@ -104,10 +113,15 @@ export async function main(
     return 1;
   }
 
-  // Typing commands at a terminal is just STDIN with no file argument, so it
-  // needs no branch of its own; the program prints nothing extra for it
-  // (T6.13, [UPGRADES U6]).
+  // Commands come from a file, named or piped in. At a terminal with no file
+  // there is nothing to read, so the program explains how to give one and
+  // exits 1, since no report was produced (Q20, T6.1). A failure to write the
+  // explanation is still reported (Q17), and still exits 1.
   const [file] = args;
+  if (file === undefined && isTerminal(stdin)) {
+    await print(stdout, stderr, OPENING);
+    return 1;
+  }
   const input = file === undefined ? stdin : createReadStream(file);
 
   // Warnings for malformed lines are printed as each line is read, so typed

@@ -1,5 +1,5 @@
 // The grammar as text for a person to read: each command's shape, the usage
-// line, and `--help`. A helper of the cli layer, like warnings.ts (DECISIONS
+// line, `--help`, and the opening shown when no file is given. A helper of the cli layer, like warnings.ts (DECISIONS
 // T6.5). Every shape is built from COMMAND_SYNTAX and the contact types from
 // CONTACT_TYPES, so the help cannot describe a grammar the parser does not
 // accept (Q18).
@@ -46,24 +46,50 @@ function commandEntry(kind: CommandKind): string[] {
 /** The last argument of `Contact`, whose values the help lists. */
 const CONTACT_TYPE_ARGUMENT = COMMAND_SYNTAX.Contact[2];
 
-/** What `--help` prints to stdout (Q19). */
-export const HELP = [
-  "Welcome to herbie-lite!",
-  "",
-  `Usage: ${USAGE}`,
-  "",
-  "Reads commands from the file, or from standard input when no file is",
-  "given, and prints each company's strongest partner. Commands typed at a",
-  "terminal are standard input too: press Ctrl+D to finish.",
-  "",
-  "From source, put -- before the arguments, or npm keeps them for itself:",
-  "  npm start -- [file]",
-  "  npm start -- --help",
-  "",
+const GREETING = "Welcome to herbie-lite!";
+
+/**
+ * The commands, their descriptions, and the rules for names and contact
+ * types: the part both `--help` and the opening show (Q18, Q20).
+ */
+const COMMANDS = [
   "Commands, one per line:",
   ...KINDS.flatMap(commandEntry),
   "",
   `<${CONTACT_TYPE_ARGUMENT}> is one of: ${CONTACT_TYPES.join(", ")}.`,
   "Names are letters only, A-Z and a-z.",
+];
+
+/** What `--help` prints to stdout (Q19). */
+export const HELP = [
+  GREETING,
+  "",
+  `Usage: ${USAGE}`,
+  "",
+  "Reads commands from the file, or from a file piped to standard input, and",
+  "prints each company's strongest partner. Commands are written in a file,",
+  "one command per line, not typed at the terminal.",
+  "",
+  "From source, put -- before the arguments, or npm keeps them for itself:",
+  "  npm start -- [file]",
+  "  npm start -- --help",
+  "",
+  ...COMMANDS,
+  "",
+].join("\n");
+
+/**
+ * What a run at a terminal with no file prints to stdout before exiting 1
+ * (Q20): commands come from a file, so instead of waiting for typed input it
+ * says how to give one, and what to write in it.
+ */
+export const OPENING = [
+  GREETING,
+  "",
+  "Commands come from a file, one command per line. Write the file, then run:",
+  "  node dist/bin.js <file>",
+  "  npm start -- <file>      (from source)",
+  "",
+  ...COMMANDS,
   "",
 ].join("\n");

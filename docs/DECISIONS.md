@@ -250,6 +250,8 @@ started.
   LLM-suggested, accepted.
 - **Superseded in part by** [T6.13](#t6-13) (the terminal hint only; the file
   and STDIN run commands, and interactive entry itself, stand).
+- **Superseded in part by** [T9.12](#t9-12) (interactive entry: typed input is
+  refused; the file and STDIN run commands stand).
 
 #### <a id="t1-11"></a>T1.11 — Layered architecture
 
@@ -997,6 +999,8 @@ started.
   abstraction for two callers that already satisfy the Node types, and it has
   nowhere to attach the `error` listener Q17 needs.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T9.12](#t9-12) (a terminal check returns, to
+  refuse typed input; the stream parameters and exit code stand).
 
 #### <a id="t6-3"></a><a id="q15"></a>T6.3 — Q15: One optional file argument
 
@@ -1344,6 +1348,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   run commands, and interactive entry itself, stand.
 - **Origin:** Mine. The LLM recommended keeping the hint and extending T6.7 to
   cover its wording; I chose to remove it and defer the fuller version.
+- **Superseded in part by** [T9.12](#t9-12) (typing commands is refused, and a
+  bare run at a terminal prints an explanation of the commands).
 
 #### <a id="t6-14"></a>T6.14 — No declared companies prints nothing
 
@@ -1822,6 +1828,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   builder: Mine. Limiting the terminal to Herbie: LLM-suggested, accepted.
   Confining that limit to the UI's pane, and leaving the cli in a real
   terminal untouched: Mine.
+- **Superseded in part by** [T9.12](#t9-12) (the console takes no typed
+  commands; it runs files. Herbie-only, not a shell, stands).
 
 #### <a id="t9-6"></a>T9.6 — The UI's files: examples read-only, a workspace for the rest
 
@@ -1977,6 +1985,57 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** LLM-suggested, accepted (the gap was found while verifying T9c).
   Plain JavaScript following `eslint.config.js`: LLM-suggested, as part of
   the change.
+
+#### <a id="t9-12"></a><a id="q20"></a>T9.12 — Q20: Commands come from a file; a bare run explains how
+
+- **Decision:** Commands are read from a file, named or piped in, and never
+  typed. When no file is named and STDIN is a terminal, the program reads
+  nothing: it prints an opening to stdout and exits 1 with no report. The
+  opening is the greeting, how to give a file (`node dist/bin.js <file>`, or
+  `npm start -- <file>` from source), and the same command section `--help`
+  shows: each command's shape and description, the contact types, and the
+  letters-only rule. It is `OPENING` in `help.ts`, assembled from sections it
+  shares with `HELP` (Q18), and its write follows Q17 like the report's. A
+  stream counts as a terminal only if it carries `isTTY: true`. `--help` no
+  longer mentions typing or Ctrl+D. Commands are written by editing input
+  files, in any editor or in the web UI's workspace editor ([T9.6](#t9-6)),
+  which shows the command reference from `help.ts` beside the file; the UI's
+  console runs a file and shows its output, and takes no typed commands.
+- **Context:** T9d, building [U6](./UPGRADES.md#u6). U6 was to greet typed
+  input with an explanation of the commands. With that built and seen, the
+  question became whether typing commands into the program should be a way to
+  write them at all; the explanation was kept, as the answer to a run with
+  nothing to read.
+- **Why:** A file is the one form of input that can be read again, fixed, and
+  rerun: a typed session is lost at Ctrl+D, and a mistake on line 40 means
+  typing all forty lines again. Warnings are most useful there too, since
+  each names a line to go and fix. Pipes stay because a pipe is file contents,
+  not typing, and it is one of the brief's two run forms. A bare run still
+  explains the commands, because the person who runs the program with nothing
+  is the one who most needs to know what to write. stdout, because the
+  opening is help, and help goes where `--help`'s does; that also leaves every
+  stderr line a prefixed problem line ([T6.7](#t6-7)). Exit 1, because no
+  report was produced, which is what exit 1 means ([T6.1](#t6-1)), so a script
+  that forgets its file argument still fails; this is what `git` does when run
+  with no arguments. **Rejected:** keeping interactive entry with the opening
+  on stderr (U6 as first built in this subtask), which helps a typed session
+  and still loses it at Ctrl+D; a one-line error in place of the opening,
+  which refuses without saying what to write; the opening on stderr, which
+  keeps stdout for reports only but needs an exception to T6.7 for
+  multi-line unprefixed text; the opening on stdout with exit 0, a friendly
+  `--help`, which makes exit 0 stop meaning a report was produced; and
+  accepting only a file argument, which drops the brief's pipe example for no
+  gain.
+- **Supersedes:** in part, [T1.10](#t1-10) (interactive entry; file and STDIN
+  input stand), [T6.2](#t6-2) (nothing in `main` asks whether a stream is a
+  terminal), [T6.13](#t6-13) (typing commands still works, and nothing extra
+  is printed at a terminal), and [T9.5](#t9-5) (the UI console taking typed
+  commands the way the CLI's interactive entry does; it runs files).
+- **Origin:** Commands only from files, with editing as the way to write
+  them: Mine, reversing my own T1.10 after U6's explanation was built and
+  seen. Keeping the explanation, for a bare run and in `--help`: Mine. stdout
+  with exit 1: LLM-suggested, accepted after the tradeoffs were set out.
+  Keeping pipes: LLM-suggested, accepted.
 
 ---
 

@@ -35,7 +35,9 @@ Four entity kinds, drawn straight from the four commands:
     program "should only accept" these; any other type is rejected (see Q7).
 - **FR2 — Input.** The brief lets us assume well-formed input; malformed lines are
   still handled (Q7). Accept via **file argument, STDIN, and interactive entry**
-  (see T1.10).
+  (see T1.10). After the base, interactive entry was removed: commands come
+  from a file, named or piped, and typing them is refused
+  ([T9.12](./DECISIONS.md#t9-12)).
 - **FR3 — Output to stdout**, one line per company.
 - **FR4 — Company report.** List **all** companies, **sorted alphabetically**. For each:
   - has a relationship → `<CompanyName>: <PartnerName> (<RelationshipStrength>)`
@@ -75,10 +77,6 @@ planning the rest of T9; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q20** — When and where the opening explanation prints (U6). Default: on
-  stderr, once at startup, only when STDIN is a terminal (a terminal check
-  returns, superseding T6.13 in part), and not repeated after the report.
-  Settle in T9d.
 - **Q21** — What a tie does (U4). Default: the line keeps the brief's format
   and the alphabetical winner (Q1), and the tie is surfaced as a note on
   stderr naming the tied partners and the strength. That is a new kind of
@@ -109,15 +107,17 @@ point here rather than repeating them.
   modification time the file had when it was opened, and a mismatch refuses
   the save and says so rather than overwriting; deletion is confirmed in the
   page and is permanent. Settle in T9h.
-- **Q27** — How the console talks to the server (U9). Default: one WebSocket
-  per console session, using the `ws` package (Node has a WebSocket client
-  but no server); each typed line is sent as it is entered and each stdout or
-  stderr write comes back tagged with its stream. Settle in T9j.
+- **Q27** — How the console talks to the server (U9). Default: one HTTP
+  request per run, naming the file; the response carries the stdout and
+  stderr lines, each tagged with its stream, and the exit code. No WebSocket
+  and no `ws` package, since nothing is typed into the console
+  ([T9.12](./DECISIONS.md#t9-12)). The pane is xterm.js, as planned, showing
+  the run's output. Settle in T9j.
 - **Q28** — How the console runs the analyzer (U9). Default: in the server's
-  process, calling `main` with streams bridged to the socket, which T6.2 made
-  possible by having `main` take its streams; a throw from `main` (a bug,
-  T6.1) ends that session and shows the stack in the pane, and the server
-  keeps running. Settle in T9j.
+  process, calling `main` with the file as its argument and collecting stdout
+  and stderr, which T6.2 made possible by having `main` take its streams; a
+  throw from `main` (a bug, T6.1) fails that run and shows the stack in the
+  pane, and the server keeps running. Settle in T9j.
 - **Q29** — What the builder checks as a line is typed (U1's second question).
   Default: each line is parsed at once with `parseLine`; references are
   checked by running `buildNetwork` over the whole draft on every change and
@@ -149,6 +149,7 @@ point here rather than repeating them.
 - [**Q17**](./DECISIONS.md#q17) (T6.9) — A closed stdout ends quietly; other I/O fails loudly.
 - [**Q18**](./DECISIONS.md#q18) (T9.9) — The help text is built from the grammar table.
 - [**Q19**](./DECISIONS.md#q19) (T9.10) — `--help` and `-h` are the only options, and win wherever they appear.
+- [**Q20**](./DECISIONS.md#q20) (T9.12) — Commands come from a file; a bare run explains how.
 
 ## 5. Tooling
 
@@ -290,8 +291,10 @@ prefix).
         ([T9.3](./DECISIONS.md#t9-3)).
   - [x] T9c — [U5](./UPGRADES.md#u5): `--help`, `-h`, and a usage line after
         a bad invocation, with the shared help text. Settles Q18 and Q19.
-  - [ ] T9d — [U6](./UPGRADES.md#u6): the opening explanation when commands
-        are typed at a terminal, from the same text. Settles Q20.
+  - [x] T9d — [U6](./UPGRADES.md#u6), reshaped: commands come from a file,
+        named or piped, and are never typed; a run at a terminal with no file
+        prints U6's explanation to stdout and exits 1
+        ([T9.12](./DECISIONS.md#t9-12)). Settles Q20.
   - [ ] T9e — [U4](./UPGRADES.md#u4): surface a tie without changing the
         report line. Settles Q21.
   - [ ] T9f — [U9](./UPGRADES.md#u9), scaffold: layout, a second tsconfig for
@@ -305,12 +308,13 @@ prefix).
         ([T9.6](./DECISIONS.md#t9-6)); `inputs/` added to `.gitignore`.
         Settles Q25 and Q26.
   - [ ] T9i — U9, files panel: the list, a viewer, an editor for workspace
-        files, deletion with confirmation, and "copy to workspace" on an
-        example.
+        files with the command reference from `help.ts` beside it
+        ([T9.12](./DECISIONS.md#t9-12)), deletion with confirmation, and
+        "copy to workspace" on an example.
   - [ ] T9j — U9, console: an xterm.js pane running herbie-lite only
-        ([T9.5](./DECISIONS.md#t9-5)), with typed entry showing U6's
-        explanation and warnings as each line is typed, and a "run" action on
-        any listed file. Settles Q27 and Q28.
+        ([T9.5](./DECISIONS.md#t9-5)) on a listed file and showing its report
+        and warnings; it takes no typed commands
+        ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
   - [ ] T9k — [U1](./UPGRADES.md#u1), builder panel
         ([T9.8](./DECISIONS.md#t9-8)): line-by-line entry checked as typed,
         pending references across the draft, and saving into `inputs/`.
@@ -328,7 +332,9 @@ prefix).
   Hooli: Molly (1)
   ```
 - Runs via file arg, STDIN, and interactive entry (typed input is STDIN with
-  no argument; the base prints no hint, [T6.13](./DECISIONS.md#t6-13)).
+  no argument; the base prints no hint, [T6.13](./DECISIONS.md#t6-13)). This
+  is the base's definition; after it, typed input is refused
+  ([T9.12](./DECISIONS.md#t9-12)).
 - Malformed and unresolved lines produce stderr warnings, the report still
   prints, and the exit code is 0 (Q5, Q7, Q8).
 - `npm run check` passes (typecheck, lint, format, tests).

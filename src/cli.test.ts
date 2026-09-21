@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { Readable, Writable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { main } from "./cli.js";
-import { HELP } from "./help.js";
+import { HELP, OPENING } from "./help.js";
 
 const ROOT = join(import.meta.dirname, "..");
 const EXAMPLES = join(ROOT, "examples");
@@ -212,17 +212,44 @@ describe("output shape (FR3, FR4)", () => {
   });
 });
 
-describe("interactive entry (T1.10, T6.13)", () => {
-  it("prints no hint or banner, whatever STDIN is", async () => {
-    // Typed input is STDIN with no file argument, and the base adds nothing
-    // to stderr for it; an opening explanation is UPGRADES U6.
-    const typed = Object.assign(Readable.from(["Company ACME\n"]), {
-      isTTY: true,
-    });
+describe("commands come from a file, not typing (Q20)", () => {
+  /** STDIN as a terminal presents it: a stream with `isTTY` set (T6.2). */
+  async function runAtTerminal(args: readonly string[]): Promise<Run> {
     const out = sink();
     const err = sink();
-    const code = await main([], typed, out, err);
-    expect({ code, out: out.text(), err: err.text() }).toEqual({
+    const stdin = Object.assign(Readable.from(["Company ACME\n"]), {
+      isTTY: true,
+    });
+    const code = await main(args, stdin, out, err);
+    return { code, out: out.text(), err: err.text() };
+  }
+
+  it("explains how to give a file instead of reading typed input, and exits 1", async () => {
+    expect(await runAtTerminal([])).toEqual({
+      code: 1,
+      out: OPENING,
+      err: "",
+    });
+  });
+
+  it("reads a named file when STDIN is a terminal", async () => {
+    expect(await runAtTerminal([INPUT])).toEqual({
+      code: 0,
+      out: EXPECTED,
+      err: "",
+    });
+  });
+
+  it("prints the help for --help when STDIN is a terminal", async () => {
+    expect(await runAtTerminal(["--help"])).toEqual({
+      code: 0,
+      out: HELP,
+      err: "",
+    });
+  });
+
+  it("reads a pipe, which is file contents, not typing", async () => {
+    expect(await run([], "Company ACME\n")).toEqual({
       code: 0,
       out: "ACME: No current relationship\n",
       err: "",

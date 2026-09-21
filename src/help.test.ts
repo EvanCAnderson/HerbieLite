@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { commandSyntax, HELP, USAGE } from "./help.js";
+import { commandSyntax, HELP, OPENING, USAGE } from "./help.js";
 import { COMMAND_SYNTAX, CONTACT_TYPES, type CommandKind } from "./parser.js";
 
 const README = readFileSync(
@@ -17,9 +17,9 @@ describe("the help text (Q18, Q19)", () => {
         "",
         "Usage: node dist/bin.js [--help | file]",
         "",
-        "Reads commands from the file, or from standard input when no file is",
-        "given, and prints each company's strongest partner. Commands typed at a",
-        "terminal are standard input too: press Ctrl+D to finish.",
+        "Reads commands from the file, or from a file piped to standard input, and",
+        "prints each company's strongest partner. Commands are written in a file,",
+        "one command per line, not typed at the terminal.",
         "",
         "From source, put -- before the arguments, or npm keeps them for itself:",
         "  npm start -- [file]",
@@ -51,6 +51,40 @@ describe("the help text (Q18, Q19)", () => {
 
   it("lists every contact type the parser accepts", () => {
     for (const type of CONTACT_TYPES) expect(HELP).toContain(type);
+  });
+});
+
+describe("the opening, for a run with no file at a terminal (Q20)", () => {
+  it("reads exactly as the user sees it", () => {
+    expect(OPENING).toBe(
+      [
+        "Welcome to herbie-lite!",
+        "",
+        "Commands come from a file, one command per line. Write the file, then run:",
+        "  node dist/bin.js <file>",
+        "  npm start -- <file>      (from source)",
+        "",
+        "Commands, one per line:",
+        "  Partner <Name>",
+        "      A partner: an employee of Drive Capital.",
+        "  Company <Name>",
+        "      A company other than Drive Capital.",
+        "  Employee <Name> <CompanyName>",
+        "      An employee of a company. Each name belongs to one person.",
+        "  Contact <EmployeeName> <PartnerName> <ContactType>",
+        "      One interaction between an employee and a partner. Each counts 1",
+        "      toward that partner's relationship with the employee's company.",
+        "",
+        "<ContactType> is one of: email, call, coffee.",
+        "Names are letters only, A-Z and a-z.",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("shows the same command section as --help (Q18)", () => {
+    const section = OPENING.slice(OPENING.indexOf("Commands, one per line:"));
+    expect(HELP).toContain(section);
   });
 });
 
