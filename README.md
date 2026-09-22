@@ -221,9 +221,12 @@ The program is four layers, each testable without the one above it
 | `report.ts`  | Pure function: a resolved network → the lines of the report.                     |
 | `cli.ts`     | The only module that touches a stream: picks a source, wires the layers, prints. |
 
-`cli.ts` has three helpers of its own: `lines.ts` reads a stream as numbered
-lines, `warnings.ts` holds every warning and error the program writes to stderr
-([T6.5](docs/DECISIONS.md#t6-5)), and `help.ts` builds the usage line,
+`cli.ts` has four helpers of its own: `run.ts` does everything the program
+does apart from streams, reading the arguments and the input and deciding what
+goes to stdout and stderr, so the web console runs the same code
+([T10.23](docs/DECISIONS.md#t10-23)); `lines.ts` reads decoded text as
+numbered lines; `warnings.ts` holds every warning and error the program writes
+to stderr ([T6.5](docs/DECISIONS.md#t6-5)); and `help.ts` builds the usage line,
 `--help`, and the opening for a run with no file from the parser's grammar
 table ([Q18](docs/DECISIONS.md#q18)). `bin.ts` is the executable entry and contains
 no logic, so nothing has to detect how it was loaded

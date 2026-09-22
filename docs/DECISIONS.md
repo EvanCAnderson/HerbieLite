@@ -1062,6 +1062,8 @@ started.
   text themselves).
 - **Origin:** LLM-suggested, accepted. Leaving `\r` to the parser: raised as
   a question by me, recommended and reasoned by the LLM, accepted.
+- **Superseded in part by** [T10.23](#t10-23) (`readLines` decoding the
+  stream; it takes decoded text, and the cli decodes).
 
 #### <a id="t6-5"></a>T6.5 — `lines.ts` and `warnings.ts` are helpers of the cli layer
 
@@ -2744,6 +2746,82 @@ Laurie Globex`: the program name, the line number and the name are gone.
   vitest stands.
 - **Origin:** Planning U11 and deferring U12: Mine. Placing U11 after the
   editor, and the defaults for Q34–Q36: LLM-suggested.
+
+#### <a id="t10-23"></a><a id="q28"></a>T10.23 — Q28: The CLI's work is one function over its arguments and its input
+
+- **Decision:** A new cli helper, `run.ts`, holds everything `main` did
+  apart from streams: reading the arguments, reading and parsing the lines,
+  resolving, and choosing the answer. `run(args, open)` takes the arguments
+  and an `open` function that returns the input's decoded text for a file
+  (or standard input), or nothing when standard input is a terminal (Q20).
+  It returns a `Run`: the `stderr` lines written first (a bad invocation,
+  warnings in line order, a failure), the `stdout` text, the `notes`
+  written after stdout (Q21), and the exit code. `main` supplies `open`
+  over `createReadStream` and stdin, writes the three parts in order, and
+  keeps only the final write's failure handling (Q17) and the stream error
+  listeners (T6.15). The web console calls the same `run` with the listed
+  file's text as one chunk. `readLines` now takes decoded chunks, sync or
+  async, instead of a Node stream, and `main` sets the encoding; its test
+  for a character split across two byte chunks moves to `cli.test.ts`. A
+  throw is still a bug and still propagates (T6.1), to the process in the
+  CLI and to the pane in the page, which shows its stack.
+- **Context:** T10f. The console has to print what the CLI prints, and the
+  CLI's logic was inside `main`, among its streams.
+- **Why:** One function means the page cannot drift from the CLI: the same
+  arguments, warnings, order and exit code, with no second copy to keep in
+  step. `open` rather than the input text, which was Q28's default, so the
+  CLI still streams its file instead of reading it whole first, and each
+  held warning stays bounded ([T9.13](#t9-13)). Three parts rather than one
+  stderr, because the notes are written only once stdout is, and only the
+  caller knows whether that write succeeded. `readLines` over decoded text
+  keeps `run.ts` and everything it imports free of Node's types, which the
+  browser project checks; decoding stays where the stream is. **Rejected:**
+  a function over the whole input text, which would read every file into
+  memory before parsing; one `stderr` list with the notes in it, which
+  loses the rule that a failed report gets no footnote; and a browser copy
+  of the argument and warning logic, which is the drift this avoids.
+- **Supersedes:** [T6.4](#t6-4), in part: `readLines` decoding the stream
+  itself. Splitting on `\n` alone, numbering from 1, and leaving `\r` to the
+  parser stand.
+- **Origin:** Q28's default, LLM-suggested, accepted, with `open` in place
+  of the input text and the three-part result: LLM-suggested, in T10f.
+
+#### <a id="t10-24"></a><a id="q27"></a>T10.24 — Q27: The console is an xterm.js pane showing each run as a terminal would
+
+- **Decision:** The console is an xterm.js pane below the files panel,
+  mounted apart from it so its scrollback survives the panel's redraws. A
+  **Run** button on the viewer runs herbie-lite on the file shown and
+  appends the run: the command as a user would type it
+  (`node dist/bin.js examples/input.txt`, or the workspace name as it
+  downloads), then stderr, stdout and the notes in the order the CLI
+  writes them, stderr in yellow, then `exit 0` or `exit 1`. Runs
+  accumulate until **Clear**, and the pane scrolls into view on each run.
+  It takes no input and has no query options. `@xterm/xterm` and
+  `@xterm/addon-fit` are dev dependencies, bundled into the page; the fit
+  addon rewraps lines when the pane changes width. What a run prints and
+  how it is shown is `console.ts`, tested; `console-panel.ts` draws the
+  pane and is not ([T10.13](#t10-13)).
+- **Context:** T10f. U9 asked for an embedded terminal pane
+  ([T9.5](#t9-5)).
+- **Why:** A terminal pane shows the program as it is used, colours and
+  exit code included, and the echoed command is one a reader can copy into
+  their own terminal to get the same output. Showing it as a terminal is
+  safe because xterm.js acts on escape sequences, and the only ones in the
+  pane are its own: every text the program prints from its input is
+  escaped ([T6.11](#t6-11)) or letters only (Q9). Runs accumulate, as a
+  terminal's do, so two files' output can be compared. No query options
+  yet, because T10f is the report on a listed file; [T10.4](#t10-4) left
+  them to be offered here later with no second implementation, and
+  `run` already takes arguments. **Accepted cost:** xterm.js is nearly all of the page's
+  script, about 345KB of 352KB minified, and a terminal emulator is less
+  plain to a screen reader than ordinary text, which `screenReaderMode`
+  offsets. **Rejected:**
+  a plain `<pre>`, with no dependency and ordinary text selection, which
+  is lighter but is not the terminal U9 set out to embed; clearing the pane
+  before each run; and query options in the pane now.
+- **Origin:** Q27's default (xterm.js), LLM-suggested, accepted. The
+  echoed command, accumulating runs, and the fit addon: LLM-suggested, in
+  T10f.
 
 ---
 

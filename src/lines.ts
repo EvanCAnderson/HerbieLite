@@ -1,7 +1,8 @@
-// Reads a byte stream as numbered lines: a helper of the cli layer, not a
+// Reads decoded text as numbered lines: a helper of the cli layer, not a
 // layer of its own (DECISIONS T6.5). Splits on `\n` alone, so a line number
 // always matches the file's `\n` count; a `\r` is left in the text for the
-// parser to deal with (Q10, T3.2).
+// parser to deal with (Q10, T3.2). It takes decoded chunks rather than a
+// stream, so the web console reads its files the same way (Q28).
 import type { SourceLine } from "./parser.js";
 
 /**
@@ -16,21 +17,18 @@ export class ReadError extends Error {
   }
 }
 
-/** Removed once, at the very start of the stream (Q16). Written as an
+/** Removed once, at the very start of the text (Q16). Written as an
  * escape: the character itself is invisible in a source file. */
 const BYTE_ORDER_MARK = "\uFEFF";
 
 /**
- * Yields each line of `stream` with its 1-based number, as the parser's
- * `SourceLine`. A final line without a trailing newline is yielded; an empty
- * stream yields nothing.
+ * Yields each line of `chunks` with its 1-based number, as the parser's
+ * `SourceLine`. A final line without a trailing newline is yielded; no text
+ * at all yields nothing.
  */
 export async function* readLines(
-  stream: NodeJS.ReadableStream,
+  chunks: AsyncIterable<string> | Iterable<string>,
 ): AsyncIterable<SourceLine> {
-  // Chunks arrive as decoded strings, and a multi-byte character split
-  // across two chunks is reassembled rather than corrupted.
-  stream.setEncoding("utf8");
   let buffer = "";
   let lineNumber = 0;
   let atStreamStart = true;
@@ -40,7 +38,7 @@ export async function* readLines(
   // this catch, so a bug downstream is never mislabelled as an I/O problem
   // (T6.12); the tests hold both halves of that.
   try {
-    for await (const chunk of stream as AsyncIterable<string>) {
+    for await (const chunk of chunks) {
       buffer += chunk;
       if (atStreamStart && buffer !== "") {
         if (buffer.startsWith(BYTE_ORDER_MARK)) buffer = buffer.slice(1);

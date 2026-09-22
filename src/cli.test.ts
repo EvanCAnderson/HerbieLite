@@ -451,6 +451,21 @@ describe("quoted input is escaped and bounded (T6.11)", () => {
   });
 });
 
+describe("decoding (T6.4)", () => {
+  it("reassembles a character split across two byte chunks", async () => {
+    // Why main sets an encoding rather than concatenating buffers: the two
+    // bytes of `é` arrive separately. Names are ASCII (Q9), so this only
+    // shows up in the text a warning quotes.
+    const stdin = Readable.from(
+      [Buffer.from([0xc3]), Buffer.from([0xa9, 0x0a])],
+      { objectMode: false },
+    );
+    const err = sink();
+    await main([], stdin, sink(), err);
+    expect(err.text()).toContain("discarded: é\n");
+  });
+});
+
 describe("an I/O failure and a bug are told apart (T6.12)", () => {
   it("reports a stream that fails partway as an I/O failure", async () => {
     const exploding = new Readable({

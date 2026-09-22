@@ -12,7 +12,7 @@ async function read(...chunks: string[]): Promise<SourceLine[]> {
   return readFrom(Readable.from(chunks));
 }
 
-async function readFrom(stream: NodeJS.ReadableStream): Promise<SourceLine[]> {
+async function readFrom(stream: AsyncIterable<string>): Promise<SourceLine[]> {
   const lines: SourceLine[] = [];
   for await (const line of readLines(stream)) lines.push(line);
   return lines;
@@ -107,21 +107,6 @@ describe("byte-order mark (Q16)", () => {
       { lineNumber: 1, text: "Partner Chris" },
       { lineNumber: 2, text: "﻿Company Globex" },
     ]);
-  });
-});
-
-describe("decoding", () => {
-  it("reassembles a character split across two byte chunks", async () => {
-    // Why the reader sets an encoding rather than concatenating buffers: the
-    // two bytes of `é` arrive separately. Names are ASCII (Q9), so this only
-    // shows up in the text a warning quotes.
-    const bytes = Readable.from(
-      [Buffer.from([0xc3]), Buffer.from([0xa9, 0x0a])],
-      { objectMode: false },
-    );
-    const lines: SourceLine[] = [];
-    for await (const line of readLines(bytes)) lines.push(line);
-    expect(lines).toEqual([{ lineNumber: 1, text: "é" }]);
   });
 });
 

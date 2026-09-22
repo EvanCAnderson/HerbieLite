@@ -2,6 +2,7 @@
 // file shown read-only with line numbers, and the actions on it. The work on
 // the workspace is in actions.ts; this module only draws and wires it.
 import { addToWorkspace, describeSave } from "./actions.js";
+import type { Runnable } from "./console.js";
 import { download, h } from "./dom.js";
 import type { Workspace } from "./workspace.js";
 
@@ -16,11 +17,13 @@ export interface FilesPanelOptions {
   readonly examples: ReadonlyMap<string, string>;
   /** False when the browser refused storage, so files last only until reload. */
   readonly persistent: boolean;
+  /** Runs herbie-lite on the chosen file, in the console (T10f). */
+  readonly onRun: (file: Runnable) => void;
 }
 
 export function mountFilesPanel(
   root: HTMLElement,
-  { workspace, examples, persistent }: FilesPanelOptions,
+  { workspace, examples, persistent, onRun }: FilesPanelOptions,
 ): void {
   let selection: Selection | undefined =
     examples.size > 0
@@ -139,7 +142,16 @@ export function mountFilesPanel(
       );
     }
     const chosen = selection;
-    const actions = h("div", { className: "actions" });
+    const actions = h(
+      "div",
+      { className: "actions" },
+      h("button", {
+        type: "button",
+        className: "action primary",
+        textContent: "Run",
+        onclick: () => onRun({ ...chosen, text }),
+      }),
+    );
     if (chosen.source === "example") {
       actions.append(
         h("button", {

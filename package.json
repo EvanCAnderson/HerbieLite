@@ -25,6 +25,8 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.7.0",
     "@vitest/coverage-v8": "^5.0.1",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.3.0",

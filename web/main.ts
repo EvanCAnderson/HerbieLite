@@ -1,6 +1,7 @@
 // The page's entry point (DECISIONS T9.7): plain TypeScript, bundled by Vite
 // into dist/web/ (Q22), running with no server (T10.16).
 import "./style.css";
+import { mountConsole } from "./console-panel.js";
 import { h } from "./dom.js";
 import { EXAMPLES } from "./examples.js";
 import { mountFilesPanel } from "./files-panel.js";
@@ -24,10 +25,19 @@ const app = document.querySelector<HTMLElement>("#app");
 if (app === null) throw new Error("index.html has no #app element");
 
 const { store, persistent } = openStore();
+// The console is mounted apart from the files panel, which redraws itself
+// on every change, so the terminal and its scrollback are never torn down.
 const panel = h("div");
-app.replaceChildren(h("h1", { textContent: "Herbie Lite" }), panel);
+const consoleRoot = h("div");
+app.replaceChildren(
+  h("h1", { textContent: "Herbie Lite" }),
+  panel,
+  consoleRoot,
+);
+const herbie = mountConsole(consoleRoot);
 mountFilesPanel(panel, {
   workspace: new Workspace(store),
   examples: EXAMPLES,
   persistent,
+  onRun: (file) => herbie.run(file),
 });

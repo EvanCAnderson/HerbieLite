@@ -125,6 +125,17 @@ button {
   color: var(--accent);
 }
 
+.action.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.action.primary:hover {
+  color: var(--bg);
+  filter: brightness(1.1);
+}
+
 .action.danger:hover {
   border-color: var(--danger);
   color: var(--danger);
@@ -190,6 +201,35 @@ button {
   text-align: right;
   color: var(--gutter);
   user-select: none;
+}
+
+/* The console always looks like a terminal, dark in either theme. */
+.console {
+  margin-top: 1.5rem;
+}
+
+.console header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.console header h2 {
+  margin: 0;
+}
+
+.screen {
+  height: 18rem;
+  padding: 0.5rem 0.75rem;
+  background: #15171b;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.screen > div {
+  height: 100%;
 }
 
 .empty {
