@@ -64,6 +64,39 @@ test("runs an example in the console and shows the brief's report", async ({
   await expect(shown).toContainText("exit 0");
 });
 
+test("runs a typed herbie-lite command in the console, and refuses others", async ({
+  page,
+}) => {
+  await page.locator(".console .xterm").click();
+  await page.keyboard.type(
+    "node dist/bin.js --partners Globex examples/input.txt",
+  );
+  await page.keyboard.press("Enter");
+  const shown = consoleText(page);
+  await expect(shown).toContainText("Globex: Chris (2), Molly (1)");
+
+  await page.keyboard.type("Partner Chris");
+  await page.keyboard.press("Enter");
+  await expect(shown).toContainText("command for an input file");
+  await page.keyboard.type("ls");
+  await page.keyboard.press("Enter");
+  await expect(shown).toContainText("ls: not available here");
+});
+
+test("asks a query with the flag buttons, as a typed command", async ({
+  page,
+}) => {
+  const employees = page.getByRole("button", { name: "--employees" });
+  await expect(employees).toBeDisabled();
+  await page.getByLabel("Company to ask about").fill("Globex");
+  await employees.click();
+  const shown = consoleText(page);
+  await expect(shown).toContainText(
+    "$ node dist/bin.js --employees Globex examples/input.txt",
+  );
+  await expect(shown).toContainText("Laurie: Chris (2), Molly (1)");
+});
+
 test("copies an example, edits it, saves it, and keeps it across a reload", async ({
   page,
 }) => {

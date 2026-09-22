@@ -38,7 +38,7 @@ export const PURPOSES: ReadonlyMap<string, string> = new Map([
   ],
   [
     "queries.txt",
-    "Written for the --partners and --employees queries, which run from the command line; the console shows its report.",
+    "Written for the --partners and --employees queries: ask one with the buttons, or type it in the console.",
   ],
   [
     "ties.txt",

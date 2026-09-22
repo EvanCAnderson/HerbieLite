@@ -1,25 +1,44 @@
-// The console (T10f): an xterm.js pane that runs herbie-lite on a listed
-// file and shows what it printed (Q27). It runs this program and nothing
-// else, and takes no typed input (DECISIONS T9.5, T9.12). What a run prints,
-// and how it is shown, is in console.ts; this module only draws the pane.
+// The console: an xterm.js pane (Q27) that is a shell for herbie-lite and
+// nothing else (T11c, DECISIONS T11.5). A line typed at its prompt, or
+// entered by a button, runs if it invokes herbie-lite as the README shows,
+// and is refused otherwise; commands themselves are never typed (T9.12).
+// What a line asks for and how it runs is shell.ts, how a run is shown is
+// console.ts; this module only draws the pane and wires them.
 import "@xterm/xterm/css/xterm.css";
 import { FitAddon } from "@xterm/addon-fit";
 import { Terminal } from "@xterm/xterm";
-import { commandLine, runFile, transcript, type Runnable } from "./console.js";
+import {
+  commandLine,
+  output,
+  pathOf,
+  stderrLine,
+  UNSAVED_NOTE,
+  type Query,
+  type Runnable,
+} from "./console.js";
 import { h } from "./dom.js";
+import {
+  CONSOLE_HELP,
+  LineEditor,
+  readCommandLine,
+  runLine,
+  type Files,
+} from "./shell.js";
 
 export interface Console {
-  /** Runs herbie-lite on the file and appends the run to the pane. */
-  run(file: Runnable): void;
+  /** Enters the command for the file, and a query if asked, and runs it. */
+  run(file: Runnable, query?: Query): void;
 }
 
-export function mountConsole(root: HTMLElement): Console {
+const PROMPT = "\u001b[1m$\u001b[0m ";
+
+export function mountConsole(root: HTMLElement, files: Files): Console {
   const terminal = new Terminal({
     // The program writes `\n`; a terminal needs `\r\n` to return the cursor.
     convertEol: true,
-    disableStdin: true,
+    cursorBlink: true,
     cursorStyle: "bar",
-    cursorInactiveStyle: "none",
+    cursorInactiveStyle: "outline",
     fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
     fontSize: 13,
     scrollback: 5000,
@@ -28,6 +47,7 @@ export function mountConsole(root: HTMLElement): Console {
   });
   const fit = new FitAddon();
   terminal.loadAddon(fit);
+  const editor = new LineEditor(PROMPT);
 
   // xterm.js styles the element it opens in, so it gets one of its own
   // inside the frame that carries the page's border and padding.
@@ -44,7 +64,10 @@ export function mountConsole(root: HTMLElement): Console {
           type: "button",
           className: "action",
           textContent: "Clear",
-          onclick: () => terminal.clear(),
+          onclick: () => {
+            terminal.clear();
+            terminal.focus();
+          },
         }),
       ),
       h("div", { className: "screen" }, pane),
@@ -53,34 +76,90 @@ export function mountConsole(root: HTMLElement): Console {
   terminal.open(pane);
   // Lines wrap at the pane's width, so it is measured again when it changes.
   new ResizeObserver(() => fit.fit()).observe(pane);
-  terminal.writeln(
-    "\u001b[2mChoose a file and press Run to run herbie-lite on it.\u001b[0m\r\n",
+  terminal.write(
+    "\u001b[2mType a herbie-lite command, such as node dist/bin.js examples/input.txt,\n" +
+      "or choose a file and press Run. Type help for what this console takes.\u001b[0m\n\n" +
+      PROMPT,
   );
 
-  // Runs are queued, so two quick clicks cannot interleave their output.
-  let queue: Promise<void> = Promise.resolve();
-  return {
-    run(file) {
-      const command = commandLine(file);
-      queue = queue.then(async () => {
+  /**
+   * Runs one line. `override` supplies the file a button ran, so an editor's
+   * unsaved text is what runs, as on screen (T10g).
+   */
+  async function execute(line: string, override?: Runnable): Promise<void> {
+    const asked = readCommandLine(line);
+    switch (asked.kind) {
+      case "empty":
+        break;
+      case "help":
+        terminal.write(CONSOLE_HELP);
+        break;
+      case "clear":
+        terminal.clear();
+        break;
+      case "refused":
+        terminal.write(stderrLine(`console: ${asked.message}`));
+        break;
+      case "run": {
+        const path = override === undefined ? undefined : pathOf(override);
+        const read: Files = (file) =>
+          override !== undefined && file === path ? override.text : files(file);
+        if (override?.unsaved === true) terminal.write(`${UNSAVED_NOTE}\n`);
         try {
-          terminal.write(
-            transcript(command, await runFile(file), file.unsaved === true),
-          );
+          const { cat, result } = await runLine(asked, read);
+          terminal.write(cat.map(stderrLine).join("") + output(result));
         } catch (error) {
           // A throw is a bug, not data (T6.1): the pane shows its stack, as
-          // Node would, and the page carries on.
+          // Node would, and the console carries on.
           const stack =
             error instanceof Error ? (error.stack ?? error.message) : "";
-          terminal.write(
-            `\u001b[1m$ ${command}\u001b[0m\n\u001b[31m${stack}\u001b[0m\n\n`,
-          );
+          terminal.write(`\u001b[31m${stack}\u001b[0m\n\n`);
           console.error(error);
         }
-        terminal.scrollToBottom();
-        // The pane may be below the fold, where a run would go unseen.
-        pane.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      });
+        break;
+      }
+    }
+    terminal.write(PROMPT + editor.current);
+    terminal.scrollToBottom();
+  }
+
+  // Lines run one at a time, in the order entered, so a paste of several
+  // lines, or quick clicks, cannot interleave their output.
+  let queue: Promise<void> = Promise.resolve();
+  function enqueue(line: string, override?: Runnable): void {
+    queue = queue.then(() => execute(line, override));
+  }
+
+  function feed(data: string): void {
+    for (const effect of editor.feed(data)) {
+      if (effect.kind === "write") terminal.write(effect.text);
+      else if (effect.kind === "clear") terminal.clear();
+      else enqueue(effect.line);
+    }
+  }
+  terminal.onData(feed);
+  // xterm.js knows Enter and Backspace by the deprecated `keyCode`, which a
+  // synthetic keypress (as some embedded browsers send) leaves at 0, so the
+  // line would never run. Those two are read from `key` instead when
+  // `keyCode` is missing; a real keypress takes xterm's own path.
+  const byKey: Readonly<Record<string, string>> = {
+    Enter: "\r",
+    Backspace: "\u007f",
+  };
+  terminal.attachCustomKeyEventHandler((event) => {
+    const data = byKey[event.key];
+    if (data === undefined || event.keyCode !== 0) return true;
+    if (event.type === "keydown") feed(data);
+    return false;
+  });
+
+  return {
+    run(file, query) {
+      const command = commandLine(file, query);
+      terminal.write(editor.enter(command));
+      enqueue(command, file);
+      // The pane may be below the fold, where a run would go unseen.
+      pane.scrollIntoView({ behavior: "smooth", block: "nearest" });
     },
   };
 }

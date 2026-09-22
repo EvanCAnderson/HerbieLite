@@ -348,7 +348,7 @@ README names it as not built.
 
 <a id="u13"></a>
 
-## U13 — Queries in the console
+## U13 — Queries in the console — **built**
 
 The console runs a file for its report only. The CLI's `--partners` and
 `--employees` queries ([U10](#u10)) are not offered in the page, though
@@ -367,6 +367,12 @@ Open questions:
   the companies the file declares, which rules out Q33's error but hides it.
 - **Does the echoed command show the option?** It should, so the command can
   still be copied into a terminal.
+
+Built in T11c, with the console made a shell that runs herbie-lite only
+([DECISIONS T11.5](./DECISIONS.md#t11-5)). A company field suggests the
+companies the file declares and takes any name, as the CLI does, so an
+undeclared one gets Q33's error; **--partners** and **--employees** type the
+full command into the console, option and all, and typed queries work too.
 
 <a id="u14"></a>
 

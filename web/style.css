@@ -175,6 +175,38 @@ button {
   margin-left: auto;
 }
 
+.queries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.queries .company {
+  width: 12rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.queries .company:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.action.flag {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .purpose {
   margin: -0.25rem 0 0.75rem;
   color: var(--muted);

@@ -147,10 +147,17 @@ Builds the page and serves it at <http://127.0.0.1:5170>. On it:
 
 - **Files.** The six examples are listed read-only; any of them can be copied
   into a workspace, and any `.txt` file on disk can be opened into it.
-- **Console.** **Run** runs herbie-lite on the file shown and prints what the
-  command line would: the command, then the warnings, the report and the tie
-  notes, then the exit code. It is the program's own code, not a copy, so the
-  output is the same, line for line ([T10.23](docs/DECISIONS.md#t10-23)).
+- **Console.** A shell that runs herbie-lite and nothing else
+  ([T11.5](docs/DECISIONS.md#t11-5)). Type a command as you would in a
+  terminal: `node dist/bin.js examples/input.txt`, a query such as
+  `node dist/bin.js --partners Globex examples/input.txt`, the same through
+  `npm start --`, or a file piped in with `cat examples/input.txt | node dist/bin.js`.
+  A file is `examples/<name>` or a workspace file by its name; `help` lists
+  the rest. **Run** types the command for the file shown, and a company
+  field with **--partners** and **--employees** types a query. Each run
+  prints what the command line would: the warnings, the answer and the tie
+  notes, then the exit code. It is the program's own code, not a copy, so
+  the output is the same, line for line ([T10.23](docs/DECISIONS.md#t10-23)).
 - **Editor.** A workspace file opens as text, with the four commands beside
   it, or below it on a narrow screen. As you type, each line the program would
   warn about is marked: _discarded_ if it would be thrown away as it stands,
@@ -172,8 +179,9 @@ What it does not do:
 - **The examples cannot be edited**, since the tests assert every one
   ([T9.6](docs/DECISIONS.md#t9-6)); copy one to change it.
 - **The console runs herbie-lite and nothing else**
-  ([T9.5](docs/DECISIONS.md#t9-5)): no shell, no typed commands, and no
-  `--partners` or `--employees` yet.
+  ([T9.5](docs/DECISIONS.md#t9-5)): any other program, and a command such as
+  `Partner Chris` typed on its own, is refused with a reason. Commands go in
+  a file ([T9.12](docs/DECISIONS.md#t9-12)).
 - **Two tabs can edit one file**, but a save made from an older copy is
   refused and offers to keep yours or load theirs, so neither is lost
   ([Q26](docs/DECISIONS.md#q26)).
@@ -344,8 +352,7 @@ output with **empty stderr** ([T6.10](docs/DECISIONS.md#t6-10)).
 
 ## How I used LLM tools
 
-I used Claude throughout, as an engineer I was pairing with rather than as a
-generator: it produced most of the first drafts, and I directed the work,
+I used Claude throughout, as an engineer I was pairing with. It produced the first drafts, and I directed the work,
 argued with it, and own the result.
 
 The method was to make the reasoning the artifact. The repository carries three

@@ -2,6 +2,7 @@
 // into dist/web/ (Q22), running with no server (T10.16).
 import "./style.css";
 import { mountConsole } from "./console-panel.js";
+import { pageFiles } from "./shell.js";
 import { h } from "./dom.js";
 import { EXAMPLES, PURPOSES } from "./examples.js";
 import { mountFilesPanel } from "./files-panel.js";
@@ -25,6 +26,7 @@ const app = document.querySelector<HTMLElement>("#app");
 if (app === null) throw new Error("index.html has no #app element");
 
 const { store, persistent } = openStore();
+const workspace = new Workspace(store);
 // The console is mounted apart from the files panel, which redraws itself
 // on every change, so the terminal and its scrollback are never torn down.
 const panel = h("div");
@@ -34,11 +36,14 @@ app.replaceChildren(
   panel,
   consoleRoot,
 );
-const herbie = mountConsole(consoleRoot);
+const herbie = mountConsole(
+  consoleRoot,
+  pageFiles(EXAMPLES, (name) => workspace.read(name)?.text),
+);
 mountFilesPanel(panel, {
-  workspace: new Workspace(store),
+  workspace,
   examples: EXAMPLES,
   purposes: PURPOSES,
   persistent,
-  onRun: (file) => herbie.run(file),
+  onRun: (file, query) => herbie.run(file, query),
 });

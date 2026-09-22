@@ -1844,6 +1844,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   terminal untouched: Mine.
 - **Superseded in part by** [T9.12](#t9-12) (the console takes no typed
   commands; it runs files. Herbie-only, not a shell, stands).
+- **Superseded in part by** [T11.5](#t11-5) ("not a shell": the console is
+  a shell that runs herbie-lite only; nothing else runs).
 
 #### <a id="t9-6"></a>T9.6 — The UI's files: examples read-only, a workspace for the rest
 
@@ -2822,6 +2824,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Q27's default (xterm.js), LLM-suggested, accepted. The
   echoed command, accumulating runs, and the fit addon: LLM-suggested, in
   T10f.
+- **Superseded in part by** [T11.5](#t11-5) (no input and no query
+  options; the console now takes typed herbie-lite commands).
 
 #### <a id="t10-25"></a><a id="q29"></a>T10.25 — Q29: The editor marks what the CLI would warn about, as discarded or pending
 
@@ -3093,6 +3097,57 @@ Laurie Globex`: the program name, the line number and the name are gone.
   when it throws, two ways to name a file; and relying on the form's own
   submission alone, which failed in the pane.
 - **Origin:** LLM-suggested, in T11a (the bug was reported by me).
+
+#### <a id="t11-5"></a>T11.5 — The console is a shell that runs herbie-lite and nothing else
+
+- **Decision:** The console takes typed command lines. It runs a line
+  that invokes herbie-lite as the README does: `node dist/bin.js [args]`,
+  `npm start -- [args]`, or `cat <file> | node dist/bin.js [args]` with the
+  file on standard input; plus `help` and `clear`. Anything else is refused
+  with a one-line reason and nothing runs: another program, a second pipe,
+  `npm start` arguments without `--`, and a command such as `Partner Chris`,
+  which is pointed at a file instead. An accepted line goes through the
+  CLI's own `run` (Q28): a file is `examples/<name>` or a workspace file by
+  name, as last saved; a missing file gets the CLI's `cannot read` error;
+  a bare `node dist/bin.js` prints the opening, as at a terminal (Q20). The
+  prompt has Backspace, Up and Down history, Ctrl+C, Ctrl+L and paste, with
+  the cursor always at the end of the line. **Run** and the new
+  **--partners** and **--employees** buttons, beside a company field that
+  suggests the file's companies and accepts any name, enter their command
+  at the prompt and run it, so a button and typing do the same thing.
+  Enter and Backspace are also read from `event.key` when a keypress has no
+  `keyCode`, which xterm.js relies on and a synthetic keypress lacks. This
+  builds [U13](./UPGRADES.md#u13). What a line asks for, the line editor
+  and running a line are `shell.ts`, tested; the pane is not
+  ([T10.13](#t10-13)).
+- **Context:** T11c. Typing into the console did nothing, by design
+  ([T10.24](#t10-24)), and I wanted it to work as a shell limited
+  to herbie-lite's own invocations, never its input commands.
+- **Why:** A console that looks like a terminal and ignores the keyboard
+  reads as broken. Typing the same command lines the README gives makes
+  the console a place to try them, and what works there works in a
+  terminal. The limit is what [T9.5](#t9-5) protects: no program but this
+  one, and with no server ([T10.16](#t10-16)) nothing typed can reach
+  beyond the page. Typed input commands stay refused, as [T9.12](#t9-12)
+  decided for the CLI: they are written in a file. Buttons that enter
+  their command, rather than running beside the prompt, keep one path for
+  a run and show the command a reader could copy. A company field that
+  accepts any name keeps the CLI's behaviour, Q33's error included; the
+  suggestions spare typing. The `keyCode` fallback costs a few lines and
+  makes the console work in the Claude app's pane, where Enter otherwise
+  did nothing, as [T11.4](#t11-4) found for the name form. **Rejected:** an
+  argument field beside **Run** instead of a prompt, which looks less like
+  a shell; a dropdown of declared companies only, which hides Q33; buttons
+  that run without showing their command; and accepting any `node`
+  script.
+- **Supersedes:** [T10.24](#t10-24), in part: the console taking no input
+  and having no query options. The xterm.js pane and how a run is shown
+  stand. Also [T9.5](#t9-5), in part: "not a shell"; running herbie-lite
+  and nothing else stands.
+- **Origin:** A console that runs typed herbie-lite commands only, the
+  forms it accepts, and keeping the buttons: Mine. The buttons entering
+  their command at the prompt, the field with suggestions, and the
+  `keyCode` fallback: LLM-suggested, accepted.
 
 ---
 

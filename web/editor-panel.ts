@@ -5,15 +5,16 @@
 // tested (DECISIONS T10.13).
 import { COMMAND_REFERENCE } from "../src/help.js";
 import { describeSave } from "./actions.js";
-import type { Runnable } from "./console.js";
+import { companiesIn, type Query, type Runnable } from "./console.js";
 import { download, h } from "./dom.js";
 import { checkText, summary, type Mark } from "./editor.js";
+import { queryControls, type QueryControls } from "./query-controls.js";
 import type { SaveResult, Workspace, WorkspaceFile } from "./workspace.js";
 
 export interface EditorOptions {
   readonly workspace: Workspace;
   readonly file: WorkspaceFile;
-  readonly onRun: (file: Runnable) => void;
+  readonly onRun: (file: Runnable, query?: Query) => void;
   /** The file was deleted from the editor; the panel lets go of it. */
   readonly onDelete: () => void;
   /** The workspace changed (a save), so the file list may need redrawing. */
@@ -36,6 +37,7 @@ export class Editor {
   private readonly problems: HTMLElement;
   private readonly state: HTMLElement;
   private readonly status: HTMLElement;
+  private readonly queries: QueryControls;
   private marks: readonly Mark[] = [];
   private checks = 0;
   private timer: number | undefined;
@@ -72,6 +74,9 @@ export class Editor {
     this.problems = h("div", { className: "problems" });
     this.state = h("span", { className: "badge" });
     this.status = h("div", { className: "status", role: "status" });
+    this.queries = queryControls((query) => {
+      options.onRun(this.runnable(), query);
+    });
 
     this.element = h(
       "section",
@@ -85,12 +90,7 @@ export class Editor {
           "div",
           { className: "actions" },
           this.button("Run", "action primary", () => {
-            options.onRun({
-              source: "workspace",
-              name: this.name,
-              text: this.text.value,
-              unsaved: this.dirty,
-            });
+            options.onRun(this.runnable());
           }),
           this.button("Save", "action", () => this.save()),
           this.button("Download", "action", () => {
@@ -99,6 +99,7 @@ export class Editor {
           this.button("Delete", "action danger", () => this.delete()),
         ),
       ),
+      this.queries.element,
       h(
         "div",
         { className: "editing" },
@@ -119,6 +120,16 @@ export class Editor {
     );
     this.update();
     void this.check();
+  }
+
+  /** The editor's text as the console runs it, saved or not (T10g). */
+  private runnable(): Runnable {
+    return {
+      source: "workspace",
+      name: this.name,
+      text: this.text.value,
+      unsaved: this.dirty,
+    };
   }
 
   /** Whether the text differs from what the workspace holds. */
@@ -210,8 +221,13 @@ export class Editor {
   /** Checks the text as it stands; a check overtaken by an edit is dropped. */
   private async check(): Promise<void> {
     const ticket = ++this.checks;
-    const marks = await checkText(this.text.value);
+    const text = this.text.value;
+    const [marks, companies] = await Promise.all([
+      checkText(text),
+      companiesIn(text),
+    ]);
     if (ticket !== this.checks) return;
+    this.queries.suggest(companies);
     this.marks = marks;
     this.update();
     this.problems.replaceChildren(

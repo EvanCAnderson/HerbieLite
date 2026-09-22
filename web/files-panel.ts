@@ -3,9 +3,10 @@
 // and the actions on each. The work on the workspace is in actions.ts; this
 // module only draws and wires it.
 import { addToWorkspace, describeSave } from "./actions.js";
-import type { Runnable } from "./console.js";
+import { companiesIn, type Query, type Runnable } from "./console.js";
 import { download, h } from "./dom.js";
 import { Editor } from "./editor-panel.js";
+import { queryControls } from "./query-controls.js";
 import { suggestName, type Workspace } from "./workspace.js";
 
 /** Which file is shown: an example (read-only) or a workspace file. */
@@ -21,8 +22,8 @@ export interface FilesPanelOptions {
   readonly purposes: ReadonlyMap<string, string>;
   /** False when the browser refused storage, so files last only until reload. */
   readonly persistent: boolean;
-  /** Runs herbie-lite on the chosen file, in the console (T10f). */
-  readonly onRun: (file: Runnable) => void;
+  /** Runs herbie-lite on the chosen file, in the console (T10f, T11c). */
+  readonly onRun: (file: Runnable, query?: Query) => void;
 }
 
 export function mountFilesPanel(
@@ -298,6 +299,8 @@ export function mountFilesPanel(
     }
     const chosen = selection;
     const purpose = purposes.get(chosen.name);
+    const queries = queryControls((query) => onRun({ ...chosen, text }, query));
+    void companiesIn(text).then((companies) => queries.suggest(companies));
     const actions = h(
       "div",
       { className: "actions" },
@@ -349,6 +352,7 @@ export function mountFilesPanel(
       ...(purpose === undefined
         ? []
         : [h("p", { className: "purpose", textContent: purpose })]),
+      queries.element,
       source(text),
     );
   }
