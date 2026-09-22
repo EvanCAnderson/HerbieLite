@@ -1,0 +1,25 @@
+// The browser tests' own TypeScript project (Q34): they run in Node and drive
+// the built page from outside, so they have Node's types and not the DOM's,
+// except inside the callbacks Playwright sends into the page. Playwright
+// compiles them itself; tsc only checks them.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "types": ["node"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+
+    /* The same strictness as the rest of the project (DECISIONS T1.5). */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["."]
+}

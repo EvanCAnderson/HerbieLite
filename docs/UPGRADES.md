@@ -306,7 +306,7 @@ answers its open questions got:
 
 <a id="u11"></a>
 
-## U11 — End-to-end tests of the web page in a browser — **planned as T10h**
+## U11 — End-to-end tests of the web page in a browser — **built**
 
 The page's logic is kept in modules tested without a browser; the code that
 touches the DOM is not tested ([DECISIONS T10.13](./DECISIONS.md#t10-13)).
@@ -314,10 +314,11 @@ A browser test would load the built page and use it as a person does.
 
 - **Origin:** LLM-suggested, deferred here as Q23's default.
 
-Planned as T10h, after the editor and before the README
-([DECISIONS T10.22](./DECISIONS.md#t10-22)), which answers when to build it.
-Its other open questions are PLAN §4's Q34 (which tool), Q35 (in
-`npm run check`, or a script of its own) and Q36 (what the tests cover).
+Built in T10h, after the editor and before the README
+([DECISIONS T10.22](./DECISIONS.md#t10-22)): Playwright on Chromium
+([T10.27](./DECISIONS.md#t10-27)), run by `npm run test:e2e` rather than in
+`npm run check` ([T10.28](./DECISIONS.md#t10-28)), with one test per thing a
+person does with the page ([T10.29](./DECISIONS.md#t10-29)).
 
 <a id="u12"></a>
 

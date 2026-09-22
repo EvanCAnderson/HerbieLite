@@ -73,31 +73,9 @@ That log keeps the complete record, in task order.
 
 ### Open
 
-Every question the base raised is settled (listed below). These were opened by
-planning the upgrades; each has its current default and the subtask that
-settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
-point here rather than repeating them.
-
-- **Q34** — Which tool drives the browser (U11). Default: Playwright's test
-  runner, `@playwright/test`, as a dev dependency, with Chromium only; its
-  browser is installed by a separate `npx playwright install chromium`, so
-  `npm install` stays free of browser downloads. The alternative is Vitest's
-  browser mode, one runner for everything, but it runs tests inside a page
-  rather than driving the built page from outside. Settle in T10h.
-- **Q35** — Where the browser tests run (U11). Default: their own script,
-  `npm run test:e2e`, which builds the page and runs the tests against
-  Vite's preview server; `npm run check` is unchanged, as coverage was kept
-  out of it ([T9.3](./DECISIONS.md#t9-3)). The alternative is putting them
-  in `check`, which catches a broken page on every commit but makes every
-  check need a browser and a build. Settle in T10h.
-- **Q36** — What the browser tests cover (U11). Default: one test per thing
-  a person does with the page, none of them repeating logic vitest already
-  asserts: it opens on the first example; running `examples/input.txt` in
-  the console shows PLAN §7's three lines; copying an example, editing it
-  and saving it keeps the edit across a reload; deleting a workspace file
-  asks first. The alternative is a single smoke test that the page renders,
-  which is cheaper and leaves the wiring in `main.ts` and the panels
-  unchecked. Settle in T10h.
+Every question is settled (listed below): those the base raised, and those
+opened by planning the upgrades. A new one gets its current default and the
+subtask that settles it ([T2.2](./DECISIONS.md#t2-2)).
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -134,6 +112,9 @@ point here rather than repeating them.
 - [**Q28**](./DECISIONS.md#q28) (T10.23) — The CLI's work is one function over its arguments and its input.
 - [**Q27**](./DECISIONS.md#q27) (T10.24) — The console is an xterm.js pane showing each run as a terminal would.
 - [**Q29**](./DECISIONS.md#q29) (T10.25) — The editor marks what the CLI would warn about, discarded or pending; a file saves either way.
+- [**Q34**](./DECISIONS.md#q34) (T10.27) — Playwright's test runner drives Chromium, from outside the page.
+- [**Q35**](./DECISIONS.md#q35) (T10.28) — `npm run test:e2e` builds the page and tests it; `check` is unchanged.
+- [**Q36**](./DECISIONS.md#q36) (T10.29) — One browser test per thing a person does with the page.
 
 ## 5. Tooling
 
@@ -323,7 +304,7 @@ prefix).
         from `help.ts` beside it ([T9.12](./DECISIONS.md#t9-12)), each line
         checked as it is edited, pending references across the file, and
         saving into the workspace. Settles Q29.
-  - [ ] T10h — [U11](./UPGRADES.md#u11): end-to-end tests that load the
+  - [x] T10h — [U11](./UPGRADES.md#u11): end-to-end tests that load the
         built page in a browser and use it as a person does, once the editor
         exists ([T10.22](./DECISIONS.md#t10-22)). Settles Q34, Q35 and Q36.
   - [ ] T10i — README: how to start the UI, what it can and cannot do

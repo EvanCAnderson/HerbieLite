@@ -2906,6 +2906,77 @@ Laurie Globex`: the program name, the line number and the name are gone.
   reference moving below the text on narrower screens: LLM-suggested, in
   T10g, after seeing it squeezed beside the text.
 
+#### <a id="t10-27"></a><a id="q34"></a>T10.27 — Q34: Playwright's test runner drives Chromium, from outside the page
+
+- **Decision:** The browser tests use `@playwright/test`, a dev
+  dependency, with one project, Chromium. Its browser is installed by
+  `npx playwright install chromium`, run once, not by `npm install`. The
+  tests are `e2e/*.e2e.ts`, with their own `e2e/tsconfig.json` (Node's
+  types, plus the DOM's for callbacks sent into the page), checked by
+  `npm run typecheck` and linted like the rest; the `.e2e.ts` suffix keeps
+  vitest and Playwright from picking up each other's files. Settings are in
+  a plain-JS `playwright.config.js`, like `vitest.config.js`
+  ([T9.11](#t9-11)). Playwright's output, `test-results/` and
+  `playwright-report/`, is ignored by git, ESLint and Prettier.
+- **Context:** T10h, building [U11](./UPGRADES.md#u11).
+- **Why:** The point of these tests is the built page as a person meets
+  it, so they should load the same bundle a user loads and act on it
+  through clicks, typing and dialogs; Playwright does that from outside,
+  waits for what it asserts without sleeps, and handles `confirm` and
+  `prompt`, which the files panel and editor use. Chromium alone, because
+  the page uses nothing a browser differs on, and each more browser is
+  another download and another run. A separate install step keeps
+  `npm install` and `npm run check` free of a 94MB browser for anyone who
+  never runs these. **Rejected:** Vitest's browser mode, which keeps one
+  runner but runs tests inside a page against modules rather than the
+  built bundle; and all three of Playwright's browsers.
+- **Origin:** Q34's default, LLM-suggested, accepted. The `.e2e.ts` suffix
+  and a tsconfig of their own: LLM-suggested, in T10h.
+
+#### <a id="t10-28"></a><a id="q35"></a>T10.28 — Q35: `npm run test:e2e` builds the page and tests it; `check` is unchanged
+
+- **Decision:** `npm run test:e2e` builds the page, then runs Playwright,
+  which serves the build with Vite's preview server on port 5171 and stops
+  it afterwards. `npm run check` does not run the browser tests; it does
+  type-check and lint them.
+- **Context:** T10h. `check` is the gate before every commit (T1.3).
+- **Why:** `check` then still runs on a clean clone with no browser
+  installed and no build, as [T6.10](#t6-10) kept it, and stays under a
+  second of tests; the browser tests take a build and a few seconds more,
+  and belong to changes to the page. Type-checking and linting them in
+  `check` means they cannot rot unnoticed between runs. Port 5171, never
+  reused, because `npm run ui` holds 5170, and a preview started before a
+  rebuild would serve the old page and the tests would pass on it.
+  **Known cost:** a change to the page can be committed with `check` green
+  and these red, until someone runs them. **Rejected:** the browser tests
+  in `check`, which catches that but makes every commit need a browser and
+  a build; and reusing a server already on 5170.
+- **Origin:** Q35's default, LLM-suggested, accepted. The separate port:
+  LLM-suggested, in T10h.
+
+#### <a id="t10-29"></a><a id="q36"></a>T10.29 — Q36: One browser test per thing a person does with the page
+
+- **Decision:** Five tests, each from a fresh page with an empty
+  workspace: the page opens on the first example, read-only; **Run** on
+  `examples/input.txt` shows the command, PLAN §7's three lines and
+  `exit 0` in the console; an example copied to the workspace, edited and
+  saved, is still edited after a reload, and runs with the edit; a new file
+  whose line names an undeclared company is marked pending until the
+  company is declared; and **Delete** asks, keeps the file when refused,
+  and removes it when accepted. None re-asserts what vitest already does,
+  such as warning wording or the report for every example.
+- **Context:** T10h.
+- **Why:** Everything these tests reach is either asserted in vitest or
+  is wiring between panels, and the wiring is what [T10.13](#t10-13) left
+  untested, so each test crosses at least one boundary: files panel to
+  console, editor to storage and back, editor to its checks, panel to a
+  dialog. Breaking the Run wiring on purpose fails two of the five.
+  **Rejected:** a single test that the page renders, which is cheaper and
+  would pass with every button disconnected; and a browser test per
+  example, which repeats vitest's assertions at many times the cost.
+- **Origin:** Q36's default, LLM-suggested, accepted, with the pending-mark
+  test added in T10h: LLM-suggested.
+
 ---
 
 ## Open questions
