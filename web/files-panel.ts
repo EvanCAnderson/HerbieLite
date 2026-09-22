@@ -1,10 +1,12 @@
-// The files panel (T10e): the examples and the workspace listed, the chosen
-// file shown read-only with line numbers, and the actions on it. The work on
-// the workspace is in actions.ts; this module only draws and wires it.
+// The files panel (T10e): the examples and the workspace listed, an example
+// shown read-only with line numbers, a workspace file in the editor (T10g),
+// and the actions on each. The work on the workspace is in actions.ts; this
+// module only draws and wires it.
 import { addToWorkspace, describeSave } from "./actions.js";
 import type { Runnable } from "./console.js";
 import { download, h } from "./dom.js";
-import type { Workspace } from "./workspace.js";
+import { Editor } from "./editor-panel.js";
+import { suggestName, type Workspace } from "./workspace.js";
 
 /** Which file is shown: an example (read-only) or a workspace file. */
 interface Selection {
@@ -33,6 +35,72 @@ export function mountFilesPanel(
     ? ""
     : "This browser will not keep files, so the workspace lasts until the page is reloaded.";
 
+  // The open workspace file's editor, kept across renders so its text,
+  // cursor and scroll survive them. There is at most one.
+  let editor: Editor | undefined;
+
+  /**
+   * Shows another file, or none. Unsaved changes in the editor are only
+   * given up once the user agrees; returns whether the switch happened.
+   */
+  function select(next: Selection | undefined): boolean {
+    const same = next?.source === "workspace" && editor?.name === next.name;
+    if (!same && editor?.dirty === true) {
+      if (!confirm(`Discard your unsaved changes to ${editor.name}?`)) {
+        return false;
+      }
+    }
+    if (!same) editor = undefined;
+    selection = next;
+    return true;
+  }
+
+  /** The editor for the selected workspace file, made when first shown. */
+  function editorFor(name: string): Editor | undefined {
+    if (editor?.name === name) return editor;
+    const file = workspace.read(name);
+    if (file === undefined) return undefined;
+    editor = new Editor({
+      workspace,
+      file,
+      onRun,
+      onDelete: () => {
+        status = `Deleted ${name}.`;
+        editor = undefined;
+        selection = undefined;
+        render();
+      },
+      onChange: () => render(),
+    });
+    return editor;
+  }
+
+  /**
+   * A new, empty workspace file under a name the user gives. A name already
+   * taken is overwritten only once the user confirms it (Q30).
+   */
+  function newFile(): void {
+    const suggested = suggestName("untitled", new Set(workspace.list()));
+    const name = prompt("Name the new file:", suggested)?.trim();
+    if (name === undefined || name === "") return;
+    let result = workspace.create(name, "");
+    if (
+      result.outcome === "exists" &&
+      confirm(
+        `${name} is already in the workspace. Replace it with an empty file?`,
+      )
+    ) {
+      result = workspace.create(name, "", true);
+    }
+    status = describeSave(result, name);
+    if (result.outcome === "saved") {
+      if (!select({ source: "workspace", name })) return;
+      // An overwritten file is a new file, whatever the editor held.
+      editor = undefined;
+    }
+    render();
+  }
+
   // One file input, kept across renders, so choosing a file is not lost.
   const picker = h("input", { type: "file", accept: ".txt,text/plain" });
   picker.hidden = true;
@@ -44,7 +112,7 @@ export function mountFilesPanel(
       const result = addToWorkspace(workspace, file.name, text);
       status = describeSave(result, file.name);
       if (result.outcome === "saved") {
-        selection = { source: "workspace", name: result.file.name };
+        select({ source: "workspace", name: result.file.name });
       }
       render();
     });
@@ -64,7 +132,7 @@ export function mountFilesPanel(
       className: "file",
       textContent: chosen.name,
       onclick: () => {
-        selection = chosen;
+        if (!select(chosen)) return;
         status = "";
         render();
       },
@@ -97,19 +165,30 @@ export function mountFilesPanel(
         names.length === 0
           ? h("p", {
               className: "empty",
-              textContent: "No files yet. Open one, or copy an example.",
+              textContent:
+                "No files yet. Start one, open one, or copy an example.",
             })
           : h(
               "ul",
               {},
               ...names.map((name) => fileButton({ source: "workspace", name })),
             ),
-        h("button", {
-          type: "button",
-          className: "action",
-          textContent: "Open a file…",
-          onclick: () => picker.click(),
-        }),
+        h(
+          "div",
+          { className: "actions" },
+          h("button", {
+            type: "button",
+            className: "action",
+            textContent: "New file…",
+            onclick: newFile,
+          }),
+          h("button", {
+            type: "button",
+            className: "action",
+            textContent: "Open a file…",
+            onclick: () => picker.click(),
+          }),
+        ),
       ),
     );
   }
@@ -130,6 +209,10 @@ export function mountFilesPanel(
   }
 
   function viewer(): HTMLElement {
+    if (selection?.source === "workspace") {
+      const open = editorFor(selection.name);
+      if (open !== undefined) return open.element;
+    }
     const text = selection === undefined ? undefined : textOf(selection);
     if (selection === undefined || text === undefined) {
       return h(
@@ -162,7 +245,7 @@ export function mountFilesPanel(
             const result = addToWorkspace(workspace, chosen.name, text);
             status = describeSave(result, chosen.name);
             if (result.outcome === "saved") {
-              selection = { source: "workspace", name: result.file.name };
+              select({ source: "workspace", name: result.file.name });
             }
             render();
           },
@@ -177,25 +260,6 @@ export function mountFilesPanel(
         onclick: () => download(chosen.name, text),
       }),
     );
-    if (chosen.source === "workspace") {
-      actions.append(
-        h("button", {
-          type: "button",
-          className: "action danger",
-          textContent: "Delete",
-          onclick: () => {
-            // Deletion is permanent, so it is confirmed first (Q26).
-            if (!confirm(`Delete ${chosen.name}? This cannot be undone.`)) {
-              return;
-            }
-            workspace.delete(chosen.name);
-            status = `Deleted ${chosen.name}.`;
-            selection = undefined;
-            render();
-          },
-        }),
-      );
-    }
     return h(
       "section",
       { className: "viewer" },
@@ -205,8 +269,7 @@ export function mountFilesPanel(
         h("h2", { textContent: chosen.name }),
         h("span", {
           className: "badge",
-          textContent:
-            chosen.source === "example" ? "Example · read-only" : "Workspace",
+          textContent: "Example · read-only",
         }),
         actions,
       ),
@@ -214,29 +277,41 @@ export function mountFilesPanel(
     );
   }
 
+  const layout = h("div", { className: "layout" });
+  const statusLine = h("p", { className: "status", role: "status" });
+  root.replaceChildren(layout, picker);
+
   function render(): void {
-    root.replaceChildren(
-      h(
-        "div",
-        { className: "layout" },
-        fileList(),
-        viewer(),
-        h("p", { className: "status", role: "status", textContent: status }),
-      ),
-      picker,
-    );
+    statusLine.textContent = status;
+    const view = viewer();
+    // An editor already on the page is left where it is, so typing, the
+    // cursor and the scroll position are never disturbed by a redraw.
+    if (view.parentElement === layout) {
+      layout.firstElementChild?.replaceWith(fileList());
+    } else {
+      layout.replaceChildren(fileList(), view, statusLine);
+    }
   }
 
   // Another tab changed the workspace: redraw, and let go of a file it
-  // deleted rather than show text that is no longer there.
+  // deleted, unless the editor holds unsaved changes to it, which a save
+  // can still keep as a new file (Q26).
   window.addEventListener("storage", () => {
     if (
       selection?.source === "workspace" &&
-      workspace.read(selection.name) === undefined
+      workspace.read(selection.name) === undefined &&
+      editor?.dirty !== true
     ) {
+      editor = undefined;
       selection = undefined;
     }
+    editor?.refresh();
     render();
+  });
+
+  // Leaving the page drops unsaved changes, so the browser asks first.
+  window.addEventListener("beforeunload", (event) => {
+    if (editor?.dirty === true) event.preventDefault();
   });
 
   render();

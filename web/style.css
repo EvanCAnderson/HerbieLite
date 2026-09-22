@@ -10,6 +10,7 @@
   --accent-soft: #e5edfb;
   --danger: #b3261e;
   --gutter: #9aa1ab;
+  --pending: #9a6700;
   font-family:
     system-ui,
     -apple-system,
@@ -30,6 +31,7 @@
     --accent-soft: #22304a;
     --danger: #f2877e;
     --gutter: #5f6672;
+    --pending: #e3b341;
   }
 }
 
@@ -201,6 +203,142 @@ button {
   text-align: right;
   color: var(--gutter);
   user-select: none;
+}
+
+/* The editor: a gutter of line numbers and marks beside the text, whose
+   rows share the textarea's font and line height so they stay aligned. */
+.files .actions {
+  flex-wrap: wrap;
+  margin-left: 0;
+}
+
+/* The reference sits beside the text where there is room for both, and
+   below it otherwise; its lines are never wrapped, so its layout holds. */
+.editing {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+@media (min-width: 1280px) {
+  #app {
+    max-width: 90rem;
+  }
+
+  .editing {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.code-frame {
+  display: flex;
+  height: 24rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.code-frame:focus-within {
+  border-color: var(--accent);
+}
+
+.gutter {
+  flex: none;
+  width: 3.75rem;
+  padding: 0.75rem 0;
+  overflow: hidden;
+  color: var(--gutter);
+  text-align: right;
+  user-select: none;
+}
+
+.gutter .row {
+  height: 1.5em;
+  padding-right: 0.75rem;
+  border-left: 3px solid transparent;
+}
+
+.gutter .row.discarded {
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
+.gutter .row.pending {
+  border-left-color: var(--pending);
+  color: var(--pending);
+}
+
+.code {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 0;
+  border: 0;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  line-height: inherit;
+  white-space: pre;
+  overflow: auto;
+}
+
+.editor .status {
+  margin: 0.5rem 0 0;
+}
+
+.problems .summary {
+  margin: 0.5rem 0;
+  color: var(--muted);
+}
+
+.problems ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.problem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.2rem 0.5rem;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: none;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.problem:hover {
+  background: var(--surface);
+}
+
+.problem.discarded {
+  border-left-color: var(--danger);
+}
+
+.problem.pending {
+  border-left-color: var(--pending);
+}
+
+.problem .where {
+  color: var(--muted);
+}
+
+.reference pre {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  overflow-x: auto;
 }
 
 /* The console always looks like a terminal, dark in either theme. */

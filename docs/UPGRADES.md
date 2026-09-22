@@ -6,7 +6,7 @@ complete; since then they are being built, and each entry says whether it is.
 
 <a id="u1"></a>
 
-## U1 — Guided input-file builder — **reshaped: the in-browser file editor**
+## U1 — Guided input-file builder — **built as the in-browser file editor**
 
 An interactive mode that creates a new input file, checking each line as it is
 typed and saving only lines that pass validation. Extends T1.10's interactive
@@ -15,17 +15,18 @@ entry, which only reads typed commands and prints a report.
 - **Origin:** Mine (raised during the T1 review; LLM recommended deferring it
   here rather than building it in the base).
 
-Planned as T10g: the web UI's file editor ([U9](#u9)) is the builder. Since
+Built in T10g ([DECISIONS T10.25](./DECISIONS.md#t10-25),
+[T10.26](./DECISIONS.md#t10-26)): the web UI's file editor ([U9](#u9)) is the builder. Since
 commands are written by editing files ([T9.12](./DECISIONS.md#t9-12)), a
 separate builder would be a second way to write one; the editor gives its
 convenience to any workspace file instead, with the command reference beside
 the text and each line checked as it is edited. See
-[DECISIONS T10.2](./DECISIONS.md#t10-2). Its open questions are PLAN §4's
-Q30 and Q29, with their defaults there.
+[DECISIONS T10.2](./DECISIONS.md#t10-2).
 
 - ~~Where the file is saved, and what happens on a clash or a failed save~~ —
   Q30, settled with the workspace in T10d.
-- ~~Accept lines whose references can't be checked yet?~~ — Q29.
+- ~~Accept lines whose references can't be checked yet?~~ — Yes: they are
+  marked pending, and the file can be saved (Q29, T10.25).
 - ~~A separate mode or command from the analyzer?~~ — Neither: the UI's
   editor (T9.8, T10.2).
 

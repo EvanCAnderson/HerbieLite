@@ -64,7 +64,9 @@ export function mountConsole(root: HTMLElement): Console {
       const command = commandLine(file);
       queue = queue.then(async () => {
         try {
-          terminal.write(transcript(command, await runFile(file)));
+          terminal.write(
+            transcript(command, await runFile(file), file.unsaved === true),
+          );
         } catch (error) {
           // A throw is a bug, not data (T6.1): the pane shows its stack, as
           // Node would, and the page carries on.

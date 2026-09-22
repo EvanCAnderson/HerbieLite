@@ -2823,6 +2823,89 @@ Laurie Globex`: the program name, the line number and the name are gone.
   echoed command, accumulating runs, and the fit addon: LLM-suggested, in
   T10f.
 
+#### <a id="t10-25"></a><a id="q29"></a>T10.25 — Q29: The editor marks what the CLI would warn about, as discarded or pending
+
+- **Decision:** As a workspace file is edited, `checkText` in `editor.ts`
+  runs the whole text through the CLI's own reader, parser and
+  `buildNetwork`, 150ms after typing pauses, and marks every line the CLI
+  would warn about: in the gutter, and in a list below the text that moves
+  the cursor to the line. A mark is **discarded** when the program would
+  throw the line away as it stands: a malformed line, a repeated
+  declaration, or a name used for the wrong kind of person (Q12). It is
+  **pending** when the line names a company or person no line declares
+  yet: an employee's unknown company, or a contact whose every failed name
+  is undeclared. A mark's message is the warning's own wording without its
+  line number and quote: `warnings.ts` now exports `malformedProblem` and
+  `networkProblem`, which `malformedWarning` and `networkWarning` wrap. A
+  file with marks of either kind can be saved. A test holds, for every
+  example, that the marks are exactly the CLI's warnings, line for line and
+  word for word.
+- **Context:** T10g, building [U1](./UPGRADES.md#u1) as the UI's editor
+  ([T10.2](#t10-2)).
+- **Why:** Checking with the CLI's own code, not a copy, means a line is
+  marked exactly when running the file would warn about it, which the
+  example test holds. The whole file on every pause, rather than the edited
+  line alone, because a declaration anywhere can settle a reference
+  anywhere (Q8), and a file of the size this program reads checks in well
+  under a frame. Pending apart from discarded because, in a file being
+  written, an undeclared name is most often one not typed yet, and marking
+  it as an error would flag half of every new file; a repeat or a wrong
+  role stays wrong however much more is written. The wording comes from
+  `warnings.ts` so every description of a problem stays in one place
+  ([T6.5](#t6-5)), and without the quote because the line is beside it.
+  Saving with marks, because the CLI runs such a file too, and a draft
+  worth keeping is not always a clean one. **Rejected:** checking each line
+  alone as it changes, which misses every cross-line problem; all marks as
+  errors; refusing to save a file with discarded lines; and editor-only
+  messages, a second wording of the same problems.
+- **Origin:** Q29's default, LLM-suggested, accepted. The split into
+  discarded and pending, and the problem wording exported from
+  `warnings.ts`: LLM-suggested, accepted (set out before T10g was built).
+
+#### <a id="t10-26"></a>T10.26 — The editor: a plain textarea, one open file, and saves that never lose an edit
+
+- **Decision:** A workspace file opens in the editor in place of the
+  read-only viewer; examples stay read-only, to be copied first. The editor
+  is a `<textarea>` beside a gutter of line numbers and marks drawn by the
+  page, with no editor library. **New file…** asks for a name, suggesting a
+  free one (Q25), and asks before replacing a file of that name, which is
+  the confirmation [Q30](#q30) left to the editor. **Save**, or Cmd/Ctrl+S,
+  saves from the version the editor opened (Q26). If another tab saved
+  first, the save is refused and offers **Keep mine**, which saves over
+  theirs, or **Load theirs**; if another tab deleted the file, it offers
+  **Save as new**. Leaving a file with unsaved changes, by choosing another
+  or closing the page, asks first. A change in another tab reloads an
+  editor with no unsaved changes and leaves one with them alone. **Run**
+  runs the editor's text, saved or not, and the console notes when it is
+  unsaved; **Download** downloads the editor's text. The command reference
+  from `help.ts`, the section `--help` shows, now exported as
+  `COMMAND_REFERENCE`, sits beside the text on screens 1280px wide or more
+  and below it otherwise. One editor exists at a time and is kept across
+  the files panel's redraws, which leave it in place. `editor-panel.ts` is
+  DOM code and untested ([T10.13](#t10-13)).
+- **Context:** T10g.
+- **Why:** A textarea is the browser's own editor, with undo, selection,
+  input methods and accessibility already right, and the gutter gives it
+  the one thing this file needs beyond that, a mark per line; commands are
+  a few words each, so highlighting and completion would add little.
+  Keeping the editor in place across redraws is what stops a change in
+  another tab from taking the cursor and scroll position away. A refused
+  save that offers both versions is the point of Q26: neither copy is lost
+  until the user picks one, and a deleted file can be kept from the
+  editor's copy. Running the unsaved text is what someone checking an edit
+  wants, and the note keeps the console's echoed command honest, since no
+  file holds that text yet. The reference moves below the text on narrower
+  screens because its lines are too long to share the width without
+  wrapping, and wrapped it no longer shows the commands' shape.
+  **Rejected:** CodeMirror, which draws per-line marks natively but adds
+  a second large dependency to a page already carrying xterm.js
+  ([T10.24](#t10-24)); editing examples in place, which [T9.6](#t9-6)
+  ruled out; last save wins on a clash; and running only the saved file,
+  which makes every check of an edit a save first.
+- **Origin:** LLM-suggested, accepted (set out before T10g was built). The
+  reference moving below the text on narrower screens: LLM-suggested, in
+  T10g, after seeing it squeezed beside the text.
+
 ---
 
 ## Open questions

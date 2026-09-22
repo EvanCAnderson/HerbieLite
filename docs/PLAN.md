@@ -78,12 +78,6 @@ planning the upgrades; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q29** — What the editor checks as a file is edited (U1's second
-  question). Default: each line is parsed with `parseLine` as it changes and
-  marked with its warning; references are checked by running `buildNetwork`
-  over the whole file on every change and shown as pending rather than
-  errors, since a name may be declared later (Q8); a file with pending
-  references or bad lines can still be saved. Settle in T10g.
 - **Q34** — Which tool drives the browser (U11). Default: Playwright's test
   runner, `@playwright/test`, as a dev dependency, with Chromium only; its
   browser is installed by a separate `npx playwright install chromium`, so
@@ -139,6 +133,7 @@ point here rather than repeating them.
 - [**Q30**](./DECISIONS.md#q30) (T10.19) — Files saved in `localStorage`, one key each; a refused save keeps the old file.
 - [**Q28**](./DECISIONS.md#q28) (T10.23) — The CLI's work is one function over its arguments and its input.
 - [**Q27**](./DECISIONS.md#q27) (T10.24) — The console is an xterm.js pane showing each run as a terminal would.
+- [**Q29**](./DECISIONS.md#q29) (T10.25) — The editor marks what the CLI would warn about, discarded or pending; a file saves either way.
 
 ## 5. Tooling
 
@@ -323,7 +318,7 @@ prefix).
         soon as it is listed ([T10.20](./DECISIONS.md#t10-20)); it takes no
         typed commands
         ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
-  - [ ] T10g — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
+  - [x] T10g — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
         create and edit workspace files as text, with the command reference
         from `help.ts` beside it ([T9.12](./DECISIONS.md#t9-12)), each line
         checked as it is edited, pending references across the file, and

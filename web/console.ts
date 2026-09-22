@@ -9,6 +9,8 @@ export interface Runnable {
   readonly source: "example" | "workspace";
   readonly name: string;
   readonly text: string;
+  /** Set when the text is the editor's, with changes not yet saved (T10g). */
+  readonly unsaved?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ export function runFile(file: Runnable): Promise<Run> {
 /** SGR sequences for the pane. Only this module's own text carries them. */
 const STYLE = {
   prompt: "\u001b[1m",
+  note: "\u001b[2m",
   stderr: "\u001b[33m",
   exit: "\u001b[2m",
   reset: "\u001b[0m",
@@ -44,17 +47,25 @@ function styled(style: keyof typeof STYLE, text: string): string {
 }
 
 /**
- * One run as the pane shows it: the command, then stderr, stdout and the
+ * One run as the pane shows it: the command, a note when the text run is
+ * not what the file holds, then stderr, stdout and the
  * notes in the order the CLI writes them, stderr in its own colour, then the
  * exit code (Q27). Every line ends `\n`; the pane turns that into a line
  * break. What the program prints needs no escaping here: quoted input is
  * already escaped (T6.11), and names are letters only (Q9).
  */
-export function transcript(command: string, result: Run): string {
+export function transcript(
+  command: string,
+  result: Run,
+  unsaved = false,
+): string {
   const stderr = (lines: readonly string[]): string =>
     lines.map((line) => `${styled("stderr", line)}\n`).join("");
   return (
     `${styled("prompt", `$ ${command}`)}\n` +
+    (unsaved
+      ? `${styled("note", "(the editor's text, with unsaved changes)")}\n`
+      : "") +
     stderr(result.stderr) +
     result.stdout +
     stderr(result.notes) +

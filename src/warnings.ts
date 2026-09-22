@@ -140,32 +140,29 @@ function discarded(source: SourceLine, problem: string): string {
   return `${PROGRAM}: line ${source.lineNumber}: ${problem}; discarded: ${quoted(source.text)}`;
 }
 
-/** A line the parser rejected (Q7); the reason names the first check to fail (T3.4). */
-export function malformedWarning(line: MalformedLine): string {
+/**
+ * What is wrong with a line the parser rejected (Q7), without the line
+ * number or the line: the reason names the first check to fail (T3.4). The
+ * web editor shows it beside the line itself (Q29).
+ */
+export function malformedProblem(line: MalformedLine): string {
   switch (line.reason) {
     case "unknown-command":
-      return discarded(
-        line.source,
-        `unknown command; expected one of ${Object.keys(COMMAND_SYNTAX).join(", ")}`,
-      );
+      return `unknown command; expected one of ${Object.keys(COMMAND_SYNTAX).join(", ")}`;
     case "wrong-word-count":
-      return discarded(
-        line.source,
-        `wrong number of words; expected "${commandSyntax(line.kind)}"`,
-      );
+      return `wrong number of words; expected "${commandSyntax(line.kind)}"`;
     case "invalid-word":
-      return discarded(
-        line.source,
-        `names must be letters only; expected "${commandSyntax(line.kind)}"`,
-      );
+      return `names must be letters only; expected "${commandSyntax(line.kind)}"`;
     case "invalid-contact-type":
-      return discarded(
-        line.source,
-        `contact type must be one of ${CONTACT_TYPES.join(", ")}; expected "${commandSyntax(line.kind)}"`,
-      );
+      return `contact type must be one of ${CONTACT_TYPES.join(", ")}; expected "${commandSyntax(line.kind)}"`;
     default:
       return assertNever(line);
   }
+}
+
+/** A line the parser rejected (Q7), as stderr shows it. */
+export function malformedWarning(line: MalformedLine): string {
+  return discarded(line.source, malformedProblem(line));
 }
 
 /**
@@ -196,31 +193,31 @@ function failureText({ role, name, cause }: ContactFailure): string {
   }
 }
 
-/** A line the network layer discarded once all input was read (Q5, Q8, Q13). */
-export function networkWarning(warning: NetworkWarning): string {
+/**
+ * What is wrong with a line the network layer discarded once all input was
+ * read (Q5, Q8, Q13), without the line number or the line, as the web
+ * editor shows it (Q29).
+ */
+export function networkProblem(warning: NetworkWarning): string {
   switch (warning.problem) {
     case "unknown-company":
-      return discarded(
-        warning.source,
-        `no company named ${warning.company} was declared`,
-      );
+      return `no company named ${warning.company} was declared`;
     case "duplicate-declaration": {
       const { lineNumber, text } = warning.standing.source;
-      return discarded(
-        warning.source,
-        sameDeclaration(warning.command, warning.standing.command)
-          ? `repeats the declaration on line ${lineNumber}`
-          : `${warning.command.name} is already declared on line ${lineNumber} as "${quoted(text)}"`,
-      );
+      return sameDeclaration(warning.command, warning.standing.command)
+        ? `repeats the declaration on line ${lineNumber}`
+        : `${warning.command.name} is already declared on line ${lineNumber} as "${quoted(text)}"`;
     }
     case "unresolved-contact":
-      return discarded(
-        warning.source,
-        warning.failures.map(failureText).join(", and "),
-      );
+      return warning.failures.map(failureText).join(", and ");
     default:
       return assertNever(warning);
   }
+}
+
+/** A line the network layer discarded (Q5, Q8, Q13), as stderr shows it. */
+export function networkWarning(warning: NetworkWarning): string {
+  return discarded(warning.source, networkProblem(warning));
 }
 
 /** `Al and Bo`, or `Al, Bo and Cy`. */

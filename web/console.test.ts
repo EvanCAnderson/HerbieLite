@@ -85,6 +85,17 @@ describe("what the pane shows (Q27)", () => {
     );
   });
 
+  it("notes when the text run is the editor's, not the saved file (T10g)", () => {
+    const shown = transcript(
+      "node dist/bin.js a.txt",
+      { stderr: [], stdout: "", notes: [], code: 0 },
+      true,
+    );
+    expect(shown.split("\n")[1]).toBe(
+      "\u001b[2m(the editor's text, with unsaved changes)\u001b[0m",
+    );
+  });
+
   it("shows a run with no output as the command and its exit code", () => {
     expect(
       transcript("node dist/bin.js a.txt", {

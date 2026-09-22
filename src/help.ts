@@ -51,7 +51,8 @@ const GREETING = "Welcome to herbie-lite!";
 
 /**
  * The commands, their descriptions, and the rules for names and contact
- * types: the part both `--help` and the opening show (Q18, Q20).
+ * types: the part `--help`, the opening and the web editor all show (Q18,
+ * Q20, Q29).
  */
 const COMMANDS = [
   "Commands, one per line:",
@@ -101,3 +102,6 @@ export const OPENING = [
   ...COMMANDS,
   "",
 ].join("\n");
+
+/** The command section alone, as the web editor shows it beside a file. */
+export const COMMAND_REFERENCE = COMMANDS.join("\n");
