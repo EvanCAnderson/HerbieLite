@@ -89,7 +89,7 @@ is unaffected because every name in it is ASCII letters (Q9).
 
 <a id="u4"></a>
 
-## U4 — A tie-break that means something
+## U4 — A tie-break that means something — **built as a note**
 
 Equal strengths are settled alphabetically ([Q1](./DECISIONS.md#q1)), which is
 deterministic but arbitrary in business terms: `Abdi` beats `Zoe` for no
@@ -114,10 +114,15 @@ Directions to consider:
 - Surface the tie instead of hiding it — mark the line, or report the tied
   partners on stderr while the line stays in the brief's format.
 
-Planned as T10a, as the last direction alone: the tie is noted and the
-ranking stays alphabetical ([DECISIONS T10.3](./DECISIONS.md#t10-3)). The
-other three directions are not planned. Where the note goes and how it reads
-is PLAN §4's Q21.
+Built in T10a as the last direction alone: the tie is noted and the ranking
+stays alphabetical ([DECISIONS T10.3](./DECISIONS.md#t10-3)). The other
+three directions are not planned. Q21 was settled as one note on stderr per
+tie, printed after the report
+([T10.6](./DECISIONS.md#t10-6)):
+
+```
+herbie-lite: Zebra is a tie between Al and Bo (1 contact each); Al is shown because it comes first alphabetically
+```
 
 <a id="u5"></a>
 

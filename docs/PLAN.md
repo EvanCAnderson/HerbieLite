@@ -77,12 +77,6 @@ planning the upgrades; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q21** — Where a tie's note goes and how it reads (U4). A tie is noted,
-  not ranked, and the report line is unchanged
-  ([T10.3](./DECISIONS.md#t10-3)). Default: one note on stderr naming the
-  company, the tied partners and the strength. That is a new kind of stderr
-  line, which T6.6 and T6.14 have so far avoided (a line that is not a
-  discarded line). Settle in T10a.
 - **Q22** — Where the UI's code lives and how it ships (U9). Default: the
   server in `src/ui/`, under the existing tsconfig; the browser code in `web/`
   with its own tsconfig for DOM types, bundled by Vite into `dist/web/`;
@@ -172,6 +166,7 @@ point here rather than repeating them.
 - [**Q18**](./DECISIONS.md#q18) (T9.9) — The help text is built from the grammar table.
 - [**Q19**](./DECISIONS.md#q19) (T9.10) — `--help` and `-h` are the only options, and win wherever they appear.
 - [**Q20**](./DECISIONS.md#q20) (T9.12) — Commands come from a file; a bare run explains how.
+- [**Q21**](./DECISIONS.md#q21) (T10.6) — A tie is one note on stderr, after the report.
 
 ## 5. Tooling
 
@@ -327,7 +322,7 @@ prefix).
       builder as its editor ([T10.1](./DECISIONS.md#t10-1),
       [T10.5](./DECISIONS.md#t10-5)). The tie note and the queries come first,
       so the console is built against the program's final outputs.
-  - [ ] T10a — [U4](./UPGRADES.md#u4): note a tie without changing the
+  - [x] T10a — [U4](./UPGRADES.md#u4): note a tie without changing the
         report line or ranking tied partners
         ([T10.3](./DECISIONS.md#t10-3)). Settles Q21.
   - [ ] T10b — [U10](./UPGRADES.md#u10): `--partners` and `--employees`

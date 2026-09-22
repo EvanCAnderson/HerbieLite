@@ -174,6 +174,59 @@ Contact Laurie Chris email
     ]);
   });
 
+  it("notes a tie after the warnings and the report, and still exits 0 (Q21)", async () => {
+    const { code, out, err } = await run(
+      [],
+      `Partner Molly
+Partner Chris
+Company Globex
+Employee Laurie Globex
+Contact Laurie Molly call
+Contact Laurie Chris email
+Contact Laurie Rezzan coffee
+`,
+    );
+    expect(code).toBe(0);
+    expect(out).toBe("Globex: Chris (1)\n");
+    expect(err).toBe(
+      "herbie-lite: line 7: no partner named Rezzan was declared; discarded: Contact Laurie Rezzan coffee\n" +
+        "herbie-lite: Globex is a tie between Chris and Molly (1 contact each); Chris is shown because it comes first alphabetically\n",
+    );
+  });
+
+  it("writes a tie's note after the report, as a footnote (Q21)", async () => {
+    // One stream for both, so the order a terminal would show is visible.
+    const both = sink();
+    const tie = `Partner Bo
+Partner Al
+Company Zebra
+Employee Ada Zebra
+Contact Ada Bo call
+Contact Ada Al email
+`;
+    await expect(main([], Readable.from([tie]), both, both)).resolves.toBe(0);
+    expect(both.text()).toBe(
+      "Zebra: Al (1)\n" +
+        "herbie-lite: Zebra is a tie between Al and Bo (1 contact each); Al is shown because it comes first alphabetically\n",
+    );
+  });
+
+  it("notes no tie when the report could not be written (Q21, Q17)", async () => {
+    const { code, err } = await run(
+      [],
+      `Partner Bo
+Partner Al
+Company Zebra
+Employee Ada Zebra
+Contact Ada Bo call
+Contact Ada Al email
+`,
+      { stdout: failingSink("EIO") },
+    );
+    expect(code).toBe(1);
+    expect(err).toBe("herbie-lite: cannot write output: write EIO\n");
+  });
+
   it("prints every warning in line order, whichever layer found it (T9.13)", async () => {
     // Line 2 is only known to be a repeat once all input is in, and line 3
     // fails in the parser as it is read; stderr still follows the file.
@@ -371,11 +424,11 @@ describe("the shipped examples (T7e)", () => {
     });
   });
 
-  it("breaks a tie alphabetically and sorts by code unit", async () => {
+  it("breaks a tie alphabetically, notes it, and sorts by code unit", async () => {
     expect(await example("ties.txt")).toEqual({
       code: 0,
       out: "Zebra: Al (1)\nacme: Bo (2)\n",
-      err: "",
+      err: "herbie-lite: Zebra is a tie between Al and Bo (1 contact each); Al is shown because it comes first alphabetically\n",
     });
   });
 

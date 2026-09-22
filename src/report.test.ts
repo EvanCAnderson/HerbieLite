@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildNetwork } from "./network.js";
 import type { Network } from "./network.js";
 import { parseLine } from "./parser.js";
-import { reportLines } from "./report.js";
+import { buildReport, type Report } from "./report.js";
 
 /**
  * Builds a network from the text of an input file, so each case reads as the
@@ -12,12 +12,16 @@ import { reportLines } from "./report.js";
  * Malformed and blank lines are dropped here exactly as the cli will drop
  * them (Q7, T6c).
  */
-function report(file: string): readonly string[] {
+function analyse(file: string): Report {
   const commands = file
     .split("\n")
     .map((text, index) => parseLine({ lineNumber: index + 1, text }))
     .filter((line) => line.outcome === "command");
-  return reportLines(buildNetwork(commands).network);
+  return buildReport(buildNetwork(commands).network);
+}
+
+function report(file: string): readonly string[] {
+  return analyse(file).lines;
 }
 
 describe("relationship strength (FR5)", () => {
@@ -152,6 +156,69 @@ Contact Laurie Bob call`),
   });
 });
 
+describe("ties (Q21)", () => {
+  it("lists the tied partners in the order Q1 ranks them", () => {
+    expect(
+      analyse(`Partner Molly
+Partner Chris
+Company Globex
+Employee Laurie Globex
+Contact Laurie Molly email
+Contact Laurie Chris call`).ties,
+    ).toEqual([
+      { company: "Globex", partners: ["Chris", "Molly"], strength: 1 },
+    ]);
+  });
+
+  it("names the first tied partner on the line", () => {
+    const { lines, ties } = analyse(`Partner Cy
+Partner Bo
+Partner Ada
+Company Globex
+Employee Laurie Globex
+Contact Laurie Cy email
+Contact Laurie Bo call
+Contact Laurie Ada coffee`);
+    expect(lines).toEqual(["Globex: Ada (1)"]);
+    expect(ties).toEqual([
+      { company: "Globex", partners: ["Ada", "Bo", "Cy"], strength: 1 },
+    ]);
+  });
+
+  it("ignores a tie below the strongest partner", () => {
+    expect(
+      analyse(`Partner Ada
+Partner Bo
+Partner Cy
+Company Globex
+Employee Laurie Globex
+Contact Laurie Ada email
+Contact Laurie Ada call
+Contact Laurie Bo email
+Contact Laurie Cy email`).ties,
+    ).toEqual([]);
+  });
+
+  it("finds no tie where there is no relationship (Q2)", () => {
+    expect(analyse("Company Globex").ties).toEqual([]);
+  });
+
+  it("lists ties in the report's company order (Q14)", () => {
+    expect(
+      analyse(`Partner Al
+Partner Bo
+Company acme
+Company Zebra
+Employee Ida acme
+Employee Ada Zebra
+Contact Ida Al email
+Contact Ida Bo email
+Contact Ada Al email
+Contact Ada Bo email`).ties.map((tie) => tie.company),
+    ).toEqual(["Zebra", "acme"]);
+  });
+});
+
 describe("company order (Q14)", () => {
   it("sorts alphabetically, not by declaration order", () => {
     expect(
@@ -188,7 +255,7 @@ describe("a network that breaks its own invariants", () => {
         { employee: "Laurie", partner: "Chris", contactType: "email" },
       ],
     };
-    expect(() => reportLines(broken)).toThrowError(/Laurie/);
+    expect(() => buildReport(broken)).toThrowError(/Laurie/);
   });
 });
 

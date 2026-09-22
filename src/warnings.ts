@@ -11,6 +11,7 @@ import {
   type SourceLine,
 } from "./parser.js";
 import type { ContactFailure, Declaration, NetworkWarning } from "./network.js";
+import type { Tie } from "./report.js";
 
 /** Prefixes every line, so stderr stays attributable once it is merged. */
 const PROGRAM = "herbie-lite";
@@ -201,4 +202,23 @@ export function networkWarning(warning: NetworkWarning): string {
     default:
       return assertNever(warning);
   }
+}
+
+/** `Al and Bo`, or `Al, Bo and Cy`. */
+function listOf([first, ...rest]: readonly [string, ...string[]]): string {
+  const last = rest.pop();
+  return last === undefined
+    ? first
+    : `${[first, ...rest].join(", ")} and ${last}`;
+}
+
+/**
+ * A company whose line names one of several equally strong partners (Q21).
+ * It follows the report, as a footnote to the line it explains, and is not a
+ * discarded line, so it has no line number. Names are letters only (Q9), so
+ * nothing here needs escaping.
+ */
+export function tieNote({ company, partners, strength }: Tie): string {
+  const contacts = strength === 1 ? "contact" : "contacts";
+  return `${PROGRAM}: ${company} is a tie between ${listOf(partners)} (${strength} ${contacts} each); ${partners[0]} is shown because it comes first alphabetically`;
 }

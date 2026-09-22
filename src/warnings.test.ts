@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildNetwork } from "./network.js";
 import { parseLine } from "./parser.js";
-import { malformedWarning, networkWarning } from "./warnings.js";
+import { malformedWarning, networkWarning, tieNote } from "./warnings.js";
 
 /** Cases read as the input file a user would write (the T4.3 pattern). */
 function parse(file: string): ReturnType<typeof parseLine>[] {
@@ -194,5 +194,27 @@ describe("quoting input back (T6.11)", () => {
     ).toEqual([
       'herbie-lite: line 3: Laurie is already declared on line 2 as "Employee Laurie Globex\\r"; discarded: Partner Laurie\\r',
     ]);
+  });
+});
+
+describe("ties (Q21)", () => {
+  it("names both partners, the strength, and the one the line shows", () => {
+    expect(
+      tieNote({ company: "Globex", partners: ["Chris", "Molly"], strength: 2 }),
+    ).toBe(
+      "herbie-lite: Globex is a tie between Chris and Molly (2 contacts each); Chris is shown because it comes first alphabetically",
+    );
+  });
+
+  it("lists three or more partners with commas, and says contact for 1", () => {
+    expect(
+      tieNote({
+        company: "Globex",
+        partners: ["Ada", "Bo", "Cy"],
+        strength: 1,
+      }),
+    ).toBe(
+      "herbie-lite: Globex is a tie between Ada, Bo and Cy (1 contact each); Ada is shown because it comes first alphabetically",
+    );
   });
 });

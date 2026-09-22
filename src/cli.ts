@@ -9,11 +9,12 @@ import { HELP, OPENING } from "./help.js";
 import { ReadError, readLines } from "./lines.js";
 import { buildNetwork } from "./network.js";
 import { parseLine, type SourcedCommand } from "./parser.js";
-import { reportLines } from "./report.js";
+import { buildReport } from "./report.js";
 import {
   malformedWarning,
   networkWarning,
   readFailure,
+  tieNote,
   tooManyArguments,
   unknownOption,
   writeFailure,
@@ -174,7 +175,12 @@ export async function main(
 
   // No declared companies is no output at all, not a blank line (T6.14):
   // FR4 lists companies, and there are none to list.
-  const lines = reportLines(network);
+  const { lines, ties } = buildReport(network);
   if (lines.length === 0) return 0;
-  return print(stdout, stderr, `${lines.join("\n")}\n`);
+  const code = await print(stdout, stderr, `${lines.join("\n")}\n`);
+
+  // Ties are footnotes to report lines, so they follow the report, once it
+  // is written; a report that failed to write has nothing to footnote (Q21).
+  if (code === 0) for (const tie of ties) writeLine(stderr, tieNote(tie));
+  return code;
 }

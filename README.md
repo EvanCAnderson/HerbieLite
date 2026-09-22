@@ -90,7 +90,7 @@ at the line a warning names, and rerun, which a typed session cannot.
   no file at a terminal (which prints the opening instead), a file that could
   not be read, or an I/O failure.
 
-Warnings go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
+Warnings and tie notes go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
 report.txt` gives a clean file with the warnings still on screen.
 
 ---
@@ -106,7 +106,7 @@ so none of them can quietly stop matching the program
 | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `input.txt`             | The brief's example, verbatim.                                                                                                               |
 | `late-declarations.txt` | Every name used before it is declared, and resolved anyway (Q5, Q8, Q12).                                                                    |
-| `ties.txt`              | The alphabetical tie-break (Q1), and code-unit sorting, where `Zebra` precedes `acme` (Q14).                                                 |
+| `ties.txt`              | The alphabetical tie-break (Q1) and its note on stderr (Q21), and code-unit sorting, where `Zebra` precedes `acme` (Q14).                    |
 | `names-and-repeats.txt` | A keyword used as a name (Q9), a person and a company sharing one (Q12), a repeated contact counting twice (Q13), and an empty company (Q2). |
 | `warnings.txt`          | Every warning the program can print, with the report still printing underneath (Q7).                                                         |
 
@@ -402,11 +402,21 @@ expressible.
 **Ties go to the alphabetically first partner** †. The brief's output format
 names exactly one partner and says nothing about ties (Q1). The rule is
 deterministic and independent of input order, which "earliest contact wins"
-would not be — the brief never says the file is chronological. **The output
-gives no sign that a tie occurred:** `Globex: Abdi (2)` reads identically
+would not be — the brief never says the file is chronological. **The report
+line gives no sign that a tie occurred:** `Globex: Abdi (2)` reads identically
 whether Abdi won outright or on the alphabetical rule, and the winner is
-arbitrary in business terms. A tie-break that means something is
-[U4](docs/UPGRADES.md#u4).
+arbitrary in business terms. Since the base was tagged, a tie is noted on
+stderr after the report, as a footnote to its line, while the line stays as it
+was ([Q21](docs/DECISIONS.md#q21)):
+
+```
+Globex: Abdi (2)
+herbie-lite: Globex is a tie between Abdi and Zoe (2 contacts each); Abdi is shown because it comes first alphabetically
+```
+
+Tied partners are not ranked on anything else: weighting contact types departs
+from the brief's count, and recency needs dates the input does not have
+([T10.3](docs/DECISIONS.md#t10-3)).
 
 **"Sorted alphabetically" means UTF-16 code-unit order** †, so every uppercase
 letter sorts before every lowercase one and `Zebra` precedes `acme` (Q14).
@@ -444,6 +454,7 @@ anything counting lines would otherwise see one report where there is none.
 | Q18   | The help text is built from the parser's grammar table                    | [T9.9](docs/DECISIONS.md#t9-9)   |
 | Q19   | `--help` and `-h` are the only options, and win wherever they appear      | [T9.10](docs/DECISIONS.md#t9-10) |
 | Q20   | Commands come from a file; a bare run explains how, and exits 1           | [T9.12](docs/DECISIONS.md#t9-12) |
+| Q21   | A tie is one note on stderr, after the report; the line is unchanged      | [T10.6](docs/DECISIONS.md#t10-6) |
 
 † The brief was open to more than one reading here.
 
@@ -456,7 +467,9 @@ is, so anything it does not ask for was written down in
 [UPGRADES](docs/UPGRADES.md) instead of being built: a guided input-file builder
 (U1), and a tie-break that reflects the relationship rather than the alphabet
 (U4). `--help` and a usage line (U5) were deferred the same way and built after
-the base was tagged ([T9.10](docs/DECISIONS.md#t9-10)). An opening explanation
+the base was tagged ([T9.10](docs/DECISIONS.md#t9-10)). U4 was built after the
+tag as a note on stderr only, with no ranking
+([T10.3](docs/DECISIONS.md#t10-3)). An opening explanation
 (U6) was built too, and became what a run with no file prints once typed input
 was dropped ([T9.12](docs/DECISIONS.md#t9-12)).
 Each entry carries the open questions it would have to answer, so what was

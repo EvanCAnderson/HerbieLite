@@ -797,6 +797,8 @@ started.
   array instead of matching text. Rejected: exporting the tally (`Strengths`)
   as part of the API, and returning a single pre-joined string.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T10.7](#t10-7) (`reportLines` returning
+  lines only; a single entry point and a private tally stand).
 
 #### <a id="t5-2"></a>T5.2 — A network that breaks its own invariants throws
 
@@ -2231,6 +2233,73 @@ Laurie Globex`: the program name, the line number and the name are gone.
   and the decisions made about the UI in T9 staying where they were made,
   stand.
 - **Origin:** Mine.
+
+#### <a id="t10-6"></a><a id="q21"></a>T10.6 — Q21: A tie is one note on stderr, after the report
+
+- **Decision:** For each company whose line names one of several equally
+  strong partners, one line goes to stderr once the report is written:
+  `herbie-lite: Zebra is a tie between Al and Bo (1 contact each); Al is shown because it comes first alphabetically`.
+  Three or more partners read `Ada, Bo and Cy`, and `contacts` is plural
+  above 1. The partners are listed in the order Q1 ranks them, so the first
+  is the one the line shows. Warnings still print before the report; notes
+  print after it, in the report's company order, and only if the report was
+  written. A tie below the strongest partner is not noted, and the exit code
+  is unchanged. `tieNote` in `warnings.ts` words it, so every stderr line is
+  still worded there ([T6.5](#t6-5)).
+- **Context:** T10a, building [U4](./UPGRADES.md#u4) as a note only
+  ([T10.3](#t10-3)). [T6.6](#t6-6) and [T6.14](#t6-14) had avoided any
+  stderr line that is not a discarded line. A first version printed
+  `herbie-lite: tie at Zebra: Al and Bo are tied at 1; the report names Al, first alphabetically`
+  before the report; seen in a terminal, it read as confusing.
+- **Why:** stderr is the one place a note can go without changing the
+  brief's report format, and it keeps `> report.txt` a clean file. After the
+  report, because a note explains a line, and in a terminal an explanation
+  printed first reads as a heading for lines not yet seen, while one printed
+  after reads as a footnote. Warnings stay before the report because they
+  are about the input, follow its line order ([T9.13](#t9-13)), and may
+  explain why a number is lower than expected. Only when the report was
+  written, because a failed write leaves no line to explain. The wording
+  names the company as the sentence's subject, not in the slot where a
+  warning has its line number, so the note cannot be read as another report
+  line; it says why the shown partner was chosen in plain words rather than
+  naming "the report". Only the top tie, because it is the only one that
+  decides what a line says. Names are letters only (Q9), so the note needs
+  no escaping ([T6.11](#t6-11)). T6.6 and T6.14 rejected a note because
+  there was nothing for the user to act on; here the line hides a choice the
+  program made, which is the cost [Q1](#q1) recorded. **Rejected:** the
+  first version's wording, which said "tie" twice and put the company where
+  a line number goes; notes before the report, with or before the warnings,
+  for the heading effect above; marking the report line, ruled out by
+  T10.3; the note without its reason ("Zebra is a tie between Al and Bo"),
+  which leaves the reader to guess why Al is shown; and a note for every
+  tied pair below the top, which is noise about lines that do not change.
+- **Origin:** A note on stderr naming the partners and strength: Q21's
+  default, LLM-suggested, accepted. The wording and printing after the
+  report: LLM-suggested, accepted, after I found the first version confusing
+  when I ran it. Top ties only: LLM-suggested, accepted.
+
+#### <a id="t10-7"></a>T10.7 — `report` returns its lines and ties together
+
+- **Decision:** `reportLines(network): string[]` becomes
+  `buildReport(network): Report`, where a `Report` holds the `lines` as
+  before and the `ties`, each a `Tie` of the company, its partners in Q1's
+  order, and the strength. `buildReport`, `Report` and `Tie` are the layer's
+  exports. The tally stays private, and the lines still carry no newline.
+- **Context:** T10a. The cli needs to know which lines settled a tie, and
+  only the report layer knows ([T1.13](#t1-13)).
+- **Why:** The line and its tie come from one pick of the strongest
+  partners, so the partner a line names is always the first of its tie; two
+  functions computing the same pick could disagree after a change to one.
+  Data rather than text, as [T2.5](#t2-5) set for the parser and the
+  network: the wording lives in `warnings.ts`, and the report tests assert a
+  structure, not a message. **Rejected:** a second export, `reportTies`,
+  beside an unchanged `reportLines`, which leaves every existing caller and
+  test alone but tallies twice and splits one decision across two functions;
+  and exporting the tally for the cli to find ties in, which [T5.1](#t5-1)
+  rejected and which would put the tie rule in the I/O layer.
+- **Supersedes:** [T5.1](#t5-1), in part: `reportLines` returning lines only.
+  One entry point, a private tally, and lines without newlines stand.
+- **Origin:** LLM-suggested, accepted.
 
 ---
 
