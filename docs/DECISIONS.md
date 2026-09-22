@@ -26,7 +26,8 @@ active. When only part of an entry changes, the new entry names that part
 part by** <new ID>, naming the same part; the rest of the old entry stays
 active. Once the commit that adds an entry has landed, what it says is never
 edited; its heading and the IDs it cites may be updated when IDs are
-restructured (T3.1). Until that commit the entry is a draft, and revising it
+restructured (T3.1), and a character an escape was decoded into may be
+restored to the escape (T12.2). Until that commit the entry is a draft, and revising it
 while reviewing the change it belongs to is ordinary editing (T5.6).
 
 ## Key
@@ -799,6 +800,8 @@ started.
 - **Origin:** LLM-suggested, accepted.
 - **Superseded in part by** [T10.7](#t10-7) (`reportLines` returning
   lines only; a single entry point and a private tally stand).
+- **Superseded in part by** [T12.5](#t12-5) (a single entry point: the layer
+  exports the report and the two queries; a private tally stands).
 
 #### <a id="t5-2"></a>T5.2 — A network that breaks its own invariants throws
 
@@ -1242,7 +1245,7 @@ started.
   capped at 200 characters of output. Escaped: every control, format and
   separator character (`\p{C}`, `\p{Z}`) other than a plain space, plus `\`
   itself. Tab and carriage return use the familiar `\t` and `\r`; everything
-  else is `\u` and its code point (` `, `\u{e0041}`). Visible non-ASCII
+  else is `\u` and its code point (`\u00a0`, `\u{e0041}`). Visible non-ASCII
   such as `Zoë` is left as typed. Past the cap the quote ends
   `... (5008 characters)`. This is [UPGRADES U3](./UPGRADES.md#u3), built in
   the base rather than deferred, and it settles U3's three open questions as
@@ -1274,9 +1277,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   exposed; stripping `\r` in the reader, which supersedes part of
   [T6.4](#t6-4), the reader's own `\n`-only splitting rule, and covers one
   character out of the class; a uniform `\u` with no short forms, one sentence
-  shorter to state but `
-` on every line of a Windows file; escaping all
-  non-ASCII, which shows `Zoë` as `Zoë`; and capping the number of
+  shorter to state but `\u000d` on every line of a Windows file; escaping all
+  non-ASCII, which shows `Zoë` as `Zo\u00eb`; and capping the number of
   warnings rather than their length, which makes the program withhold discards
   it has decided to announce ([T5.2](#t5-2), where a lost contact is judged
   the one thing the program must never do quietly) and adds a stderr line that
@@ -1639,7 +1641,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 
 - **Decision:** The five U+FEFF characters in `lines.test.ts` (the byte-order
   mark tests for Q16, at lines 87, 93, 99, 106 and 108) stay as literal
-  characters rather than `﻿` escapes.
+  characters rather than `\uFEFF` escapes.
 - **Context:** T8e, from an audit of the codebase. [T8.1](#t8-1) replaced the
   literal mark in `lines.ts` with an escape, on the grounds that a codebase
   which escapes invisible characters in its output should not hide one in its
@@ -1651,14 +1653,14 @@ Laurie Globex`: the program name, the line number and the name are gone.
   inputs of these tests look the same as ordinary lines, so what they assert
   can only be confirmed with a hex dump or an editor that shows the character.
   **Rejected:** escaping them, which the audit recommended, to match T8.1.
-- **Origin:** Mine (the LLM recommended replacing them with `﻿`).
+- **Origin:** Mine (the LLM recommended replacing them with `\uFEFF`).
 
 #### <a id="t8-4"></a>T8.4 — File paths and I/O errors are escaped too
 
 - **Decision:** An error about reading or writing names the file in quotes, and
   the path and the cause are both escaped by the same rule as quoted input
   ([T6.11](#t6-11)): `cannot read "": ENOENT: ...`,
-  `cannot read "bad[31m": ...`. Standard input is still named in words,
+  `cannot read "bad\u001b[31m": ...`. Standard input is still named in words,
   unquoted. These messages are escaped but not capped at 200 characters.
   `warnings.ts` gains `readFailure` and `writeFailure` for them, so every line
   of stderr is still worded there ([T6.5](#t6-5)).
@@ -2314,6 +2316,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Supersedes:** [T5.1](#t5-1), in part: `reportLines` returning lines only.
   One entry point, a private tally, and lines without newlines stand.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T12.5](#t12-5) (one entry point: `partnersOf` and
+  `employeesOf` are exported too, by T10.9; the rest stands).
 
 #### <a id="t10-8"></a><a id="q31"></a>T10.8 — Q31: A query is an option taking the next argument, and replaces the report
 
@@ -2980,6 +2984,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   example, which repeats vitest's assertions at many times the cost.
 - **Origin:** Q36's default, LLM-suggested, accepted, with the pending-mark
   test added in T10h: LLM-suggested.
+- **Superseded in part by** [T12.5](#t12-5) (five tests: T11 added two, for
+  seven; one test per thing a person does stands).
 
 #### <a id="t10-30"></a>T10.30 — The README documents the page as a way to run the program
 
@@ -3026,6 +3032,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   one commit for all three, which mixes a fix with a restyle.
 - **Origin:** The three pieces of work: Mine. U13 and U14, and a commit
   per subtask: LLM-suggested, accepted. A task of their own: LLM-suggested.
+- **Superseded in part by** [T12.5](#t12-5) (T11c as the look, and console
+  queries kept out of T11: they were built as T11c, and the look as T11d).
 
 #### <a id="t11-2"></a>T11.2 — Each example's purpose is shown in the page
 
@@ -3055,7 +3063,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   the rest rather than as a dark box in a light page. No web fonts: the
   system's monospace fonts, so the page still loads nothing from anywhere
   ([T10.16](#t10-16)).
-- **Context:** T11c. The page had a neutral light or dark look that could
+- **Context:** T11d. The page had a neutral light or dark look that could
   belong to any tool.
 - **Why:** The program is a command-line tool and the page's centre is a
   terminal pane running it, so a look taken from the terminal says what the
@@ -3211,6 +3219,175 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Turning the audit's findings into planned work: Mine. The
   subtasks, their order, the questions and their defaults, and CI as U15:
   LLM-suggested.
+
+#### <a id="t12-2"></a><a id="q37"></a>T12.2 — Q37: A committed entry's decoded escapes may be restored
+
+- **Decision:** Where a committed entry holds the character an escape
+  names instead of the escape itself, the escape is restored in place and
+  nothing else in the entry changes. This entry lists every line changed,
+  numbered as they stood before the repair:
+  - T6.11, line 1245: a no-break space, restored to `\u00a0`.
+  - T6.11, lines 1277–1278: a line break inside backticks, restored to
+    `\u000d`, which joins the two lines it had split.
+  - T6.11, line 1279: the second `Zoë` in "shows `Zoë` as `Zoë`", restored
+    to `Zo\u00eb`.
+  - T8.3, lines 1642 and 1654: byte-order marks, restored to `\uFEFF`.
+  - T8.4, line 1661: an ESC byte, restored to `\u001b`, which is what
+    the program prints for that path.
+
+  The Key names this as the never-edit rule's second exception, beside the
+  heading and ID updates [T3.1](#t3-1) allows.
+
+- **Context:** T12a. The audit after T11 found these characters in the
+  entries about escaping. Planning T12 showed the cause: the LLM's tools
+  write a `\u` escape in prose as the character it names, and every
+  escape in the first draft of PLAN's T12 entries arrived that way. The
+  damage landed in `7458c74` (T6) and `c8fc833` (T8, the commit tagged
+  `base-submission`).
+- **Why:** The never-edit rule ([T5.6](#t5-6)) keeps the record from being
+  rewritten after the fact, so it protects what an entry says. These
+  entries never said what the file held: T8.4's example showed a raw ESC
+  where the program prints an escape, and T6.11's rejected option read as
+  a change that changes nothing. Restoring the escapes returns the record to
+  what was decided rather than revising it, and listing each line keeps the
+  repair auditable. **Known cost:** `git blame` on these lines now points
+  at T12. **Rejected:**
+  - A superseding entry, which leaves the broken text, raw ESC included, in
+    the entry it supersedes.
+  - Leaving the text as it is with a note, which still turns a terminal
+    red whenever the file is printed.
+- **Origin:** Q37's default, LLM-suggested, accepted when T12a started.
+
+#### <a id="t12-3"></a>T12.3 — `check` fails on an invisible character in any Markdown file
+
+- **Decision:** `src/docs.test.ts` reads every Markdown file in the
+  repository, skipping build output, installs and reports. It fails on any
+  control character other than a newline or tab, a no-break space, a
+  byte-order mark, or a zero-width or direction mark, naming each by line
+  and code point. It first asserts that README, CLAUDE.md and DECISIONS
+  are among the files found, and that each kind of character is caught, so
+  it cannot pass by finding nothing. The ranges are written as hex numbers,
+  not escapes. It runs in `npm test`, and so in `check`.
+- **Context:** T12a. [T12.2](#t12-2) repairs today's damage, but the
+  cause, a tool that decodes escapes, will go on writing these docs.
+- **Why:** Review missed six such characters across two tasks, because
+  each is invisible or looks like ordinary text; only a check that reads
+  code points finds them. Run against the DECISIONS of `base-submission`,
+  this one fails and names four of the six lines. A test in `check` already
+  runs before every commit ([T1.3](#t1-3)), so no new tool is needed. It
+  sits in `src/` because that is the TypeScript project `check`
+  type-checks and lints; `docs/` has none. Numbers rather than escapes,
+  so the test cannot be damaged the way the docs were. BRIEF is checked
+  too: it holds none, and because it is frozen, one appearing there should
+  be noticed. **Known limit:** an escape decoded into a newline or a
+  visible character, as two of T6.11's were, is not caught, since both are
+  legitimate in prose. **Rejected:**
+  - A pre-commit hook, which is a second gate to install and can be
+    skipped.
+  - A Markdown linter, a new dependency for one check.
+  - Scanning source files too, where tests hold literal byte-order marks
+    and an ESC on purpose ([T8.3](#t8-3)).
+  - DECISIONS alone, when README and PLAN are written the same way.
+- **Origin:** A check so the damage cannot recur: LLM-suggested in the T12
+  plan, accepted. Its shape: LLM-suggested, in T12a.
+
+#### <a id="t12-4"></a>T12.4 — The `npm start` forms print npm's header, and the README says so
+
+- **Decision:** The README's run forms stay as they are, and stop calling
+  all four "equivalent in what they print". A note under them says the two
+  `npm start` forms print npm's own header on stdout before the report,
+  and that `npm start --silent --` sends only the report. The help text,
+  the opening, and the web console keep `npm start --` as the form from
+  source.
+- **Context:** T12b. The audit ran all four forms: the `npm start` ones
+  put four lines of npm's (a blank line, the script name, the command, a
+  blank line) on stdout ahead of the report, so
+  `npm start -- file > report.txt` does not give a clean report.
+  `npm start --silent -- file` was checked to print exactly the report, with
+  a failure still on stderr and exit 1.
+- **Why:** The `node dist/bin.js` forms are the program; `npm start` is a
+  convenience for running from source without a build, and the header
+  belongs to npm, not to herbie-lite. Saying so where the forms are listed
+  costs two sentences. **Rejected:**
+  - `--silent` in every `npm start` form in the README, the help and the
+    opening, which makes the convenience longer to type for everyone to
+    serve the few who redirect it, and means changing the console's
+    accepted forms ([T11.5](#t11-5)) to match.
+  - `loglevel=silent` in a project `.npmrc`, which also hides npm's own
+    errors from every script.
+  - Keeping "equivalent", which is false on stdout.
+- **Origin:** LLM-suggested, in T12b (the header found by the audit after
+  T11).
+
+#### <a id="t12-5"></a>T12.5 — Three reversals the log missed, recorded late
+
+- **Decision:** Three changes reversed part of an earlier entry without
+  saying so. This entry records each, and each earlier entry gets a
+  **Superseded in part by** line pointing here:
+  - **The report's exports.** [T10.9](#t10-9) exported `partnersOf` and
+    `employeesOf` beside `buildReport`, while [T10.7](#t10-7), and
+    [T5.1](#t5-1) before it, say the layer has a single entry point. The
+    layer now exports the report and the two queries. A private tally,
+    one shared ranking, and lines without newlines stand.
+  - **T11's subtasks.** [T11.1](#t11-1) planned T11c as the page's look,
+    and sent queries in the console to UPGRADES "rather than into T11".
+    [T11.5](#t11-5) then built those queries as T11c, and the look became
+    T11d. T11 as a task of its own, T11a and T11b, and U14 in UPGRADES
+    stand. [T11.3](#t11-3)'s subtask citation is updated to T11d, as the
+    Key allows when IDs are restructured.
+  - **The browser tests.** [T10.29](#t10-29) names five tests; T11 added two,
+    typing a command into the console and asking a query with the buttons,
+    so there are seven. One test per thing a person does with the page,
+    each crossing a boundary between panels, stands.
+
+  Not a reversal: two more tests hold literal byte-order marks,
+  `web/console.test.ts:82` and `web/editor.test.ts:76`, as input under test.
+  That applies [T8.3](#t8-3)'s rule, which keeps them literal in
+  `lines.test.ts`, rather than making a new decision, so T8.3 is unchanged.
+
+- **Context:** T12b. The audit after T11 found the README and PLAN §3
+  describing the report layer as one function, the README counting five
+  browser tests, and T11.1 contradicting PLAN §6's T11.
+- **Why:** The Key asks for a reversal to be a new entry with
+  **Supersedes**, so a reader of the old entry knows what no longer stands.
+  Each of these was made in a later task that did not cite the entry it
+  reversed, so the old entries still read as current. One entry for the
+  three, because they share a cause and a fix, and none is a new choice.
+  **Rejected:**
+  - Adding **Supersedes** to T10.9 and T11.5, which are committed, so
+    changing what they say breaks the never-edit rule ([T5.6](#t5-6)).
+  - Editing the old entries' text, for the same reason.
+  - Updating the README and PLAN alone, which leaves the log contradicting
+    the code.
+- **Supersedes:** in part, [T5.1](#t5-1) and [T10.7](#t10-7) (a single
+  entry point), [T11.1](#t11-1) (T11c as the look, and console queries kept
+  out of T11), and [T10.29](#t10-29) (five tests).
+- **Origin:** LLM-suggested, in T12b (the gaps found by the audit after
+  T11).
+
+#### <a id="t12-6"></a>T12.6 — A docs readability pass is T12's last subtask
+
+- **Decision:** A pass over the docs for readability is added to T12 as
+  T12i, after every other subtask. It covers the README, PLAN and
+  UPGRADES, and the opening and Key of this log. It rewords no committed
+  entry here, since the never-edit rule ([T5.6](#t5-6)) protects what an
+  entry says, and it leaves BRIEF alone, which is frozen.
+- **Context:** After T12b, while writing the hand-in email, which says a
+  final review pass will make the docs easier to read. T12 held only the
+  audit's findings ([T12.1](#t12-1)), so that promise had no planned home.
+- **Why:** The email points the reviewer at PLAN to see what is changing,
+  so the pass it names should be there. Last, because T12c–T12h each add
+  entries and change what the README describes; polishing the prose first
+  would mean polishing it twice. Inside T12 rather than apart from it,
+  because it is the same stretch of finishing work and the email presents
+  it that way. **Rejected:**
+  - `docs:` commits outside any task, which the commit rules allow but
+    which leave the promised work out of PLAN.
+  - A task of its own, T13, for one subtask.
+  - Rewording committed entries for readability, which the never-edit rule
+    forbids.
+- **Origin:** The pass itself: Mine. Placing it last in T12, and its
+  limits: LLM-suggested.
 
 ---
 

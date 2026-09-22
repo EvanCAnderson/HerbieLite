@@ -59,7 +59,7 @@ That log keeps the complete record, in task order.
 - [**T1.12**](./DECISIONS.md#t1-12) — Commands as a discriminated union.
 - [**T1.13**](./DECISIONS.md#t1-13) — Store raw facts; compute strongest partner at report time.
 - [**T4.3**](./DECISIONS.md#t4-3) — `buildNetwork` takes the whole command stream; resolve in two passes.
-- [**T5.1**](./DECISIONS.md#t5-1) — `report` exports one function; the tally stays private.
+- [**T5.1**](./DECISIONS.md#t5-1) — `report` keeps its tally private; it exports the report and the two queries ([T12.5](./DECISIONS.md#t12-5)).
 - [**T5.2**](./DECISIONS.md#t5-2) — A network that breaks its own invariants throws.
 - [**T5.5**](./DECISIONS.md#t5-5) — The example test reads the shipped `examples/input.txt`.
 - [**T6.1**](./DECISIONS.md#t6-1) — Bad data warns; a broken invariant crashes.
@@ -78,12 +78,6 @@ A new question gets its current default and the subtask that settles it
 planning the upgrades are all settled (below). Open now, from the audit
 follow-ups (T12):
 
-- **Q37** — May a committed DECISIONS entry be repaired when its
-  characters are wrong but its content is not? T5.6 says a committed entry
-  is never edited, only superseded. _Default:_ yes. Restore the escape
-  notation each sentence means, change nothing else, and list every changed
-  line in a new entry. The rule is read as protecting what an entry says,
-  and a decoded escape is not what it said. _Settle in T12a._
 - **Q38** — Should control characters in text the console echoes be escaped
   (`\u009b`, as warnings do under T6.11) or stripped? _Default:_ escape. It
   is one rule with the warnings, and a pasted control character stays
@@ -135,6 +129,7 @@ follow-ups (T12):
 - [**Q34**](./DECISIONS.md#q34) (T10.27) — Playwright's test runner drives Chromium, from outside the page.
 - [**Q35**](./DECISIONS.md#q35) (T10.28) — `npm run test:e2e` builds the page and tests it; `check` is unchanged.
 - [**Q36**](./DECISIONS.md#q36) (T10.29) — One browser test per thing a person does with the page.
+- [**Q37**](./DECISIONS.md#q37) (T12.2) — A committed entry's decoded escapes may be restored, and nothing else in it changed.
 
 ## 5. Tooling
 
@@ -352,9 +347,10 @@ prefix).
 - [ ] T12 — Audit follow-ups: what an audit of the whole repository after
       T11 found the docs, a test or the page claiming but not doing
       ([T12.1](./DECISIONS.md#t12-1)). The record is repaired first, then
-      the code under it. Running the gates on every push is
+      the code under it, and the docs are made easier to read last
+      ([T12.6](./DECISIONS.md#t12-6)). Running the gates on every push is
       [U15](./UPGRADES.md#u15), not part of T12.
-  - [ ] T12a — Repair the decision log's decoded escapes. In T6.11, T8.3
+  - [x] T12a — Repair the decision log's decoded escapes. In T6.11, T8.3
         and T8.4 the escape notation was written as the characters it
         names (DECISIONS lines 1245, 1277–1279, 1642, 1654, 1661: a
         non-breaking space, a line break, `ë`, two byte-order marks, and a
@@ -362,8 +358,10 @@ prefix).
         the notation each sentence means (`\u00a0`, `\u000d`, `Zo\u00eb`,
         `\uFEFF`, `\u001b`), and add a test to `check` that fails on a
         control or invisible character in any tracked Markdown file, so it
-        cannot recur. Settles Q37.
-  - [ ] T12b — Bring the docs back in line with the code:
+        cannot recur ([T12.2](./DECISIONS.md#t12-2),
+        [T12.3](./DECISIONS.md#t12-3)). Settles Q37.
+  - [x] T12b — Bring the docs back in line with the code
+        ([T12.4](./DECISIONS.md#t12-4), [T12.5](./DECISIONS.md#t12-5)):
     - README says five browser tests; there are seven, and T10.29 needs
       superseding in part.
     - README calls the four run forms "all equivalent in what they print",
@@ -445,6 +443,11 @@ prefix).
         `dom.ts:19` revokes the URL straight after the click. Fix the timing
         if either fails. The browser tests stay Chromium-only (T10.27)
         unless this finds a difference.
+  - [ ] T12i — Docs readability pass, last, once the code under the docs
+        has stopped changing ([T12.6](./DECISIONS.md#t12-6)): shorter
+        sentences, clearer headings, and less repetition in the README,
+        PLAN and UPGRADES, and in DECISIONS' opening and Key. No committed
+        DECISIONS entry is reworded (T5.6), and BRIEF stays frozen.
 
 ## 7. Definition of done
 
@@ -490,7 +493,7 @@ them. Recorded here rather than in the README ([T8.2](./DECISIONS.md#t8-2)).
 | 5     | Each company lists its strongest partner and the strength             | `report.test.ts` › "names the strongest partner, not the first or the last"; equal strengths in `examples/ties.txt`                                                           |
 | 5.1   | Strength = all contacts between a partner and the company's employees | `report.test.ts` › "sums a partner's contacts across all employees of the company"; "counts every contact as 1, whatever its type"                                            |
 | 6.1   | `<CompanyName>: <PartnerName> (<RelationshipStrength>)`               | `report.test.ts` › "produces the expected output from the shipped examples/input.txt"                                                                                         |
-| 6.2   | `<CompanyName>: No current relationship`                              | `report.test.ts` › "companies with no relationship (Q2)", 3 tests; `examples/names-and-repeats.txt`                                                                           |
+| 6.2   | `<CompanyName>: No current relationship`                              | `report.test.ts` › "companies with no relationship (Q2)", 4 tests; `examples/names-and-repeats.txt`                                                                           |
 | 7.1   | README: build, run, and test instructions                             | [README](../README.md) § "Build, run, and test"; verified on a clean clone (T8d)                                                                                              |
 | 7.2   | README: approach and design decisions                                 | [README](../README.md) § "How it works", with [DECISIONS](./DECISIONS.md) behind it                                                                                           |
 | 7.2.1 | README: how LLM tools were used                                       | [README](../README.md) § "How I used LLM tools", and the **Origin** line on every entry in [DECISIONS](./DECISIONS.md)                                                        |

@@ -59,15 +59,17 @@ npx playwright install chromium   # once: downloads the browser, about 94MB
 npm run test:e2e
 ```
 
-Builds the web page and runs five tests that use it in a real browser: opening
-it, running a file, editing and saving one, the editor's marks, and deleting
-([T10.29](docs/DECISIONS.md#t10-29)). They are not part of `check`, so `check`
+Builds the web page and runs seven tests that use it in a real browser:
+opening it, running a file, typing a command into the console, asking a query
+with the buttons, editing and saving a file, naming a new one and watching the
+editor's marks, and deleting ([T10.29](docs/DECISIONS.md#t10-29),
+[T12.5](docs/DECISIONS.md#t12-5)). They are not part of `check`, so `check`
 still needs no browser and no build, but `check` does type-check and lint them
 ([T10.28](docs/DECISIONS.md#t10-28)).
 
 ### Running it
 
-Four forms, all equivalent in what they print
+Four forms, all printing the same report
 ([T1.10](docs/DECISIONS.md#t1-10)):
 
 ```bash
@@ -76,6 +78,11 @@ cat examples/input.txt | node dist/bin.js  # STDIN
 npm start -- examples/input.txt            # the same, from source, no build
 cat examples/input.txt | npm start
 ```
+
+The two `npm start` forms print npm's own header on stdout before the report.
+To send only the report to a file or another program from source, add
+`--silent`: `npm start --silent -- examples/input.txt > report.txt`
+([T12.4](docs/DECISIONS.md#t12-4)).
 
 The general form is
 `node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]`,
@@ -281,7 +288,7 @@ The program is four layers, each testable without the one above it
 | ------------ | -------------------------------------------------------------------------------- |
 | `parser.ts`  | One line of text → a typed `Command`, or a malformed-line result.                |
 | `network.ts` | Applies commands, holds what it cannot yet resolve, resolves at end of input.    |
-| `report.ts`  | Pure function: a resolved network → the lines of the report.                     |
+| `report.ts`  | Pure functions: a resolved network → the report, its ties, and the queries.      |
 | `cli.ts`     | The only module that touches a stream: picks a source, wires the layers, prints. |
 
 `cli.ts` has four helpers of its own: `run.ts` does everything the program
@@ -321,10 +328,13 @@ The design decisions behind that, each with what it costs:
   because such an object would answer every question wrongly until it was told
   input had finished. The cost is that the commands are held in memory, which
   [T1.13](docs/DECISIONS.md#t1-13) already requires.
-- **The report layer exports one function** and keeps its tallies private
-  ([T5.1](docs/DECISIONS.md#t5-1)). It returns lines, not a joined string, so
-  the choice of line ending and trailing newline stays with the stream that
-  writes them.
+- **The report layer keeps its tallies private**
+  ([T5.1](docs/DECISIONS.md#t5-1)) and exports three functions: the report
+  with its ties ([T10.7](docs/DECISIONS.md#t10-7)), and one for each query
+  ([T10.9](docs/DECISIONS.md#t10-9)). All three share one ranking, so they
+  cannot disagree about who comes first. They return lines, not a joined
+  string, so the choice of line ending and trailing newline stays with the
+  stream that writes them.
 - **Bad data warns; a broken invariant crashes**
   ([T6.1](docs/DECISIONS.md#t6-1)). A malformed line is data, and data never
   costs the user the report. A network that contradicts its own invariants is a
@@ -383,6 +393,13 @@ own.
 Nothing here was accepted because it compiled. Where I took the model's
 suggestion, the entry says so; where I did not, the entry says what it
 recommended instead.
+
+One failure was the tools' own. They wrote some escape sequences in the
+decision log as the characters they name: invisible marks, and a raw
+terminal escape that turned a terminal red when the file was printed. An
+audit found them; the escapes were restored in place, each line listed
+([Q37](docs/DECISIONS.md#q37)), and a test in `check` now fails on any such
+character in a Markdown file ([T12.3](docs/DECISIONS.md#t12-3)).
 
 ---
 
@@ -475,11 +492,13 @@ Visible non-ASCII such as `Zoë` is left as typed. **Known limit:** invalid
 UTF-8 arrives as the replacement character U+FFFD, which is printable and so is
 not escaped — the warning shows `�` and cannot recover the original bytes.
 
-**The command line takes one optional file path, or `--help`** (Q15, Q19).
-Zero arguments reads STDIN. `--help` or `-h` prints the help and exits 0,
-wherever it appears. Two or more paths, any other argument starting with `-`
-(including `-` alone, which does not mean STDIN), and a file that cannot be
-read are each an error: one line on stderr, ending with the usage when the
+**The command line takes one optional file path, one optional query, or
+`--help`** (Q15, Q19, [Q31](docs/DECISIONS.md#q31)). Zero paths reads STDIN.
+`--help` or `-h` prints the help and exits 0, wherever it appears.
+`--partners` and `--employees` each take the next argument as the company.
+Two or more paths, two queries, a query with no company, any other argument
+starting with `-` (including `-` alone, which does not mean STDIN), and a
+file that cannot be read are each an error: one line on stderr, ending with the usage when the
 invocation itself was wrong, and exit 1 with no report. A file whose name
 starts with `-` is reached as `./-name`. The path or option is quoted and
 escaped in that line like any other input ([T8.4](docs/DECISIONS.md#t8-4)).

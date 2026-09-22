@@ -244,9 +244,12 @@ the file builder ([U1](#u1)). It runs in the browser alone, with no server
 ([DECISIONS T10.16](./DECISIONS.md#t10-16)).
 
 - **Terminal:** the page's embedded pane is a Herbie console that runs
-  herbie-lite and nothing else, not a shell
-  ([DECISIONS T9.5](./DECISIONS.md#t9-5)). It runs files and shows their
-  output, and takes no typed commands ([T9.12](./DECISIONS.md#t9-12)).
+  herbie-lite and nothing else ([DECISIONS T9.5](./DECISIONS.md#t9-5)). As
+  first built it ran files only; since T11c it also takes typed herbie-lite
+  command lines, as a shell for that one program
+  ([T11.5](./DECISIONS.md#t11-5), [U13](#u13)). Input commands such as
+  `Partner Chris` are never typed there; they go in a file
+  ([T9.12](./DECISIONS.md#t9-12)).
 - **Files:** the examples bundled into the page, read-only, since the tests
   assert every one; a workspace in the browser's storage for everything
   editable; files opened from disk and saved as downloads
