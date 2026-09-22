@@ -1,27 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { MAX_LENGTH, suggestName, Workspace, type Store } from "./workspace.js";
-
-/** localStorage's behaviour, in memory; `full` makes every write throw. */
-class MemoryStore implements Store {
-  readonly items = new Map<string, string>();
-  full = false;
-  get length(): number {
-    return this.items.size;
-  }
-  key(index: number): string | null {
-    return [...this.items.keys()][index] ?? null;
-  }
-  getItem(key: string): string | null {
-    return this.items.get(key) ?? null;
-  }
-  setItem(key: string, value: string): void {
-    if (this.full) throw new Error("QuotaExceededError");
-    this.items.set(key, value);
-  }
-  removeItem(key: string): void {
-    this.items.delete(key);
-  }
-}
+import {
+  MAX_LENGTH,
+  MemoryStore,
+  suggestName,
+  Workspace,
+} from "./workspace.js";
 
 function workspace(): { store: MemoryStore; files: Workspace } {
   const store = new MemoryStore();

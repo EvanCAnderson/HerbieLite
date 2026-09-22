@@ -2156,6 +2156,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   own subtask, and moving Q30 to the file API: LLM-suggested.
 - **Superseded in part by** [T10.16](#t10-16) (saving into `inputs/`; it
   saves into the browser workspace).
+- **Superseded in part by** [T10.20](#t10-20) (placed before the console; the
+  console now comes first).
 
 #### <a id="t10-3"></a>T10.3 — A tie is noted, not ranked
 
@@ -2536,7 +2538,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   committed, and Q24 is withdrawn: with no server there is nothing to keep
   local, and Vite's preview server checks `Host` itself. The rest of T10 is
   re-planned in PLAN §6 as T10d (the workspace), T10e (the files panel),
-  T10f (the editor), T10g (the console) and T10h (the README), and Q25–Q30
+  T10f (the console), T10g (the editor) and T10h (the README), in the
+  order [T10.20](#t10-20) set, and Q25–Q30
   are rewritten for the browser.
 - **Context:** Reviewing T10d, whose checks existed only because the UI had
   a server. The server was there to list, read, save and delete files on
@@ -2650,6 +2653,58 @@ Laurie Globex`: the program name, the line number and the name are gone.
   over one key edited by hand.
 - **Origin:** Q30's default, LLM-suggested, accepted, with the store, keys and limits
   set in T10d: LLM-suggested, accepted.
+
+#### <a id="t10-20"></a>T10.20 — The console comes before the editor
+
+- **Decision:** The console is built as T10f, straight after the files panel,
+  and the editor as T10g. Q27 and Q28 settle in T10f, Q29 in T10g.
+- **Context:** After T10d, asking how much was left before the UI could be
+  seen working. In the planned order, running a file came last of the three
+  panels.
+- **Why:** The console needs only a listed file, which the files panel
+  provides, so nothing it does waits for the editor; built first, the page
+  runs the analyzer on any example or file from disk two subtasks sooner,
+  and the editor then adds writing files to something that already works end
+  to end. The planned order put the editor first for no stated reason.
+  **Rejected:** keeping the editor first, which delays the one thing the UI
+  is for.
+- **Supersedes:** [T10.2](#t10-2), in part: the editor placed between the
+  files panel and the console. The editor as U1's builder stands.
+- **Origin:** Swapping them: LLM-suggested, accepted.
+
+#### <a id="t10-21"></a>T10.21 — The files panel: nothing brought in overwrites, and storage may be refused
+
+- **Decision:** The files panel lists the examples and the workspace, shows
+  the chosen file read-only with line numbers, and offers copy to workspace
+  on an example, download on any file, delete (confirmed) on a workspace
+  file, and "Open a file…" for a file from disk. A file opened from disk or
+  a copied example is always stored under a free name from `suggestName`
+  (Q25), so bringing a file in never overwrites one and never asks; the
+  overwrite confirmation (Q30) is left to the editor's save. If the browser
+  refuses `localStorage`, the page keeps its workspace in a `MemoryStore`
+  and says the files last until reload. A change made in another tab
+  redraws the panel, and a file deleted there is let go of. Line numbers are
+  drawn by CSS, so copying a file's text leaves them behind. What the panel
+  does to the workspace is in `actions.ts`, tested; `files-panel.ts`,
+  `dom.ts` and `main.ts` only draw and wire it and are not tested
+  ([T10.13](#t10-13)). The web code imports `assertNever` from `src/`
+  rather than keeping a copy. The page opens on the first example, so it is
+  never blank.
+- **Context:** T10e.
+- **Why:** Opening a file or copying an example is asking for a copy, and a
+  numbered name gives one without a dialog; asking would put a confirmation
+  in front of the most common action to protect against a clash the page
+  can avoid itself. Some private browsing modes throw on any use of
+  `localStorage`, and a page that fails to start there shows nothing at
+  all, while one in memory still does everything but remember. Line numbers
+  are what a warning cites ([T6.4](#t6-4)), so they are shown; drawn by CSS
+  so they are not in the text a user copies. One `assertNever` keeps one
+  definition of exhaustiveness, and the module has no Node types, so the
+  browser project can check it. **Rejected:** asking before a copy or an
+  opened file replaces one of the same name; refusing to start without
+  storage; line numbers written into the text; and a second `assertNever`
+  in `web/`.
+- **Origin:** LLM-suggested, accepted.
 
 ---
 

@@ -24,7 +24,7 @@ the text and each line checked as it is edited. See
 Q30 and Q29, with their defaults there.
 
 - ~~Where the file is saved, and what happens on a clash or a failed save~~ —
-  Q30, settled with the file API in T10e.
+  Q30, settled with the workspace in T10d.
 - ~~Accept lines whose references can't be checked yet?~~ — Q29.
 - ~~A separate mode or command from the analyzer?~~ — Neither: the UI's
   editor (T9.8, T10.2).
@@ -258,8 +258,8 @@ the file builder ([U1](#u1)). It runs in the browser alone, with no server
   LLM-suggested, accepted.
 
 Planned as part of task T10 ([T10.1](./DECISIONS.md#t10-1)): the scaffold
-(T10c), the workspace (T10d), the files panel (T10e), U1's editor (T10f), the
-console (T10g), and the README (T10h). Its open questions are PLAN §4's
+(T10c), the workspace (T10d), the files panel (T10e), the console (T10f),
+U1's editor (T10g), and the README (T10h). Its open questions are PLAN §4's
 Q25–Q28 and Q30: workspace file names, a file open in two tabs, how the
 console shows a run, how the page runs the analyzer, and saving.
 
@@ -321,7 +321,7 @@ Open questions:
 - **In `npm run check`, or a separate script?** In `check` means every run
   needs a browser and a build.
 - **When?** Once the page does enough that a broken render would go unnoticed
-  by the other tests: after the editor (T10g) or the console (T10h).
+  by the other tests: after the console (T10f) or the editor (T10g).
 
 <a id="u12"></a>
 

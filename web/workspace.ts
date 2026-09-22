@@ -11,6 +11,32 @@ export interface Store {
   removeItem(key: string): void;
 }
 
+/**
+ * A store held in memory, for a browser that refuses `localStorage`, as some
+ * private modes do: the page still works, and forgets its files on reload.
+ * The tests use it too; `full` makes every write throw, as a full store does.
+ */
+export class MemoryStore implements Store {
+  private readonly items = new Map<string, string>();
+  full = false;
+  get length(): number {
+    return this.items.size;
+  }
+  key(index: number): string | null {
+    return [...this.items.keys()][index] ?? null;
+  }
+  getItem(key: string): string | null {
+    return this.items.get(key) ?? null;
+  }
+  setItem(key: string, value: string): void {
+    if (this.full) throw new Error("storage is full");
+    this.items.set(key, value);
+  }
+  removeItem(key: string): void {
+    this.items.delete(key);
+  }
+}
+
 /** A workspace file as stored: its text and how many times it was saved. */
 export interface WorkspaceFile {
   readonly name: string;

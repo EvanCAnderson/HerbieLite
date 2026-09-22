@@ -82,20 +82,20 @@ point here rather than repeating them.
   stderr in its own colour, then the exit code. xterm.js is bundled into the
   page, so it is a dev dependency and the README's "no runtime dependencies"
   stands. The alternative is a plain `<pre>`, with no dependency. Settle in
-  T10g.
+  T10f.
 - **Q28** — How the page runs the analyzer (U9). Default: the cli's work is
   split into a function that takes the input text and the arguments and
   returns stdout, stderr and the exit code, with no streams; `main` calls it
   for the CLI and the console calls it in the page, so both print the same
   text. Reading files and streams and writing to the process stay in
   `cli.ts`. A throw (a bug, [T6.1](./DECISIONS.md#t6-1)) shows its stack in
-  the pane. Settle in T10g.
+  the pane. Settle in T10f.
 - **Q29** — What the editor checks as a file is edited (U1's second
   question). Default: each line is parsed with `parseLine` as it changes and
   marked with its warning; references are checked by running `buildNetwork`
   over the whole file on every change and shown as pending rather than
   errors, since a name may be declared later (Q8); a file with pending
-  references or bad lines can still be saved. Settle in T10f.
+  references or bad lines can still be saved. Settle in T10g.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -300,19 +300,21 @@ prefix).
         saved and deleted; names for files from disk or copied examples
         ([T10.16](./DECISIONS.md#t10-16)). In modules with no DOM, tested in
         vitest ([T10.13](./DECISIONS.md#t10-13)). Settles Q25, Q26 and Q30.
-  - [ ] T10e — U9, files panel: the examples and workspace files listed, a
+  - [x] T10e — U9, files panel: the examples and workspace files listed, a
         read-only viewer, open from disk, download, deletion with
         confirmation, and "copy to workspace" on an example, with the DOM
         code for opening and downloading ([T10.19](./DECISIONS.md#t10-19)).
-  - [ ] T10f — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
+  - [ ] T10f — U9, console: an xterm.js pane running herbie-lite only
+        ([T9.5](./DECISIONS.md#t9-5)) on a listed file, in the page, showing
+        its report and warnings, before the editor so a file can be run as
+        soon as it is listed ([T10.20](./DECISIONS.md#t10-20)); it takes no
+        typed commands
+        ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
+  - [ ] T10g — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
         create and edit workspace files as text, with the command reference
         from `help.ts` beside it ([T9.12](./DECISIONS.md#t9-12)), each line
         checked as it is edited, pending references across the file, and
         saving into the workspace. Settles Q29.
-  - [ ] T10g — U9, console: an xterm.js pane running herbie-lite only
-        ([T9.5](./DECISIONS.md#t9-5)) on a listed file, in the page, showing
-        its report and warnings; it takes no typed commands
-        ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
   - [ ] T10h — README: how to start the UI, what it can and cannot do
         (browser only, files saved as downloads, examples read-only), and the
         "Beyond the brief" section brought up to date
