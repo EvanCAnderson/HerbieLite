@@ -1,8 +1,13 @@
 # Herbie Lite — Upgrades
 
-Potential next steps beyond the [brief](./BRIEF.md), each with the questions
+Possible next steps beyond the [brief](./BRIEF.md), each with the questions
 it would have to answer. None was built until the base submission was
-complete; since then they are being built, and each entry says whether it is.
+complete. Since then most have been, and each heading says whether.
+
+Every entry has the same shape: the idea, where it came from, and then what
+happened to it. For a built entry, that last part gives the answers its open
+questions got, and the DECISIONS entries that give the reasons. The idea and
+origin text is kept as it was written; only the order of the parts is new.
 
 <a id="u1"></a>
 
@@ -15,20 +20,20 @@ entry, which only reads typed commands and prints a report.
 - **Origin:** Mine (raised during the T1 review; LLM recommended deferring it
   here rather than building it in the base).
 
-Built in T10g ([DECISIONS T10.25](./DECISIONS.md#t10-25),
-[T10.26](./DECISIONS.md#t10-26)): the web UI's file editor ([U9](#u9)) is the builder. Since
-commands are written by editing files ([T9.12](./DECISIONS.md#t9-12)), a
-separate builder would be a second way to write one; the editor gives its
-convenience to any workspace file instead, with the command reference beside
-the text and each line checked as it is edited. See
-[DECISIONS T10.2](./DECISIONS.md#t10-2).
+**Built in T10g** ([DECISIONS T10.25](./DECISIONS.md#t10-25),
+[T10.26](./DECISIONS.md#t10-26)): the web UI's file editor ([U9](#u9)) is the
+builder. Since commands are written by editing files
+([T9.12](./DECISIONS.md#t9-12)), a separate builder would be a second way to
+write one; the editor gives its convenience to any workspace file instead,
+with the command reference beside the text and each line checked as it is
+edited. See [DECISIONS T10.2](./DECISIONS.md#t10-2).
 
-- ~~Where the file is saved, and what happens on a clash or a failed save~~ —
+- **Where the file is saved, and what happens on a clash or a failed save?**
   Q30, settled with the workspace in T10d.
-- ~~Accept lines whose references can't be checked yet?~~ — Yes: they are
+- **Accept lines whose references can't be checked yet?** Yes: they are
   marked pending, and the file can be saved (Q29, T10.25).
-- ~~A separate mode or command from the analyzer?~~ — Neither: the UI's
-  editor (T9.8, T10.2).
+- **A separate mode or command from the analyzer?** Neither: the UI's editor
+  (T9.8, T10.2).
 
 <a id="u2"></a>
 
@@ -37,9 +42,12 @@ the text and each line checked as it is edited. See
 Remove a U+FEFF byte-order mark from the start of line 1, so a file saved by
 Windows Notepad or as Excel's UTF-8 CSV doesn't lose its first line.
 
-Built in T6c rather than deferred; see
-[DECISIONS T6.6](./DECISIONS.md#t6-6) for why, and the answers this entry's
-open questions got:
+- **Origin:** LLM-suggested, deferred here by me. Found while discussing how
+  a warning would show a non-breaking space (Q10); Node's `readFileSync` and
+  `readline` both keep the BOM. The LLM then recommended keeping it out of
+  the base; I chose to build it (T6.6).
+
+**Built in T6c** rather than deferred ([DECISIONS T6.6](./DECISIONS.md#t6-6)):
 
 - **Reader or parser?** The reader (`lines.ts`), which is where a file's
   encoding artifacts belong; the parser stays free of I/O concerns.
@@ -50,11 +58,6 @@ open questions got:
 - **Silently, or noted on stderr?** Silently. There is nothing for the user
   to fix once it is handled, and a note would be a stderr line that is not a
   discarded line.
-
-- **Origin:** LLM-suggested, deferred here by me. Found while discussing how
-  a warning would show a non-breaking space (Q10); Node's `readFileSync` and
-  `readline` both keep the BOM. The LLM then recommended keeping it out of
-  the base; I chose to build it (T6.6).
 
 <a id="u3"></a>
 
@@ -74,10 +77,10 @@ is unaffected because every name in it is ASCII letters (Q9).
 - **Side benefit:** escaping control characters stops input from sending
   terminal escape codes to stderr, and shows a stray `\r` that the reader
   leaves in a line (T6c).
-- **Origin:** LLM-suggested, deferred here by me. Built in the T6 review
-  instead, once a mid-message quote was found to garble its own warning on a
-  CRLF file; see [DECISIONS T6.11](./DECISIONS.md#t6-11) for why, and the
-  answers this entry's open questions got:
+- **Origin:** LLM-suggested, deferred here by me.
+
+**Built in the T6 review** instead, once a mid-message quote was found to
+garble its own warning on a CRLF file ([DECISIONS T6.11](./DECISIONS.md#t6-11)):
 
 - **Show tabs as `\t`?** Yes. A tab is a valid separator (Q10), so it only
   ever reaches a warning on a line that is already bad, where showing it
@@ -116,11 +119,10 @@ Directions to consider:
 - Surface the tie instead of hiding it — mark the line, or report the tied
   partners on stderr while the line stays in the brief's format.
 
-Built in T10a as the last direction alone: the tie is noted and the ranking
-stays alphabetical ([DECISIONS T10.3](./DECISIONS.md#t10-3)). The other
-three directions are not planned. Q21 was settled as one note on stderr per
-tie, printed after the report
-([T10.6](./DECISIONS.md#t10-6)):
+**Built in T10a** as the last direction alone: the tie is noted and the
+ranking stays alphabetical ([DECISIONS T10.3](./DECISIONS.md#t10-3)). The
+other three directions are not planned. Q21 was settled as one note on stderr
+per tie, printed after the report ([T10.6](./DECISIONS.md#t10-6)):
 
 ```
 herbie-lite: Zebra is a tie between Al and Bo (1 contact each); Al is shown because it comes first alphabetically
@@ -143,9 +145,8 @@ nothing at all, rather than to someone who asked for it.
   as variants of the default and I chose to defer them rather than build
   them).
 
-Built in T9c; see [DECISIONS T9.9](./DECISIONS.md#t9-9) and
-[T9.10](./DECISIONS.md#t9-10) for why, and the answers this entry's open
-questions got:
+**Built in T9c** ([DECISIONS T9.9](./DECISIONS.md#t9-9),
+[T9.10](./DECISIONS.md#t9-10)):
 
 - **Where does the usage text live?** In `help.ts`, which builds each
   command's shape from `COMMAND_SYNTAX`; a test holds the README to the usage
@@ -173,13 +174,12 @@ altogether. Whatever is built here should share one source of text with both.
 - **Origin:** Mine (the base shipped a one-line hint; I removed it in the T6
   review rather than ship the stub, and deferred the fuller version here).
 
-Built in T9d, and reshaped in the same subtask: once the explanation was
+**Built in T9d, and reshaped in the same subtask:** once the explanation was
 seen, typing commands into the program stopped being a way to write them at
 all. Commands now come from a file, named or piped, and never typed. The
 explanation stays, as what a run at a terminal with no file prints: how to
-give a file, and the commands to write in it. See
-[DECISIONS T9.12](./DECISIONS.md#t9-12), which also answers this entry's
-open questions:
+give a file, and the commands to write in it
+([DECISIONS T9.12](./DECISIONS.md#t9-12)).
 
 - **Where does the text live?** In `help.ts`, sharing its command section
   with `--help` (Q18).
@@ -200,8 +200,7 @@ the tag has to exist before that email is sent.
 
 - **Origin:** Mine (raised while drafting the hand-in email).
 
-Built in T9a; see [DECISIONS T9.2](./DECISIONS.md#t9-2) for why, and the
-answers this entry's open questions got:
+**Built in T9a** ([DECISIONS T9.2](./DECISIONS.md#t9-2)):
 
 - **Which commit?** `c8fc833`, the `T8:` commit that completes the brief.
 - **Name and kind?** `base-submission`, annotated, with a message saying what
@@ -222,8 +221,7 @@ the installed vitest, and a script that reports coverage.
   audit of the codebase, which could not produce a figure without the
   dependency).
 
-Built in T9b; see [DECISIONS T9.3](./DECISIONS.md#t9-3) for why, and the
-answers this entry's open questions got:
+**Built in T9b** ([DECISIONS T9.3](./DECISIONS.md#t9-3)):
 
 - **Report or gate?** A report, `npm run coverage`; `npm run check` is
   unchanged. The measurement found no untested path, only code the types make
@@ -261,8 +259,8 @@ the file builder ([U1](#u1)). It runs in the browser alone, with no server
   Limiting the terminal to Herbie, the workspace split, and the stack:
   LLM-suggested, accepted.
 
-Built in task T10 ([T10.1](./DECISIONS.md#t10-1)): the scaffold (T10c), the
-workspace (T10d), the files panel (T10e), the console (T10f), U1's editor
+**Built in task T10** ([T10.1](./DECISIONS.md#t10-1)): the scaffold (T10c),
+the workspace (T10d), the files panel (T10e), the console (T10f), U1's editor
 (T10g), browser tests ([U11](#u11), T10h), and the README (T10i). Its
 questions were PLAN §4's Q22, Q23 and Q25–Q30: where the code lives, how it
 is tested, workspace file names, a file open in two tabs, how the console
@@ -296,9 +294,8 @@ Laurie: Chris (2), Molly (1)
 - **Origin:** The queries: Mine. Command-line options: LLM-suggested,
   accepted.
 
-Built in T10b; see [DECISIONS T10.8](./DECISIONS.md#t10-8),
-[T10.9](./DECISIONS.md#t10-9) and [T10.10](./DECISIONS.md#t10-10) for the
-answers its open questions got:
+**Built in T10b** ([DECISIONS T10.8](./DECISIONS.md#t10-8),
+[T10.9](./DECISIONS.md#t10-9), [T10.10](./DECISIONS.md#t10-10)):
 
 - **Options and the report?** Each option takes the next argument as the
   company, before or after the file; the answer replaces the report, one
@@ -318,7 +315,7 @@ A browser test would load the built page and use it as a person does.
 
 - **Origin:** LLM-suggested, deferred here as Q23's default.
 
-Built in T10h, after the editor and before the README
+**Built in T10h**, after the editor and before the README
 ([DECISIONS T10.22](./DECISIONS.md#t10-22)): Playwright on Chromium
 ([T10.27](./DECISIONS.md#t10-27)), run by `npm run test:e2e` rather than in
 `npm run check` ([T10.28](./DECISIONS.md#t10-28)), with one test per thing a
@@ -345,8 +342,8 @@ Open questions:
 - **How is a lost permission shown?** The browser can revoke it between
   visits.
 
-Not part of T10 ([DECISIONS T10.22](./DECISIONS.md#t10-22)): it works in two
-of the four main browsers, downloads already get a file to disk, and the
+**Not part of T10** ([DECISIONS T10.22](./DECISIONS.md#t10-22)): it works in
+two of the four main browsers, downloads already get a file to disk, and the
 README names it as not built.
 
 <a id="u13"></a>
@@ -371,7 +368,7 @@ Open questions:
 - **Does the echoed command show the option?** It should, so the command can
   still be copied into a terminal.
 
-Built in T11c, with the console made a shell that runs herbie-lite only
+**Built in T11c**, with the console made a shell that runs herbie-lite only
 ([DECISIONS T11.5](./DECISIONS.md#t11-5)). A company field suggests the
 companies the file declares and takes any name, as the CLI does, so an
 undeclared one gets Q33's error; **--partners** and **--employees** type the

@@ -1,8 +1,8 @@
 # Herbie Lite — Plan & Requirements
 
-Working document. Breaks the [brief](./BRIEF.md) into concrete, checkable
-requirements, indexes the design decisions, and tracks open questions and tasks.
-Full text and rationale for every decided item lives in
+The working plan. It breaks the [brief](./BRIEF.md) into checkable
+requirements, points to the key decisions, and tracks open questions and
+tasks. The reasoning behind every settled item is in
 [`DECISIONS.md`](./DECISIONS.md); this document links to it rather than
 repeating it.
 
@@ -33,10 +33,10 @@ Four entity kinds, drawn straight from the four commands:
   - `Contact <EmployeeName> <PartnerName> <email|call|coffee>`
   - Contact types are a closed set: `email`, `call`, `coffee`. The brief says the
     program "should only accept" these; any other type is rejected (see Q7).
-- **FR2 — Input.** The brief lets us assume well-formed input; malformed lines are
-  still handled (Q7). Accept via **file argument, STDIN, and interactive entry**
-  (see T1.10). After the base, interactive entry was removed: commands come
-  from a file, named or piped, and typing them is refused
+- **FR2 — Input.** The brief lets us assume well-formed input; malformed
+  lines are still handled (Q7). Input is a **file argument or STDIN**. The
+  base also took typed input (T1.10); after it, commands come only from a
+  file, named or piped, and typing them is refused
   ([T9.12](./DECISIONS.md#t9-12)).
 - **FR3 — Output to stdout**, one line per company.
 - **FR4 — Company report.** List **all** companies, **sorted alphabetically**. For each:
@@ -49,10 +49,9 @@ Four entity kinds, drawn straight from the four commands:
 
 ## 3. Design decisions (index)
 
-The decisions a reviewer should read first, chosen by judgment rather than by
-a rule ([T5.7](./DECISIONS.md#t5-7)); full text in
-[DECISIONS](./DECISIONS.md), in the section of the task that made each one.
-That log keeps the complete record, in task order.
+The decisions a reviewer should read first, chosen by judgment rather than
+by a rule ([T5.7](./DECISIONS.md#t5-7)). [DECISIONS](./DECISIONS.md) has
+each one in full, and the complete record in task order.
 
 - [**T1.10**](./DECISIONS.md#t1-10) — Input: file argument, STDIN, and interactive entry.
 - [**T1.11**](./DECISIONS.md#t1-11) — Layers: `parser` / `network` / `report` / `cli`.
@@ -69,14 +68,16 @@ That log keeps the complete record, in task order.
 - [**T6.12**](./DECISIONS.md#t6-12) — The reader names its own failures; a bug still crashes.
 - [**T10.23**](./DECISIONS.md#t10-23) — The CLI's work is one function, `run`, shared by `main` and the web console.
 
-## 4. Questions and assumptions (document all in README)
+## 4. Questions and assumptions
+
+Every question, open or decided, is covered in the README.
 
 ### Open
 
-A new question gets its current default and the subtask that settles it
-([T2.2](./DECISIONS.md#t2-2)). Those the base raised and those opened by
-planning the upgrades are all settled (below). Open now, from the audit
-follow-ups (T12):
+An open question states its
+current default and the subtask that settles it
+([T2.2](./DECISIONS.md#t2-2)). All those raised by the base and the upgrades
+are settled (below). Open now, from the audit follow-ups (T12):
 
 - **Q38** — Should control characters in text the console echoes be escaped
   (`\u009b`, as warnings do under T6.11) or stripped? _Default:_ escape. It
@@ -141,10 +142,9 @@ Scripts are defined in `package.json`.
 
 ## 6. Task breakdown
 
-Subtasks (lettered, see [DECISIONS T2.1](./DECISIONS.md#t2-1)) are listed in
-the order they are built. Each subtask ships with its own tests and DECISIONS
-entries, and is a natural commit boundary (commits still use the `T<n>:`
-prefix).
+Subtasks are lettered ([DECISIONS T2.1](./DECISIONS.md#t2-1)) and listed in
+the order built. Each ships with its own tests and DECISIONS entries, and is a
+natural commit boundary. Commits still use the `T<n>:` prefix.
 
 - [x] T0 — Confirm tooling (§5). Tie-break (Q1) deferred to implementation.
 - [x] T1 — Scaffold project: `package.json`, `tsconfig`(+`.build`), vitest,
@@ -347,9 +347,10 @@ prefix).
 - [ ] T12 — Audit follow-ups: what an audit of the whole repository after
       T11 found the docs, a test or the page claiming but not doing
       ([T12.1](./DECISIONS.md#t12-1)). The record is repaired first, then
-      the code under it, and the docs are made easier to read last
-      ([T12.6](./DECISIONS.md#t12-6)). Running the gates on every push is
-      [U15](./UPGRADES.md#u15), not part of T12.
+      the docs are made easier to read ([T12.6](./DECISIONS.md#t12-6),
+      [T12.7](./DECISIONS.md#t12-7)), then the code under them is fixed.
+      Running the gates on every push is [U15](./UPGRADES.md#u15), not part
+      of T12.
   - [x] T12a — Repair the decision log's decoded escapes. In T6.11, T8.3
         and T8.4 the escape notation was written as the characters it
         names (DECISIONS lines 1245, 1277–1279, 1642, 1654, 1661: a
@@ -443,11 +444,13 @@ prefix).
         `dom.ts:19` revokes the URL straight after the click. Fix the timing
         if either fails. The browser tests stay Chromium-only (T10.27)
         unless this finds a difference.
-  - [ ] T12i — Docs readability pass, last, once the code under the docs
-        has stopped changing ([T12.6](./DECISIONS.md#t12-6)): shorter
-        sentences, clearer headings, and less repetition in the README,
-        PLAN and UPGRADES, and in DECISIONS' opening and Key. No committed
-        DECISIONS entry is reworded (T5.6), and BRIEF stays frozen.
+  - [x] T12i — Docs readability pass: shorter sentences, clearer headings,
+        and less repetition in the README, PLAN and UPGRADES, and in
+        DECISIONS' opening and Key. No committed DECISIONS entry is reworded
+        (T5.6), and BRIEF stays frozen. Done after T12b rather than last,
+        since the docs are what a reviewer reads first
+        ([T12.7](./DECISIONS.md#t12-7)); T12c–T12h write their own doc
+        changes to the same standard.
 
 ## 7. Definition of done
 
@@ -457,10 +460,9 @@ prefix).
   Globex: Chris (2)
   Hooli: Molly (1)
   ```
-- Runs via file arg, STDIN, and interactive entry (typed input is STDIN with
-  no argument; the base prints no hint, [T6.13](./DECISIONS.md#t6-13)). This
-  is the base's definition; after it, typed input is refused
-  ([T9.12](./DECISIONS.md#t9-12)).
+- Runs via a file argument and STDIN. The base also accepted typed input,
+  with no hint ([T6.13](./DECISIONS.md#t6-13)); since then typed input is
+  refused ([T9.12](./DECISIONS.md#t9-12)).
 - Malformed and unresolved lines produce stderr warnings, the report still
   prints, and the exit code is 0 (Q5, Q7, Q8).
 - `npm run check` passes (typecheck, lint, format, tests).

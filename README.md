@@ -1,8 +1,8 @@
 # Herbie Lite
 
 A code sample for Drive Capital. It reads a file describing Drive's
-interpersonal network — partners, companies, employees, and the contacts
-between them — and reports, for every company, the partner with the strongest
+interpersonal network: partners, companies, employees, and the contacts
+between them. For every company, it reports the partner with the strongest
 relationship to it.
 
 ```
@@ -12,17 +12,17 @@ Globex: Chris (2)
 Hooli: Molly (1)
 ```
 
-`examples/input.txt` is that example, verbatim from the brief and the same
-file the test suite asserts against; five more examples sit beside it.
+`examples/input.txt` is the brief's example, verbatim. The test suite asserts
+against the same file, and five more examples sit beside it.
 
-The submission that answers the brief is tagged `base-submission`; any later
+The submission that answers the brief is tagged `base-submission`. Every later
 commit is an upgrade beyond it ([T9.2](docs/DECISIONS.md#t9-2)).
 
 ---
 
 ## Build, run, and test
 
-**Requires Node.js 22.13 or later** (`node --version`). No other runtime
+**Requires Node.js 22.13 or later** (`node --version`). There are no runtime
 dependencies; everything else is a dev dependency.
 
 ```bash
@@ -33,8 +33,8 @@ npm install
 npm run check
 ```
 
-`check` is the gate: type-check, lint, format check, then the full test suite,
-stopping at the first failure. It needs no build step.
+`check` is the gate. It runs the type-check, lint, format check and tests, in
+that order, and stops at the first failure. It needs no build.
 
 ```bash
 npm run build
@@ -42,34 +42,35 @@ npm run build
 
 Compiles the program to `dist/` and bundles the web page into `dist/web/`.
 Run it before any `node dist/bin.js` command below, and again after changing
-the source; `npm start --` runs the source directly and
-needs no build. Individual scripts are `npm run typecheck`, `npm run lint`,
+the source. `npm start --` runs the source directly and needs no build.
+
+The steps of `check` also run alone: `npm run typecheck`, `npm run lint`,
 `npm run format:check`, `npm test`, and `npm run test:watch`.
 
 ```bash
 npm run coverage
 ```
 
-Runs the tests with line and branch coverage over `src/` and `web/`, printing a
-table and writing an HTML report to `coverage/`. It is a report, not part of
-`check` ([T9.3](docs/DECISIONS.md#t9-3)).
+Runs the tests with line and branch coverage over `src/` and `web/`. It
+prints a table and writes an HTML report to `coverage/`. It is a report, not
+a gate ([T9.3](docs/DECISIONS.md#t9-3)).
 
 ```bash
 npx playwright install chromium   # once: downloads the browser, about 94MB
 npm run test:e2e
 ```
 
-Builds the web page and runs seven tests that use it in a real browser:
-opening it, running a file, typing a command into the console, asking a query
-with the buttons, editing and saving a file, naming a new one and watching the
-editor's marks, and deleting ([T10.29](docs/DECISIONS.md#t10-29),
+Builds the web page and runs seven tests that use it in a real browser. They
+cover opening the page, running a file, typing a command, asking a query with
+the buttons, editing and saving, naming a new file and watching its marks,
+and deleting ([T10.29](docs/DECISIONS.md#t10-29),
 [T12.5](docs/DECISIONS.md#t12-5)). They are not part of `check`, so `check`
-still needs no browser and no build, but `check` does type-check and lint them
+still needs no browser. `check` does type-check and lint them
 ([T10.28](docs/DECISIONS.md#t10-28)).
 
 ### Running it
 
-Four forms, all printing the same report
+There are four forms, and all four print the same report
 ([T1.10](docs/DECISIONS.md#t1-10)):
 
 ```bash
@@ -79,14 +80,14 @@ npm start -- examples/input.txt            # the same, from source, no build
 cat examples/input.txt | npm start
 ```
 
-The two `npm start` forms print npm's own header on stdout before the report.
-To send only the report to a file or another program from source, add
-`--silent`: `npm start --silent -- examples/input.txt > report.txt`
+The two `npm start` forms also print npm's own header on stdout, before the
+report. To get only the report from source, add `--silent`:
+`npm start --silent -- examples/input.txt > report.txt`
 ([T12.4](docs/DECISIONS.md#t12-4)).
 
 The general form is
-`node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]`,
-and `--help` (or `-h`) prints it with the queries, the four commands and the
+`node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]`.
+`--help`, or `-h`, prints it along with the queries, the four commands and the
 contact types ([Q19](docs/DECISIONS.md#q19)):
 
 ```bash
@@ -94,14 +95,21 @@ node dist/bin.js --help
 npm start -- --help   # from source
 ```
 
-From source, the `--` matters: `npm start --help` is read by npm, which prints
-its own help instead.
+From source, the `--` matters. Without it, npm reads `--help` itself and
+prints its own help.
+
+Commands come from a file: write them in any editor, then name the file or
+pipe it in. A bare `node dist/bin.js` at a terminal does not wait for typed
+commands. It prints a short welcome, how to give a file, and the four
+commands, then exits 1, since no report was produced
+([Q20](docs/DECISIONS.md#q20)). A file can be fixed at the line a warning
+names and run again; a typed session cannot.
 
 ### Asking about one company
 
-Since the base was tagged, two queries answer the brief's first example
-question, "Who do we know who works at ACME Co?", and print instead of the
-report ([Q31](docs/DECISIONS.md#q31)):
+Two queries answer the brief's first example question, "Who do we know who
+works at ACME Co?". They were added after the base was tagged, and print
+instead of the report ([Q31](docs/DECISIONS.md#q31)):
 
 ```
 $ node dist/bin.js --partners Globex examples/input.txt
@@ -112,35 +120,30 @@ Jamie: No contacts
 Laurie: Chris (2), Molly (1)
 ```
 
-`--partners` lists every partner who has contacted the company, strongest
-first, with equal strengths alphabetical as in the report; its first partner is
-always the one the report names. `--employees` lists the company's employees
-alphabetically, each with the partners who contacted them
-([Q32](docs/DECISIONS.md#q32)). One query per run; the option can come before
-or after the file, and works with a pipe too. Warnings still print on stderr,
-since a discarded line can change an answer, but tie notes do not, since
-`--partners` already shows every tied partner. A company the input never
-declares is an error that exits 1, checked once the whole file is read
-([Q33](docs/DECISIONS.md#q33)).
+- `--partners` lists every partner who has contacted the company, strongest
+  first. Equal strengths are alphabetical, as in the report, so the first
+  partner is always the one the report names.
+- `--employees` lists the company's employees alphabetically, each with the
+  partners who contacted them ([Q32](docs/DECISIONS.md#q32)).
 
-Commands come from a file: write them in any editor, then name the file or
-pipe it in. Running `node dist/bin.js` with neither, at a terminal, does not
-wait for typed commands. It prints a short welcome, how to give a file, and
-the four commands with what each one declares, then exits 1, since no report
-was produced ([Q20](docs/DECISIONS.md#q20)). A file can be read again, fixed
-at the line a warning names, and rerun, which a typed session cannot.
+One query per run. The option can come before or after the file, and works
+with a pipe. Warnings still print, since a discarded line can change an
+answer. Tie notes do not, since `--partners` already shows every tied
+partner. A company the input never declares is an error, exit 1, checked once
+the whole file is read ([Q33](docs/DECISIONS.md#q33)).
 
-### Exit codes
+### Exit codes and streams
 
-- **0** — a report, or a query's answer, was produced. Bad lines in the input
-  never change this: they are reported on stderr and the output still prints.
-- **1** — nothing was produced: more than one file argument, an unknown option,
-  a query with no company, two queries, a company the input never declares, no
-  file at a terminal (which prints the opening instead), a file that could not
-  be read, or an I/O failure.
+- **0**: a report, or a query's answer, was produced. Bad lines never change
+  this. They are reported on stderr, and the output still prints.
+- **1**: nothing was produced. The causes are more than one file argument, an
+  unknown option, a query with no company, two queries, a company the input
+  never declares, no file at a terminal (which prints the opening instead), a
+  file that could not be read, or an I/O failure.
 
-Warnings and tie notes go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
-report.txt` gives a clean file with the warnings still on screen.
+The report goes to stdout; warnings and tie notes go to stderr. So
+`node dist/bin.js examples/input.txt > report.txt` gives a clean file and
+leaves the warnings on screen.
 
 ### In a browser
 
@@ -150,57 +153,55 @@ Since the base was tagged, a web page does the same work in a browser:
 npm run ui
 ```
 
-Builds the page and serves it at <http://127.0.0.1:5170>. On it:
+This builds the page and serves it at <http://127.0.0.1:5170>. It has three
+parts:
 
-- **Files.** The six examples are listed read-only; any of them can be copied
+- **Files.** The six examples are listed read-only. Any of them can be copied
   into a workspace, and any `.txt` file on disk can be opened into it.
 - **Console.** A shell that runs herbie-lite and nothing else
-  ([T11.5](docs/DECISIONS.md#t11-5)). Type a command as you would in a
-  terminal: `node dist/bin.js examples/input.txt`, a query such as
-  `node dist/bin.js --partners Globex examples/input.txt`, the same through
-  `npm start --`, or a file piped in with `cat examples/input.txt | node dist/bin.js`.
-  A file is `examples/<name>` or a workspace file by its name; `help` lists
-  the rest. **Run** types the command for the file shown, and a company
-  field with **--partners** and **--employees** types a query. Each run
-  prints what the command line would: the warnings, the answer and the tie
-  notes, then the exit code. It is the program's own code, not a copy, so
-  the output is the same, line for line ([T10.23](docs/DECISIONS.md#t10-23)).
+  ([T11.5](docs/DECISIONS.md#t11-5)). Type a command as in a terminal:
+  `node dist/bin.js examples/input.txt`, a query, the same through
+  `npm start --`, or `cat examples/input.txt | node dist/bin.js`. A file is
+  `examples/<name>`, or a workspace file by its name; `help` lists the rest.
+  **Run** types the command for the file shown. A company field with
+  **--partners** and **--employees** types a query. Each run prints what the
+  command line would, then the exit code. It is the program's own code, not a
+  copy, so the output matches line for line
+  ([T10.23](docs/DECISIONS.md#t10-23)).
 - **Editor.** A workspace file opens as text, with the four commands beside
   it, or below it on a narrow screen. As you type, each line the program would
-  warn about is marked: _discarded_ if it would be thrown away as it stands,
-  _pending_ if it names a company or person not declared yet
+  warn about is marked. It is _discarded_ if it would be thrown away as it
+  stands, and _pending_ if it names a company or person not declared yet
   ([Q29](docs/DECISIONS.md#q29)). A file saves with marks or without, and
-  **Run** runs what is in the editor, saved or not.
+  **Run** runs the editor's text, saved or not.
 
 What it does not do:
 
 - **It has no server** ([T10.16](docs/DECISIONS.md#t10-16)). `npm run ui` only
-  serves the built files; everything runs in the page, and nothing is sent
+  serves the built files. Everything runs in the page, and nothing is sent
   anywhere.
 - **The workspace lives in that browser**, in its local storage. Files reach
-  your disk only as downloads: editing a file opened from disk changes the
-  copy in the workspace, never the original. Writing back to the original
-  file is a next step not taken ([U12](docs/UPGRADES.md#u12)). If the browser
-  refuses storage, as some private windows do, the workspace lasts until the
-  page is reloaded, and the page says so.
+  your disk only as downloads, so editing a file opened from disk never
+  changes the original. Writing back to it was not built
+  ([U12](docs/UPGRADES.md#u12)). If the browser refuses storage, as some
+  private windows do, the workspace lasts until reload, and the page says so.
 - **The examples cannot be edited**, since the tests assert every one
-  ([T9.6](docs/DECISIONS.md#t9-6)); copy one to change it.
-- **The console runs herbie-lite and nothing else**
-  ([T9.5](docs/DECISIONS.md#t9-5)): any other program, and a command such as
-  `Partner Chris` typed on its own, is refused with a reason. Commands go in
-  a file ([T9.12](docs/DECISIONS.md#t9-12)).
-- **Two tabs can edit one file**, but a save made from an older copy is
-  refused and offers to keep yours or load theirs, so neither is lost
+  ([T9.6](docs/DECISIONS.md#t9-6)). Copy one to change it.
+- **The console runs nothing else** ([T9.5](docs/DECISIONS.md#t9-5)). Another
+  program is refused with a reason. So is a command such as `Partner Chris`
+  typed on its own, since commands go in a file
+  ([T9.12](docs/DECISIONS.md#t9-12)).
+- **Two tabs can edit one file, and neither edit is lost.** A save from an
+  older copy is refused, and offers to keep yours or load theirs
   ([Q26](docs/DECISIONS.md#q26)).
 
 ---
 
 ## Examples
 
-[`examples/`](examples) holds six inputs. Each one runs as it stands, and each
-is asserted by the test suite for its exact report **and** its exact warnings,
-so none of them can quietly stop matching the program
-([T7.5](docs/DECISIONS.md#t7-5)).
+[`examples/`](examples) holds six inputs. The test suite asserts each one's
+exact report **and** exact warnings, so none can quietly stop matching the
+program ([T7.5](docs/DECISIONS.md#t7-5)).
 
 | File                    | What it shows                                                                                                                                                                   |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -211,16 +212,16 @@ so none of them can quietly stop matching the program
 | `queries.txt`           | Both queries (Q31, Q32): `--partners` ranking three partners, `--employees` with an employee nobody contacted, and a tie the report notes but `--partners Hooli` shows in full. |
 | `warnings.txt`          | Every warning the program can print, with the report still printing underneath (Q7).                                                                                            |
 
-The input format has no comment syntax — the brief marks the comment in its own
-example as illustration only — so none of these files is annotated; what each
-one shows is described here instead.
+The input format has no comments. The brief marks the comment in its own
+example as illustration only. So the files are not annotated, and what each
+shows is described here.
 
 ### Declaration order does not matter
 
-The brief guarantees only that a company precedes its employees, and its own
-example declares a partner after the contacts naming them. Nothing about a
-person or a contact is judged until input ends, so this file works despite
-naming everything backwards:
+The brief guarantees only that a company comes before its employees. Its own
+example declares a partner after the contacts that name them. Nothing about a
+person or a contact is judged until input ends, so this file works although
+it names everything backwards:
 
 ```
 $ cat examples/late-declarations.txt
@@ -240,17 +241,21 @@ ACME: Molly (2)
 Globex: Chris (1)
 ```
 
-No warnings: the contact on line 1 finds an employee declared on line 2, whose
-company arrives on line 4, and a partner declared on line 3. An implementation
-that resolved each name as it read it would reject most of this file, and the
-brief's own example would not tell you which kind you had.
+There are no warnings. The contact on line 1 finds its employee on line 2,
+whose company arrives on line 4, and its partner on line 3. A program that
+resolved each name as it read it would reject most of this file. The brief's
+own example would not show the difference.
 
 ### Every warning, on one file
 
-`warnings.txt` produces twelve warnings, which between them cover every message
-the program can print: the four ways the parser rejects a line, both wordings of
-a repeated declaration, an employee at an undeclared company, and a contact that
-fails on an unknown employee, an unknown partner, or two names in swapped roles.
+`warnings.txt` produces twelve warnings, which cover every message the
+program can print:
+
+- the four ways the parser rejects a line;
+- both wordings of a repeated declaration;
+- an employee at an undeclared company;
+- a contact with an unknown employee, an unknown partner, or two names in
+  swapped roles.
 
 ```
 $ node dist/bin.js examples/warnings.txt
@@ -264,18 +269,20 @@ herbie-lite: line 9: names must be letters only; expected "Partner <Name>"; disc
 ... and eight more, through line 18
 ```
 
-Three things in that file are worth pointing at:
+Three lines in it are worth pointing at:
 
-- **Line 8, `Company Drive Capital`,** is why Drive Capital can never appear in
-  the output: a name is one word, so the declaration is not expressible (Q3).
+- **Line 8, `Company Drive Capital`,** shows why Drive Capital can never
+  appear in the output. A name is one word, so that declaration cannot be
+  written (Q3).
 - **Line 10 holds a literal non-breaking space** between `Chris` and `Smith`.
   It is invisible in the file, and the warning shows it as
-  `Partner Chris\u00a0Smith` ([T6.11](docs/DECISIONS.md#t6-11)) — which is the
-  whole reason quoted input is escaped.
-- **Two kinds of problem, one order.** Lines 6 to 11 fail on their own words,
-  and lines 13 to 18 only once the whole file is in, because a name cannot be
-  judged before then. Both kinds print together after input ends, in line
-  order, so stderr reads like the file ([T9.13](docs/DECISIONS.md#t9-13)).
+  `Partner Chris\u00a0Smith` ([T6.11](docs/DECISIONS.md#t6-11)). That is why
+  quoted input is escaped.
+- **Two kinds of problem print in one order.** Lines 6 to 11 fail on their
+  own words. Lines 13 to 18 fail only once the whole file is in, because a
+  name cannot be judged before then. All warnings print after input ends, in
+  line order, so stderr reads like the file
+  ([T9.13](docs/DECISIONS.md#t9-13)).
 
 ---
 
@@ -291,113 +298,120 @@ The program is four layers, each testable without the one above it
 | `report.ts`  | Pure functions: a resolved network → the report, its ties, and the queries.      |
 | `cli.ts`     | The only module that touches a stream: picks a source, wires the layers, prints. |
 
-`cli.ts` has four helpers of its own: `run.ts` does everything the program
-does apart from streams, reading the arguments and the input and deciding what
-goes to stdout and stderr, so the web console runs the same code
-([T10.23](docs/DECISIONS.md#t10-23)); `lines.ts` reads decoded text as
-numbered lines; `warnings.ts` holds every warning and error the program writes
-to stderr ([T6.5](docs/DECISIONS.md#t6-5)); and `help.ts` builds the usage line,
-`--help`, and the opening for a run with no file from the parser's grammar
-table ([Q18](docs/DECISIONS.md#q18)). `bin.ts` is the executable entry and contains
-no logic, so nothing has to detect how it was loaded
-([T1.6](docs/DECISIONS.md#t1-6)).
+`cli.ts` has four helpers of its own:
 
-The web page is a fifth consumer of the same layers, not a fifth layer. Its
-code is in `web/`, with its own TypeScript project, so browser code cannot
-reach for a Node API nor the program's code for the DOM
+- `run.ts` does all of the program's work apart from streams: it reads the
+  arguments and the input, and decides what goes to stdout and stderr. The
+  web console runs the same code ([T10.23](docs/DECISIONS.md#t10-23)).
+- `lines.ts` reads decoded text as numbered lines.
+- `warnings.ts` words every warning and error the program writes to stderr
+  ([T6.5](docs/DECISIONS.md#t6-5)).
+- `help.ts` builds the usage line, `--help`, and the opening for a run with no
+  file, from the parser's grammar table ([Q18](docs/DECISIONS.md#q18)).
+
+`bin.ts` is the executable entry and holds no logic, so nothing has to detect
+how it was loaded ([T1.6](docs/DECISIONS.md#t1-6)).
+
+The web page uses the same layers; it is not a fifth one. Its code is in
+`web/`, with its own TypeScript project, so browser code cannot reach for a
+Node API, and the program's code cannot reach for the DOM
 ([Q22](docs/DECISIONS.md#q22)). The parser, network, report and `run.ts` run
-in the page unchanged, which is only possible because none of them does any
-I/O. What the page decides is in modules with no DOM, tested in vitest beside
-the rest; the code that draws the page is covered by the browser tests
-instead ([Q23](docs/DECISIONS.md#q23), [Q36](docs/DECISIONS.md#q36)).
+in the page unchanged, which works because none of them does any I/O. The
+page's logic is in modules with no DOM, tested in vitest. The code that draws
+the page is covered by the browser tests ([Q23](docs/DECISIONS.md#q23),
+[Q36](docs/DECISIONS.md#q36)).
 
-The design decisions behind that, each with what it costs:
+The main design decisions, each with what it costs:
 
-- **Commands are a discriminated union** on the keyword, with an `assertNever`
-  guard in every switch ([T1.12](docs/DECISIONS.md#t1-12)). Adding a fifth
-  command makes the compiler name every place that must handle it.
+- **Commands are a discriminated union** on the keyword, with an
+  `assertNever` guard in every switch ([T1.12](docs/DECISIONS.md#t1-12)).
+  Adding a fifth command makes the compiler name every place that must handle
+  it.
 - **The network stores raw facts, not tallies**
   ([T1.13](docs/DECISIONS.md#t1-13)). Strengths are computed at report time.
-  Pre-summing while reading is impossible anyway — a contact cannot be resolved
-  until all input is in — and keeping the contacts is what would let the other
-  questions Herbie answers ("who do we know at ACME?") be added later. The cost
-  is one extra pass over the contacts per run.
+  Tallying while reading is impossible anyway, since a contact cannot be
+  resolved until all input is in. Keeping the contacts is also what let the
+  queries be added later. The cost is one extra pass over the contacts.
 - **Nothing about a person or a contact is judged until input ends**
-  ([T4.3](docs/DECISIONS.md#t4-3)). `buildNetwork` therefore takes the whole
-  command stream as one argument rather than being an object fed line by line,
-  because such an object would answer every question wrongly until it was told
-  input had finished. The cost is that the commands are held in memory, which
-  [T1.13](docs/DECISIONS.md#t1-13) already requires.
+  ([T4.3](docs/DECISIONS.md#t4-3)). So `buildNetwork` takes the whole command
+  stream as one argument. An object fed line by line would answer every
+  question wrongly until told the input had ended. The cost is holding the
+  commands in memory, which T1.13 already requires.
 - **The report layer keeps its tallies private**
-  ([T5.1](docs/DECISIONS.md#t5-1)) and exports three functions: the report
-  with its ties ([T10.7](docs/DECISIONS.md#t10-7)), and one for each query
+  ([T5.1](docs/DECISIONS.md#t5-1)). It exports three functions: the report
+  with its ties ([T10.7](docs/DECISIONS.md#t10-7)), and one per query
   ([T10.9](docs/DECISIONS.md#t10-9)). All three share one ranking, so they
-  cannot disagree about who comes first. They return lines, not a joined
-  string, so the choice of line ending and trailing newline stays with the
-  stream that writes them.
+  cannot disagree about who comes first. They return lines, not one string,
+  so the line ending stays with the stream that writes them.
 - **Bad data warns; a broken invariant crashes**
   ([T6.1](docs/DECISIONS.md#t6-1)). A malformed line is data, and data never
-  costs the user the report. A network that contradicts its own invariants is a
-  bug, so it throws and the stack trace survives
+  costs the user the report. A network that breaks its own invariants is a
+  bug, so it throws and keeps its stack trace
   ([T5.2](docs/DECISIONS.md#t5-2)). Only the read and the final write are
-  caught, and the reader names its own failures so that a bug in another layer
-  is never misreported as a problem with the user's file
-  ([T6.12](docs/DECISIONS.md#t6-12)).
+  caught. The reader names its own failures, so a bug elsewhere is never
+  blamed on the user's file ([T6.12](docs/DECISIONS.md#t6-12)).
 - **`main` takes its streams as arguments** and returns an exit code
-  ([T6.2](docs/DECISIONS.md#t6-2)), so every test drives the real entry point
-  with no stubbing and `process` is named in exactly one file.
-- **Input is read line by line with its own reader**
-  ([T6.4](docs/DECISIONS.md#t6-4)), so each line number is exact. Lines are
-  split on `\n` alone: `readline` also breaks on a lone `\r`, which would silently renumber
-  every later line and make every later warning point at the wrong one.
+  ([T6.2](docs/DECISIONS.md#t6-2)). Every test drives the real entry point
+  with no stubbing, and `process` is named in one file only.
+- **Input is read by the program's own line reader**
+  ([T6.4](docs/DECISIONS.md#t6-4)), so each line number is exact. It splits
+  on `\n` alone. Node's `readline` also splits on a lone `\r`, which would
+  silently renumber every later line, and every later warning with it.
 
 Tests sit beside the code they cover ([T1.1](docs/DECISIONS.md#t1-1)). The
-brief's example is tested twice: `report.test.ts` reads the shipped `examples/input.txt`
-from disk, so the file a reviewer runs and the file the suite asserts on cannot
-drift apart ([T5.5](docs/DECISIONS.md#t5-5)), and `cli.test.ts` spawns the
-program end to end for both the file argument and a pipe, asserting the exact
-output with **empty stderr** ([T6.10](docs/DECISIONS.md#t6-10)).
+brief's example is tested twice. `report.test.ts` reads the shipped
+`examples/input.txt`, so the file a reviewer runs and the file the suite
+checks cannot drift apart ([T5.5](docs/DECISIONS.md#t5-5)). `cli.test.ts`
+runs the program as a process, with a file argument and with a pipe, and
+asserts the exact output with **empty stderr**
+([T6.10](docs/DECISIONS.md#t6-10)).
 
 ---
 
 ## How I used LLM tools
 
-I used Claude throughout, as an engineer I was pairing with. It produced the first drafts, and I directed the work,
-argued with it, and own the result.
+I used Claude throughout, as an engineer I was pairing with. It wrote the
+first drafts. I directed the work, argued with it, and own the result.
 
-The method was to make the reasoning the artifact. The repository carries three
-documents: the brief, frozen verbatim as the source of truth; a
-[plan](docs/PLAN.md) that turns it into checkable requirements, open questions,
-and tasks; and a [decision log](docs/DECISIONS.md) where every choice is written
-down **when it is made**, with its context, its reasoning, and the alternatives
-it rejected. All three are loaded into the model's context at the start of every
-session ([T4.1](docs/DECISIONS.md#t4-1)), so a settled question stays settled
-instead of being relitigated three sessions later, and a decision made in
-conversation reaches the record even when it changes no code yet
-([T4.2](docs/DECISIONS.md#t4-2)).
+The method was to make the reasoning the artifact. The repository carries
+three documents:
 
-Every entry in that log ends with an **Origin** line recording where the idea
+- the brief, frozen verbatim as the source of truth;
+- a [plan](docs/PLAN.md) that turns it into checkable requirements, open
+  questions, and tasks;
+- a [decision log](docs/DECISIONS.md), where every choice is written down
+  **when it is made**, with its context, its reasoning, and the alternatives
+  it rejected.
+
+All three are loaded into the model's context at the start of every session
+([T4.1](docs/DECISIONS.md#t4-1)). So a settled question stays settled, and a
+decision made in conversation reaches the record even before it changes any
+code ([T4.2](docs/DECISIONS.md#t4-2)).
+
+Every entry in the log ends with an **Origin** line saying where the idea
 came from: `Mine`, `LLM-suggested, accepted`, `LLM-suggested, modified` with
-what I changed, or `LLM-suggested, rejected`. Those lines are the honest record,
-and the pattern in them is roughly this. The model was reliably good at
-scaffolding, at naming the alternatives to a choice once asked, and at finding
-the case I had not considered — a stray `\r` renumbering every warning, a
-warning that garbles itself on a Windows file. It was less good at judgment
-about scope and about what a user experiences: it recommended failing on the
-first bad line, leaving a byte-order mark unhandled, and shipping a one-line
-interactive hint, and I overruled all three for reasons the relevant entries
-give. Asking it for its reasoning before accepting a recommendation changed the
-recommendation often enough to be worth doing every time, and twice changed my
-own.
+what I changed, or `LLM-suggested, rejected`. Those lines are the honest
+record, and they show a pattern:
 
-Nothing here was accepted because it compiled. Where I took the model's
-suggestion, the entry says so; where I did not, the entry says what it
+- The model was reliably good at scaffolding, at naming the alternatives to
+  a choice once asked, and at finding cases I had missed: a stray `\r`
+  renumbering every warning, or a warning that garbles itself on a Windows
+  file.
+- It was weaker on scope and on what a user experiences. It recommended
+  failing on the first bad line, leaving a byte-order mark unhandled, and
+  shipping a one-line interactive hint. I overruled all three, for reasons
+  the entries give.
+- Asking for its reasoning before accepting a recommendation often changed
+  the recommendation, so I did it every time. Twice it changed my own view.
+
+Nothing was accepted because it compiled. Where I took the model's
+suggestion, the entry says so. Where I did not, it says what the model
 recommended instead.
 
 One failure was the tools' own. They wrote some escape sequences in the
-decision log as the characters they name: invisible marks, and a raw
-terminal escape that turned a terminal red when the file was printed. An
-audit found them; the escapes were restored in place, each line listed
+decision log as the characters they name: invisible marks, and a raw terminal
+escape that turned a terminal red when the file was printed. An audit found
+them. The escapes were restored in place, each line listed
 ([Q37](docs/DECISIONS.md#q37)), and a test in `check` now fails on any such
 character in a Markdown file ([T12.3](docs/DECISIONS.md#t12-3)).
 
@@ -405,154 +419,152 @@ character in a Markdown file ([T12.3](docs/DECISIONS.md#t12-3)).
 
 ## Assumptions and edge cases
 
-The brief allows well-formed input to be assumed. This program does not: every
-line is validated, and anything it rejects is reported rather than dropped
-silently. Items marked † are places where the brief was open to more than one
+The brief allows well-formed input to be assumed. This program does not
+assume it: every line is checked, and anything rejected is reported, never
+dropped silently. Items marked † are where the brief allowed more than one
 reading and I chose one.
 
 ### What counts as a line
 
-A **word is letters only**, `[A-Za-z]+` †. The brief says "the upper- and
-lowercase characters A thru z", which read literally as an ASCII range would
-also admit `[ \ ] ^ _` and a backtick; "upper- and lowercase characters" makes
-letters the clear intent (Q9). Two consequences worth naming: a keyword is a
-legal name, so `Company Contact` declares a company called Contact and the
-program handles it; and because every name in the output is letters, no control
-character or terminal escape sequence from the input can ever reach the report.
+**A word is letters only**, `[A-Za-z]+` †. The brief says "the upper- and
+lowercase characters A thru z". Read as an ASCII range, `A`–`z` would also
+admit `[ \ ] ^ _` and a backtick. "Upper- and lowercase characters" makes
+letters the clear intent (Q9). Two consequences:
 
-**Words are separated by runs of spaces or tabs**, and leading and trailing
-whitespace is ignored, as is the trailing `\r` of a Windows line ending (Q10).
-An unusual space — a non-breaking space, say — stays part of its word and so
-fails the letters-only check, which means it is warned about rather than
-silently accepted.
+- A keyword is a legal name. `Company Contact` declares a company called
+  Contact.
+- Every name in the output is letters, so no control character or terminal
+  escape from the input can reach the report.
 
-**Command keywords are case-sensitive** (Q11): `partner Chris` is an unknown
-command, not a `Partner`. Names are case-sensitive too (Q4), and so are contact
-types, so `Email` is rejected. One rule covers every word on a line.
+**Words are separated by runs of spaces or tabs** (Q10). Leading and trailing
+whitespace is ignored, as is the `\r` of a Windows line ending. An unusual
+space, such as a non-breaking space, stays part of its word. It then fails
+the letters-only check, so it is warned about, not silently accepted.
 
-**A line with no words is skipped silently** (Q6) — the shipped `examples/input.txt`
-ends with one, as the brief's example does.
+**Keywords are case-sensitive** (Q11): `partner Chris` is an unknown command.
+So are names (Q4) and contact types, so `Email` is rejected. One rule covers
+every word on a line.
 
-**A byte-order mark at the very start of the file is removed, silently** (Q16).
-A file saved by Windows Notepad or as Excel's UTF-8 CSV begins with an
-invisible character that would otherwise make line 1 an unknown command; if
-line 1 were `Partner Chris`, every later contact naming Chris would fail to
-resolve and the report would name a different partner — one invisible byte, and
-a wrong answer. A U+FEFF anywhere else is treated as data and rejected by the
-letters-only rule.
+**A line with no words is skipped silently** (Q6). `examples/input.txt` ends
+with one, as the brief's example does.
+
+**A byte-order mark at the very start of the file is removed, silently**
+(Q16). Windows Notepad, and Excel's UTF-8 CSV, start a file with this
+invisible character. Left in, it makes line 1 an unknown command. If line 1
+were `Partner Chris`, every contact naming Chris would then fail, and the
+report would name a different partner. A U+FEFF anywhere else is data, and
+the letters-only rule rejects it.
 
 ### Names and identity
 
 **One name means one person** †. The brief says employee names are "globally
-unique" and shows only employees; I read that as a single namespace shared by
-partners and employees, so a name is never both (Q12). Company names are their
-own namespace — a company may share a name with a person, which the
-letters-only rule makes likely, and that is not a conflict. This is what lets a
-swapped `Contact` line say "Chris is declared as a partner, not an employee"
-instead of calling two known names unknown.
+unique", and shows only employees. I read that as one namespace shared by
+partners and employees, so a name is never both (Q12). Companies have their
+own namespace. A company may share a name with a person, which letters-only
+names make likely, and that is not a conflict. This is what lets a swapped
+`Contact` line say "Chris is declared as a partner, not an employee", rather
+than calling two known names unknown.
 
-**Declaration order never matters.** The brief only guarantees that a company
-precedes its employees, and its own example declares a partner after the
-contacts that name them. Contacts are therefore resolved after all input is read
-(Q8), and so are partners and employees (Q5, Q12). A name that never resolves is
-reported with the line it came from and discarded.
+**Declaration order never matters.** The brief guarantees only that a company
+comes before its employees, and its own example declares a partner after
+contacts that name them. So contacts are resolved after all input is read
+(Q8), and so are partners and employees (Q5, Q12). A name that never resolves
+is reported with its line and discarded.
 
 **A repeated declaration is discarded with a warning; a repeated contact
 counts** †. The brief defines strength as the "total amount of Contacts", so
-two identical `Contact` lines are two interactions — the input has no field that
-could distinguish a genuine repeat from a double entry (Q13). A second
-`Partner`, `Company`, or `Employee` line for the same name is a data error: the
-first valid declaration stands, and the warning says which line it was, wording
-an exact repeat differently from a name claimed by a different declaration
+two identical `Contact` lines are two interactions. The input has no field
+that could tell a real repeat from a double entry (Q13). A second `Partner`,
+`Company`, or `Employee` line for the same name is a data error. The first
+valid declaration stands, and the warning names its line. An exact repeat is
+worded differently from a name claimed by a different declaration
 ([T6.8](docs/DECISIONS.md#t6-8)).
 
 ### When the input is wrong
 
-**Every bad line is discarded with one stderr warning, and the report still
-prints** (Q7). The warning gives the line number, what was wrong, the expected
-format for that command, and the line itself:
+**Every bad line is discarded with one warning on stderr, and the report
+still prints** (Q7). The warning gives the line number, what was wrong, the
+expected format, and the line itself:
 
 ```
 herbie-lite: line 9: contact type must be one of email, call, coffee; expected "Contact <EmployeeName> <PartnerName> <ContactType>"; discarded: Contact Laurie Chris text
 ```
 
-The alternative — refusing to report until the file is clean — withholds the
-answer over a typo. The tradeoff is that a discarded contact lowers that
-partner's strength and a close result can then name a different partner; the
-warning is the signal that the report may be affected. Every warning prints
-after input ends, in line order, whether the line failed on its own words or
-only once the whole file was known ([T9.13](docs/DECISIONS.md#t9-13)).
+The alternative, refusing to report until the file is clean, withholds the
+answer over a typo. The tradeoff is that a discarded contact lowers a
+partner's strength, so a close result can name a different partner. The
+warning is the signal that the report may be affected. All warnings print
+after input ends, in line order ([T9.13](docs/DECISIONS.md#t9-13)).
 
 **Quoted input is escaped and capped at 200 characters**
-([T6.11](docs/DECISIONS.md#t6-11)). Control, format and separator characters are
-shown as `\t`, `\r`, or `\u00a0`, so an invisible character is visible in the
-warning and a hostile or merely binary file cannot send terminal escape
-sequences to stderr. Past the cap the quote ends `... (5008 characters)`.
-Visible non-ASCII such as `Zoë` is left as typed. **Known limit:** invalid
-UTF-8 arrives as the replacement character U+FFFD, which is printable and so is
-not escaped — the warning shows `�` and cannot recover the original bytes.
+([T6.11](docs/DECISIONS.md#t6-11)). Control, format and separator characters
+show as `\t`, `\r`, or `\u00a0`. So an invisible character is visible in the
+warning, and a hostile or binary file cannot send terminal escapes to stderr.
+Past the cap, the quote ends `... (5008 characters)`. Visible non-ASCII such
+as `Zoë` is left as typed. **Known limit:** invalid UTF-8 arrives as the
+replacement character, U+FFFD. It is printable, so it is not escaped, and the
+warning cannot show the original bytes.
 
-**The command line takes one optional file path, one optional query, or
-`--help`** (Q15, Q19, [Q31](docs/DECISIONS.md#q31)). Zero paths reads STDIN.
-`--help` or `-h` prints the help and exits 0, wherever it appears.
-`--partners` and `--employees` each take the next argument as the company.
-Two or more paths, two queries, a query with no company, any other argument
-starting with `-` (including `-` alone, which does not mean STDIN), and a
-file that cannot be read are each an error: one line on stderr, ending with the usage when the
-invocation itself was wrong, and exit 1 with no report. A file whose name
-starts with `-` is reached as `./-name`. The path or option is quoted and
-escaped in that line like any other input ([T8.4](docs/DECISIONS.md#t8-4)).
+**The command line takes one optional file, one optional query, or
+`--help`** (Q15, Q19, [Q31](docs/DECISIONS.md#q31)). No file means STDIN.
+`--help` or `-h` prints the help and exits 0, wherever it appears. Each query
+option takes the next argument as the company. Every other bad invocation is
+one line on stderr and exit 1, with no report; the causes are listed under
+[Exit codes and streams](#exit-codes-and-streams). The line ends with the
+usage when the invocation itself was wrong. `-` alone is an unknown option,
+not STDIN, and a file whose name starts with `-` is reached as `./-name`. A
+path or option in the message is quoted and escaped like any other input
+([T8.4](docs/DECISIONS.md#t8-4)).
 
-**A closed stdout ends the run quietly** (Q17). `node dist/bin.js examples/input.txt |
-head -1` is a correct pipeline, and `head` closing the pipe is not a failure:
-the program exits 0 with no message. Any other write failure, and any failure
-while reading, prints one line and exits 1. **A stderr that cannot be written to
-is silent** ([T6.15](docs/DECISIONS.md#t6-15)): warnings are lost, and the exit
-code still reflects only what stdout did, because failing the run would discard
-a report that stdout accepted.
+**A closed stdout ends the run quietly** (Q17).
+`node dist/bin.js examples/input.txt | head -1` is a correct pipeline, and
+`head` closing the pipe is not a failure, so the program exits 0 with no
+message. Any other write failure, and any read failure, prints one line and
+exits 1. **A stderr that cannot be written to is silent**
+([T6.15](docs/DECISIONS.md#t6-15)). The warnings are lost, and the exit code
+reflects only stdout, because failing the run would discard a report stdout
+accepted.
 
 ### The report
 
 **Every declared company is listed** (FR4), sorted alphabetically, whether or
 not anyone at Drive knows it.
 
-**A company with no contacts — including one with no employees — prints `No
-current relationship`** (Q2). Strength 0 is not a relationship.
+**A company with no contacts, or no employees, prints `No current
+relationship`** (Q2). Strength 0 is not a relationship.
 
-**Drive Capital never appears** (Q3). It is never declared with `Company`, and
-it could not be: names are a single word, so `Company Drive Capital` is not
-expressible.
+**Drive Capital never appears** (Q3). It is never declared with `Company`,
+and it cannot be: names are one word, so `Company Drive Capital` cannot be
+written.
 
-**Ties go to the alphabetically first partner** †. The brief's output format
-names exactly one partner and says nothing about ties (Q1). The rule is
-deterministic and independent of input order, which "earliest contact wins"
-would not be — the brief never says the file is chronological. **The report
-line gives no sign that a tie occurred:** `Globex: Abdi (2)` reads identically
-whether Abdi won outright or on the alphabetical rule, and the winner is
-arbitrary in business terms. Since the base was tagged, a tie is noted on
-stderr after the report, as a footnote to its line, while the line stays as it
-was ([Q21](docs/DECISIONS.md#q21)):
+**Ties go to the alphabetically first partner** †. The brief's format names
+one partner and says nothing about ties (Q1). The rule is deterministic and
+independent of input order. "Earliest contact wins" would not be, and the
+brief never says the file is chronological. **The report line shows no sign
+of a tie:** `Globex: Abdi (2)` reads the same whether Abdi won outright or
+alphabetically, and the winner is arbitrary in business terms. Since the base
+was tagged, a tie is noted on stderr after the report, as a footnote. The
+line itself is unchanged ([Q21](docs/DECISIONS.md#q21)):
 
 ```
 Globex: Abdi (2)
 herbie-lite: Globex is a tie between Abdi and Zoe (2 contacts each); Abdi is shown because it comes first alphabetically
 ```
 
-Tied partners are not ranked on anything else: weighting contact types departs
-from the brief's count, and recency needs dates the input does not have
-([T10.3](docs/DECISIONS.md#t10-3)).
+Tied partners are not ranked on anything else. Weighting contact types would
+depart from the brief's count, and recency needs dates the input does not
+have ([T10.3](docs/DECISIONS.md#t10-3)).
 
-**"Sorted alphabetically" means UTF-16 code-unit order** †, so every uppercase
-letter sorts before every lowercase one and `Zebra` precedes `acme` (Q14).
-Because names are letters only this is ordinary alphabetical order for input of
-one case — every example in the brief. `localeCompare` was rejected: it groups
-`acme` with `ACME` as a person would, but it depends on the runtime's locale
-data, so a submission could print a different order when graded than it does
-here.
+**"Sorted alphabetically" means UTF-16 code-unit order** † (Q14). Every
+uppercase letter sorts before every lowercase one, so `Zebra` precedes
+`acme`. For input in one case, as in every example in the brief, this is
+ordinary alphabetical order. `localeCompare` was rejected. It groups `acme`
+with `ACME` as a person would, but it depends on the runtime's locale data,
+so the graded run could print a different order from this one.
 
 **No declared companies prints nothing at all**, not a blank line
-([T6.14](docs/DECISIONS.md#t6-14)) — a list of no companies is no output, and
-anything counting lines would otherwise see one report where there is none.
+([T6.14](docs/DECISIONS.md#t6-14)). A list of no companies is no output.
+Anything counting lines would otherwise see a report where there is none.
 
 ### Every question, and where it was settled
 
@@ -583,7 +595,8 @@ anything counting lines would otherwise see one report where there is none.
 | Q32   | A query lists partners strongest first, employees alphabetically          | [T10.9](docs/DECISIONS.md#t10-9)   |
 | Q33   | A query naming an undeclared company exits 1, after the input is read     | [T10.10](docs/DECISIONS.md#t10-10) |
 
-The web page raised questions of its own, about the page rather than the input:
+The web page raised questions of its own, about the page rather than the
+input:
 
 | ID  | Decision                                                                         | Settled in                         |
 | --- | -------------------------------------------------------------------------------- | ---------------------------------- |
@@ -607,46 +620,50 @@ The web page raised questions of its own, about the page rather than the input:
 ## Beyond the brief
 
 The base submission, tagged `base-submission`, builds what the brief asks for
-and nothing more. Ideas outside it went into [UPGRADES](docs/UPGRADES.md) as
-potential next steps, each with the questions it would have to answer, rather
-than into the base. Since the tag, most of those next steps have been built,
-each as its own task with its decisions logged:
+and nothing more. Ideas beyond it went into [UPGRADES](docs/UPGRADES.md) as
+possible next steps, each with the questions it would have to answer. Since
+the tag, most have been built, each with its decisions logged.
 
-- **Built:** `--help` and a usage line (U5,
-  [T9.10](docs/DECISIONS.md#t9-10)); an explanation of the commands for a run
-  with no file (U6, [T9.12](docs/DECISIONS.md#t9-12)); a note on stderr when
-  partners tie, with no other ranking (U4, [T10.6](docs/DECISIONS.md#t10-6));
-  and the `--partners` and `--employees` queries, which answer questions the
-  brief says Herbie answers but does not ask this program to (U10,
-  [T10.4](docs/DECISIONS.md#t10-4)); and the web page described under
-  [In a browser](#in-a-browser), running entirely in the browser (U9,
-  [T10.16](docs/DECISIONS.md#t10-16)), whose editor checks each line as it is
-  written (U1, [T10.2](docs/DECISIONS.md#t10-2)), with tests that drive it in
-  a real browser (U11, [T10.22](docs/DECISIONS.md#t10-22)). Also a tag on the
-  base (U7) and a coverage report (U8).
-- **Not built:** saving back to a file opened from disk, which only Chrome and
-  Edge support, while downloads already reach disk in every browser (U12,
-  [T10.22](docs/DECISIONS.md#t10-22)).
+Built:
 
-Two ideas were built into the base itself instead of waiting, each because
-leaving it out meant shipping a program that could be confidently wrong:
+- `--help` and a usage line (U5, [T9.10](docs/DECISIONS.md#t9-10)).
+- An explanation of the commands for a run with no file (U6,
+  [T9.12](docs/DECISIONS.md#t9-12)).
+- A note on stderr when partners tie, with no other ranking (U4,
+  [T10.6](docs/DECISIONS.md#t10-6)).
+- The `--partners` and `--employees` queries. They answer questions the brief
+  says Herbie answers, but does not ask this program to (U10,
+  [T10.4](docs/DECISIONS.md#t10-4)).
+- The web page described under [In a browser](#in-a-browser), running
+  entirely in the browser (U9, [T10.16](docs/DECISIONS.md#t10-16)). Its
+  editor checks each line as it is written (U1,
+  [T10.2](docs/DECISIONS.md#t10-2)), and tests drive it in a real browser
+  (U11, [T10.22](docs/DECISIONS.md#t10-22)).
+- A tag on the base (U7) and a coverage report (U8).
 
-- **Stripping a byte-order mark** ([T6.6](docs/DECISIONS.md#t6-6)) — one
-  invisible byte in a file a reviewer could plausibly produce would otherwise
-  change the reported partner, with three warnings that cannot show the cause.
-- **Escaping quoted input** ([T6.11](docs/DECISIONS.md#t6-11)) — a warning on a
-  Windows file was found overwriting its own text, so the message naming the
-  problem was lost.
+Not built: saving back to a file opened from disk. Only Chrome and Edge
+support it, and downloads already reach disk in every browser (U12,
+[T10.22](docs/DECISIONS.md#t10-22)).
+
+Two ideas were built into the base itself rather than waiting. Leaving either
+out meant shipping a program that could be confidently wrong:
+
+- **Stripping a byte-order mark** ([T6.6](docs/DECISIONS.md#t6-6)). Without
+  it, one invisible byte in a file a reviewer could easily produce changes
+  the reported partner, with three warnings that cannot show the cause.
+- **Escaping quoted input** ([T6.11](docs/DECISIONS.md#t6-11)). A warning on
+  a Windows file was found overwriting its own text, hiding the problem it
+  named.
 
 ---
 
 ## Where the reasoning lives
 
-- [`docs/BRIEF.md`](docs/BRIEF.md) — the interview prompt, verbatim and frozen.
-- [`docs/PLAN.md`](docs/PLAN.md) — requirements, the task breakdown, and an
-  index of the decisions worth reading first.
-- [`docs/DECISIONS.md`](docs/DECISIONS.md) — every decision in the order it was
-  made, with its alternatives and where the idea came from.
-- [`docs/UPGRADES.md`](docs/UPGRADES.md) — potential next steps beyond the
-  brief, and which of them are built.
-- [`CLAUDE.md`](CLAUDE.md) — the working rules those documents are kept under.
+- [`docs/BRIEF.md`](docs/BRIEF.md): the interview prompt, verbatim and frozen.
+- [`docs/PLAN.md`](docs/PLAN.md): requirements, the task breakdown, and the
+  decisions worth reading first.
+- [`docs/DECISIONS.md`](docs/DECISIONS.md): every decision in the order it
+  was made, with its alternatives and where the idea came from.
+- [`docs/UPGRADES.md`](docs/UPGRADES.md): possible next steps beyond the
+  brief, and which are built.
+- [`CLAUDE.md`](CLAUDE.md): the working rules those documents are kept under.

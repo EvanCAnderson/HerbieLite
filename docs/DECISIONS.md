@@ -1,51 +1,70 @@
 # Herbie Lite — Decision Log
 
-Chronological record of decisions made while building this submission — the
-"what, when, and why" behind the code. Newest entries at the bottom of each
-stage. This is the **source of truth for resolved decisions**; the
-[plan](./PLAN.md) holds forward-looking design notes and still-open questions
-(PLAN §4), which graduate to entries here once resolved.
+Every decision made while building this submission: what was decided, when,
+and why. This log is the source of truth for settled decisions. A question
+still open lives in [PLAN §4](./PLAN.md#4-questions-and-assumptions), and
+moves here once it is settled.
 
-Each entry: **Decision** · **Context** · **Why** (incl. alternatives rejected)
-· **Origin** · **Supersedes** (if it revises an earlier entry).
+Entries are grouped by the task that made them, and the newest in each task
+comes last.
 
-**Origin** records who first proposed the option that was chosen. Ownership is
-always mine; this records where the idea came from.
+## How an entry is written
 
-- `Mine` — I proposed it, or chose an option the LLM didn't recommend (note what
-  it recommended).
-- `LLM-suggested, accepted` — optionally note if asking for its reasoning changed
-  the suggestion.
-- `LLM-suggested, modified` — note what I changed.
-- `LLM-suggested, rejected`
+Each entry has these parts:
 
-When a decision changes, add a new entry with **Supersedes:** <old ID>, and add
-**Superseded by** <new ID> to the old entry. Entries without that line are
-active. When only part of an entry changes, the new entry names that part
-(**Supersedes:** Q5, first bullet) and the old entry gets **Superseded in
-part by** <new ID>, naming the same part; the rest of the old entry stays
-active. Once the commit that adds an entry has landed, what it says is never
-edited; its heading and the IDs it cites may be updated when IDs are
-restructured (T3.1), and a character an escape was decoded into may be
-restored to the escape (T12.2). Until that commit the entry is a draft, and revising it
-while reviewing the change it belongs to is ordinary editing (T5.6).
+- **Decision:** what was chosen.
+- **Context:** what prompted it.
+- **Why:** the reasoning, including the alternatives rejected.
+- **Origin:** who first proposed the option chosen. The decision is always
+  mine; this records where the idea came from. It is one of:
+  - `Mine`: I proposed it, or chose an option the LLM did not recommend. The
+    entry notes what it recommended.
+  - `LLM-suggested, accepted`: with a note if asking for its reasoning
+    changed the suggestion.
+  - `LLM-suggested, modified`: with a note of what I changed.
+  - `LLM-suggested, rejected`.
+- **Supersedes:** only when the entry revises an earlier one.
+
+### Changing a decision
+
+A decision is changed by a new entry, never by rewriting the old one.
+
+- **A whole reversal:** the new entry says **Supersedes:** <old ID>, and the
+  old entry gains a **Superseded by** <new ID> line.
+- **A partial one:** the new entry names the part it changes
+  (**Supersedes:** Q5, first bullet). The old entry gains a **Superseded in
+  part by** <new ID> line naming the same part, and the rest of it stands.
+
+An entry with neither line is active.
+
+### When an entry is fixed
+
+Until the commit that adds it lands, an entry is a draft. Revising it while
+reviewing its change is ordinary editing (T5.6). After that commit, what it
+says is never edited, with two exceptions:
+
+- its heading, and the IDs it cites, may be updated when IDs are
+  restructured (T3.1);
+- a character that an escape was decoded into may be restored to the escape
+  (T12.2).
 
 ## Key
 
 Every entry has one ID, and its heading starts with it.
 
 - `S<n>`: setup, decided before any task.
-- `T<n>.<m>`: a decision recorded in task T<n> of PLAN §6, numbered in the
-  order made. Decisions from reviewing a task go in that task's section,
-  with **Context:** "T<n> review". There is no separate review section.
+- `T<n>.<m>`: a decision made in task T<n> of PLAN §6, numbered in the order
+  made. A decision from reviewing a task goes in that task's section, with
+  **Context:** "T<n> review". There is no separate review section.
 - `Q<n>`: a question from PLAN §4. It keeps the number it was opened with,
-  which code comments and the README cite. When a task settles it, it gets
-  a T ID in that task's section and the heading shows both:
+  since code comments and the README cite it. When a task settles it, it also
+  gets a T ID in that task's section, and the heading shows both:
   `T3.2 — Q10: Whitespace within a line`.
-- Subtasks (`T3a`) name PLAN work, not decisions (T2.1). `U<n>` names an idea
-  deferred to [UPGRADES](./UPGRADES.md).
-- Each heading has an anchor for its T ID (`#t3-2`) and, if it has one, its
-  Q (`#q10`).
+- `T3a` and the like name PLAN subtasks, which are work, not decisions
+  (T2.1). `U<n>` names an idea in [UPGRADES](./UPGRADES.md).
+
+Each heading has an anchor for its T ID (`#t3-2`) and, if it has one, for its
+Q (`#q10`).
 
 ---
 
@@ -3388,10 +3407,41 @@ Laurie Globex`: the program name, the line number and the name are gone.
     forbids.
 - **Origin:** The pass itself: Mine. Placing it last in T12, and its
   limits: LLM-suggested.
+- **Superseded in part by** [T12.7](#t12-7) (last in T12: the pass is done
+  now, before T12c–T12h; its scope and limits stand).
+
+#### <a id="t12-7"></a>T12.7 — The readability pass is done now, not last
+
+- **Decision:** T12i is done after T12b, ahead of T12c–T12h. It shortens the
+  README's sentences, tightens PLAN's framing, and gives this log a new
+  opening and Key. UPGRADES entries are put into one order (the idea, its
+  origin, then what happened to it), with the idea, origin and question text
+  kept as written. Each of T12c–T12h then writes its own doc changes to the
+  same standard, rather than leaving them for a later pass. The pass's limits
+  stand: no committed entry is reworded, and BRIEF is untouched.
+- **Context:** After T12b. [T12.6](#t12-6) placed the pass last, so that
+  prose would not be polished twice. T12c–T12h were still open.
+- **Why:** The docs are what a reviewer reads first, so they should be
+  readable now, not after six more subtasks of code. The cost is the one
+  T12.6 avoided: some prose written by T12c–T12h may need a second look. It
+  is small, because those subtasks mostly add DECISIONS entries and touch a
+  line or two of the README. **Rejected:**
+  - Keeping it last, as T12.6 decided, which leaves the docs a reviewer
+    reads first waiting on six subtasks of code.
+  - A first pass now and T12i left open for a second, which does the work
+    twice by design.
+- **Supersedes:** [T12.6](#t12-6), in part: the pass placed last in T12. Its
+  scope, and its limits on committed entries and BRIEF, stand.
+- **Origin:** Doing the pass now, and the reason: Mine (the LLM set out
+  keeping T12.6's order, doing the pass now and recording it, and a first
+  pass with T12i left open). That the cost of polishing twice is small, and
+  that T12c–T12h write their doc changes to the same standard: LLM-suggested.
+  Keeping UPGRADES' original text and changing only its order: Mine, after
+  the LLM pointed out that the first version of the pass had reworded it.
 
 ---
 
 ## Open questions
 
-Open questions live in [PLAN §4](./PLAN.md#4-questions-and-assumptions-document-all-in-readme)
+Open questions live in [PLAN §4](./PLAN.md#4-questions-and-assumptions)
 and move here once resolved.
