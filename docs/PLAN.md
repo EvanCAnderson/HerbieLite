@@ -73,9 +73,29 @@ That log keeps the complete record, in task order.
 
 ### Open
 
-Every question is settled (listed below): those the base raised, and those
-opened by planning the upgrades. A new one gets its current default and the
-subtask that settles it ([T2.2](./DECISIONS.md#t2-2)).
+A new question gets its current default and the subtask that settles it
+([T2.2](./DECISIONS.md#t2-2)). Those the base raised and those opened by
+planning the upgrades are all settled (below). Open now, from the audit
+follow-ups (T12):
+
+- **Q37** — May a committed DECISIONS entry be repaired when its
+  characters are wrong but its content is not? T5.6 says a committed entry
+  is never edited, only superseded. _Default:_ yes. Restore the escape
+  notation each sentence means, change nothing else, and list every changed
+  line in a new entry. The rule is read as protecting what an entry says,
+  and a decoded escape is not what it said. _Settle in T12a._
+- **Q38** — Should control characters in text the console echoes be escaped
+  (`\u009b`, as warnings do under T6.11) or stripped? _Default:_ escape. It
+  is one rule with the warnings, and a pasted control character stays
+  visible rather than silently vanishing. _Settle in T12d._
+- **Q39** — When several lines are pasted into the console, should each be
+  echoed as it runs, so each answer sits under its own command, or should
+  the current echo stay and the comment claiming no interleaving be fixed?
+  _Default:_ echo each line as it runs. _Settle in T12e._
+- **Q40** — Should the quote cap be exactly 200 characters, with
+  "(N characters)" counting characters rather than UTF-16 units, or should
+  the docs describe today's soft cap instead? _Default:_ change the code to
+  match the docs. _Settle in T12f._
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -329,6 +349,102 @@ prefix).
   - [x] T11d — A terminal-forward look: dark throughout, monospace
         headings, green and amber accents, the console at the centre
         ([T11.3](./DECISIONS.md#t11-3), [T11.6](./DECISIONS.md#t11-6)).
+- [ ] T12 — Audit follow-ups: what an audit of the whole repository after
+      T11 found the docs, a test or the page claiming but not doing
+      ([T12.1](./DECISIONS.md#t12-1)). The record is repaired first, then
+      the code under it. Running the gates on every push is
+      [U15](./UPGRADES.md#u15), not part of T12.
+  - [ ] T12a — Repair the decision log's decoded escapes. In T6.11, T8.3
+        and T8.4 the escape notation was written as the characters it
+        names (DECISIONS lines 1245, 1277–1279, 1642, 1654, 1661: a
+        non-breaking space, a line break, `ë`, two byte-order marks, and a
+        raw ESC that turns a terminal red when the file is printed). Restore
+        the notation each sentence means (`\u00a0`, `\u000d`, `Zo\u00eb`,
+        `\uFEFF`, `\u001b`), and add a test to `check` that fails on a
+        control or invisible character in any tracked Markdown file, so it
+        cannot recur. Settles Q37.
+  - [ ] T12b — Bring the docs back in line with the code:
+    - README says five browser tests; there are seven, and T10.29 needs
+      superseding in part.
+    - README calls the four run forms "all equivalent in what they print",
+      but both `npm start` forms print npm's banner on stdout. Use
+      `npm start --silent --`, or narrow the claim.
+    - README and PLAN §3 say the report layer "exports one function"; it
+      exports three. T10.9 added two without superseding T10.7, so a new
+      entry records that, and T10.7 gets its **Superseded in part by**.
+    - README's command-line paragraph under "When the input is wrong"
+      leaves out the queries.
+    - UPGRADES U9 says the console "takes no typed commands"; since T11.5
+      it does.
+    - T11.1 planned T11c as the look and sent console queries to UPGRADES.
+      Queries were built as T11c and the look as T11d, so T11.1 needs
+      superseding in part, and T11.3's subtask citation should read T11d.
+    - PLAN §8 counts 3 tests for Q2; there are 4.
+    - T8.3's list of literal byte-order marks misses
+      `web/console.test.ts:82` and `web/editor.test.ts:76`.
+  - [ ] T12c — Make the T6.12 test able to fail. `cli.test.ts` › "lets any
+        other throw from inside the read loop propagate" no longer reaches
+        the rethrow at `run.ts:169`: since T9.13 its throw comes from
+        `main`'s stderr write, after `run()` returns. Deleting the rethrow
+        leaves every test green. Throw from inside the loop instead (a
+        parser mocked to throw), and assert the throw propagates with no
+        `cannot read` on stderr; re-run that mutation to confirm the test
+        kills it. Also fix the stale `reportLines` comment
+        (`cli.test.ts:503`), and `code ?? 0` in the process test
+        (`cli.test.ts:621`), which reads a signal-killed child as exit 0.
+  - [ ] T12d — Keep control characters out of the console:
+    - `Workspace.list()` checks `isValidName` (Q25), so a stored key the
+      workspace would refuse to create is not listed. Today such a name is
+      echoed raw on Run, and a U+009B in it wiped the console in a
+      Chromium probe.
+    - Text the program did not escape but the console echoes has its
+      controls handled per Q38: typed and pasted lines, the company field,
+      `cat`'s missing-file line, and a refused line's first word.
+    - `LineEditor` stops accepting U+0080–U+009F (`shell.ts:281`).
+    - T10.24's claim that only the page's own escape sequences reach the
+      pane, and the matching comment at `console.ts:97`, are corrected by
+      a new entry.
+
+    A test for each path. Settles Q38.
+
+  - [ ] T12e — Make web failures visible:
+    - The console's run queue (`console-panel.ts:141`) survives a throw
+      outside `execute`'s `try`; today one such throw stops every later
+      command until reload.
+    - A file from disk that cannot be read says so on the status line
+      (`files-panel.ts:179`).
+    - New file asks about discarding unsaved edits before it creates
+      anything, and redraws either way (`files-panel.ts:151`). Today it
+      creates the file first, then leaves it out of the list if you keep
+      your edits.
+    - A storage failure is not reported as a full store unless it is one
+      (`workspace.ts:174`).
+    - Several pasted lines are handled per Q39.
+
+    Settles Q39.
+
+  - [ ] T12f — Tidy the code:
+    - Remove `runFile` (`console.ts:65`), which has had no production
+      caller since T11c, and move its tests to `shell.ts`'s `runLine`,
+      the path the page actually runs.
+    - Share one code-unit comparator between `report.ts` and the three
+      copies in `web/` (`workspace.ts:121`, `examples.ts:18`,
+      `console.ts:60`).
+    - Rewrap `help.ts:2`'s comment.
+    - Handle the quote cap and its character count per Q40
+      (`warnings.ts:125`).
+
+    Settles Q40.
+
+  - [ ] T12g — Reader cost on one very long line: `readLines` looks for
+        `\n` only in text it has not yet searched (`lines.ts:47`). Before
+        the fix a single line took 0.14, 0.42, 1.46 and 4.38 s at 8, 16,
+        32 and 64 MB; the entry records the timings after.
+  - [ ] T12h — Downloads outside Chromium: install Playwright's Firefox and
+        WebKit, and check that **Download** saves a file in each, since
+        `dom.ts:19` revokes the URL straight after the click. Fix the timing
+        if either fails. The browser tests stay Chromium-only (T10.27)
+        unless this finds a difference.
 
 ## 7. Definition of done
 

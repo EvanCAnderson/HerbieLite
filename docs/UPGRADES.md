@@ -392,3 +392,22 @@ Open questions:
   is the tidier one.
 - **Should messages expire?** A timed fade suits "Saved", and not a refusal
   that still needs a choice ([Q26](./DECISIONS.md#q26)).
+
+<a id="u15"></a>
+
+## U15 — Run the gates on every push
+
+`npm run check` and `npm run test:e2e` run only when someone runs them.
+Nothing runs them on a push, so a change to the page can land with the
+browser tests failing: the known cost that
+[DECISIONS T10.28](./DECISIONS.md#t10-28) accepted.
+
+- **Origin:** LLM-suggested, from the audit after T11
+  ([T12.1](./DECISIONS.md#t12-1)).
+
+Open questions:
+
+- **Where?** A GitHub Actions workflow on the remote, or a local pre-push
+  hook, which needs no remote but can be skipped.
+- **Which gates?** `check` alone, or `test:e2e` too, which needs Chromium
+  installed on the runner.

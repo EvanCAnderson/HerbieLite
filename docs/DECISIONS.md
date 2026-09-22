@@ -3171,6 +3171,47 @@ Laurie Globex`: the program name, the line number and the name are gone.
   the tests to expect "# Examples", which would hide the problem.
 - **Origin:** LLM-suggested, in T11d (the look itself: Mine, T11.3).
 
+### T12 — Audit follow-ups
+
+#### <a id="t12-1"></a>T12.1 — The audit's findings are their own task, record first
+
+- **Decision:** The findings of an audit of the whole repository after T11
+  become PLAN task T12. Its lettered subtasks are listed in the order they
+  will be built:
+  - T12a repairs the decision log's decoded escapes.
+  - T12b fixes the other docs that no longer match the code.
+  - T12c makes the T6.12 test able to fail.
+  - T12d keeps control characters out of the console.
+  - T12e makes web failures visible.
+  - T12f tidies the code.
+  - T12g fixes the reader's cost on a very long line.
+  - T12h checks downloads outside Chromium.
+
+  Four choices the fixes need are opened as PLAN §4's Q37–Q40. Running the
+  gates on every push is logged as [UPGRADES U15](./UPGRADES.md#u15), not
+  as a T12 subtask.
+
+- **Context:** After T11. The audit read every tracked file, ran `check`
+  and the browser tests, tried 14 deliberate bugs against the suite, and
+  probed the built page in Chromium. It found nothing malicious and no
+  failing test, but about a dozen places where the docs, a test, or the
+  page claim something they do not do.
+- **Why:** The record is repaired before the code because its errors are
+  the most visible, and T12 will add entries of its own beside the
+  corrupted ones. The code is fixed afterwards, so that no new entry
+  describes code that is about to change. Each subtask has one reason, so
+  each is one commit, as [T2.1](#t2-1) set. The findings get a task of
+  their own, as [T11.1](#t11-1) set for the follow-ups to T10, since T11
+  is complete. **Rejected:**
+  - One commit for every finding, which mixes a doc repair with a security
+    fix.
+  - Putting the findings in UPGRADES, which holds ideas not yet asked for;
+    these are defects in what is already built.
+  - Continuous integration as a T12 subtask. It is new scope, not a fix.
+- **Origin:** Turning the audit's findings into planned work: Mine. The
+  subtasks, their order, the questions and their defaults, and CI as U15:
+  LLM-suggested.
+
 ---
 
 ## Open questions
