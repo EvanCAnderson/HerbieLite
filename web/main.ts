@@ -3,7 +3,7 @@
 import "./style.css";
 import { mountConsole } from "./console-panel.js";
 import { h } from "./dom.js";
-import { EXAMPLES } from "./examples.js";
+import { EXAMPLES, PURPOSES } from "./examples.js";
 import { mountFilesPanel } from "./files-panel.js";
 import { MemoryStore, Workspace, type Store } from "./workspace.js";
 
@@ -38,6 +38,7 @@ const herbie = mountConsole(consoleRoot);
 mountFilesPanel(panel, {
   workspace: new Workspace(store),
   examples: EXAMPLES,
+  purposes: PURPOSES,
   persistent,
   onRun: (file) => herbie.run(file),
 });

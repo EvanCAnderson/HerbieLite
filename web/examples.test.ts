@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { EXAMPLES } from "./examples.js";
+import { EXAMPLES, PURPOSES } from "./examples.js";
 
 describe("the bundled examples (T10.16)", () => {
   it("holds every file in examples/, by name, in code-unit order", () => {
@@ -11,6 +11,13 @@ describe("the bundled examples (T10.16)", () => {
       "ties.txt",
       "warnings.txt",
     ]);
+  });
+
+  it("describes every example, and nothing that is not one (T11.2)", () => {
+    expect([...PURPOSES.keys()].sort()).toEqual([...EXAMPLES.keys()]);
+    for (const purpose of PURPOSES.values()) {
+      expect(purpose).toMatch(/^[A-Z].*\.$/);
+    }
   });
 
   it("holds each file's text as written", () => {

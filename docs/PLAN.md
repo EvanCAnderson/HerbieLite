@@ -318,7 +318,7 @@ prefix).
   - [x] T11a — New file asks for its name in the page, not with `prompt()`,
         which some browsers, the Claude app's among them, do not support
         ([T11.4](./DECISIONS.md#t11-4)).
-  - [ ] T11b — Each example's purpose, one line, shown in the page
+  - [x] T11b — Each example's purpose, one line, shown in the page
         ([T11.2](./DECISIONS.md#t11-2)).
   - [ ] T11c — A terminal-forward look: dark throughout, monospace
         headings, green and amber accents, the console at the centre

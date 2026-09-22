@@ -17,6 +17,8 @@ interface Selection {
 export interface FilesPanelOptions {
   readonly workspace: Workspace;
   readonly examples: ReadonlyMap<string, string>;
+  /** What each example is for, in one line (T11.2). */
+  readonly purposes: ReadonlyMap<string, string>;
   /** False when the browser refused storage, so files last only until reload. */
   readonly persistent: boolean;
   /** Runs herbie-lite on the chosen file, in the console (T10f). */
@@ -25,7 +27,7 @@ export interface FilesPanelOptions {
 
 export function mountFilesPanel(
   root: HTMLElement,
-  { workspace, examples, persistent, onRun }: FilesPanelOptions,
+  { workspace, examples, purposes, persistent, onRun }: FilesPanelOptions,
 ): void {
   let selection: Selection | undefined =
     examples.size > 0
@@ -203,6 +205,9 @@ export function mountFilesPanel(
       },
     });
     if (current) button.setAttribute("aria-current", "true");
+    const purpose =
+      chosen.source === "example" ? purposes.get(chosen.name) : undefined;
+    if (purpose !== undefined) button.title = purpose;
     return h("li", {}, button);
   }
 
@@ -292,6 +297,7 @@ export function mountFilesPanel(
       );
     }
     const chosen = selection;
+    const purpose = purposes.get(chosen.name);
     const actions = h(
       "div",
       { className: "actions" },
@@ -340,6 +346,9 @@ export function mountFilesPanel(
         }),
         actions,
       ),
+      ...(purpose === undefined
+        ? []
+        : [h("p", { className: "purpose", textContent: purpose })]),
       source(text),
     );
   }

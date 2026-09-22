@@ -29,12 +29,21 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("opens on the first example, read-only", async ({ page }) => {
+test("opens on the first example, read-only, with what each example is for", async ({
+  page,
+}) => {
   const viewer = page.locator(".viewer");
   await expect(
     viewer.getByRole("heading", { name: "input.txt" }),
   ).toBeVisible();
   await expect(viewer.getByText("Example · read-only")).toBeVisible();
+  await expect(viewer.locator(".purpose")).toHaveText(
+    "The brief's own example, verbatim. Runs to the three lines the brief expects.",
+  );
+  await expect(fileIn(page, "Examples", "ties.txt")).toHaveAttribute(
+    "title",
+    /alphabetically first partner/,
+  );
   await expect(viewer.getByText("Contact Laurie Chris coffee")).toBeVisible();
   await expect(fileIn(page, "Examples", "input.txt")).toHaveAttribute(
     "aria-current",

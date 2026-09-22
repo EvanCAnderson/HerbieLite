@@ -17,3 +17,35 @@ export const EXAMPLES: ReadonlyMap<string, string> = new Map(
     )
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
 );
+
+/**
+ * What each example is for, in one line, shown beside it in the page
+ * (DECISIONS T11.2). The README describes each at more length; a test holds
+ * that every bundled example has a line here and nothing else does.
+ */
+export const PURPOSES: ReadonlyMap<string, string> = new Map([
+  [
+    "input.txt",
+    "The brief's own example, verbatim. Runs to the three lines the brief expects.",
+  ],
+  [
+    "late-declarations.txt",
+    "Every name is used before it is declared, and all of them resolve: line order does not matter.",
+  ],
+  [
+    "names-and-repeats.txt",
+    "A keyword used as a name, a person and a company sharing one, a contact counted twice, and a company with no employees.",
+  ],
+  [
+    "queries.txt",
+    "Written for the --partners and --employees queries, which run from the command line; the console shows its report.",
+  ],
+  [
+    "ties.txt",
+    "Equal strengths go to the alphabetically first partner, with a note on stderr; Zebra sorts before acme.",
+  ],
+  [
+    "warnings.txt",
+    "Every warning the program can print, with the report still printed underneath.",
+  ],
+]);
