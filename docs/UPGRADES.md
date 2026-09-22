@@ -5,7 +5,7 @@ complete.
 
 <a id="u1"></a>
 
-## U1 — Guided input-file builder
+## U1 — Guided input-file builder — **reshaped: the in-browser file editor**
 
 An interactive mode that creates a new input file, checking each line as it is
 typed and saving only lines that pass validation. Extends T1.10's interactive
@@ -14,16 +14,19 @@ entry, which only reads typed commands and prints a report.
 - **Origin:** Mine (raised during the T1 review; LLM recommended deferring it
   here rather than building it in the base).
 
-Planned as T9k, a panel of the web UI ([U9](#u9)) rather than a CLI mode,
-which answers the third open question below; see
-[DECISIONS T9.8](./DECISIONS.md#t9-8). The other two are PLAN §4's Q30 and
-Q29, with their defaults there.
+Planned as T10e: the web UI's file editor ([U9](#u9)) is the builder. Since
+commands are written by editing files ([T9.12](./DECISIONS.md#t9-12)), a
+separate builder would be a second way to write one; the editor gives its
+convenience to any workspace file instead, with the command reference beside
+the text and each line checked as it is edited. See
+[DECISIONS T10.2](./DECISIONS.md#t10-2). Its open questions are PLAN §4's
+Q30 and Q29, with their defaults there.
 
 - ~~Where the file is saved, and what happens on a clash or a failed save~~ —
-  Q30.
+  Q30, settled with the file API in T10c.
 - ~~Accept lines whose references can't be checked yet?~~ — Q29.
-- ~~A separate mode or command from the analyzer?~~ — Neither: a UI panel
-  (T9.8).
+- ~~A separate mode or command from the analyzer?~~ — Neither: the UI's
+  editor (T9.8, T10.2).
 
 <a id="u2"></a>
 
@@ -111,7 +114,7 @@ Directions to consider:
 - Surface the tie instead of hiding it — mark the line, or report the tied
   partners on stderr while the line stays in the brief's format.
 
-Planned as T9e. Its open question — which signal, if any, ranks first, and
+Planned as T9f. Its open question — which signal, if any, ranks first, and
 where a ranking would live — is PLAN §4's Q21, whose default is to surface the
 tie and keep the ranking as it is.
 
@@ -229,8 +232,7 @@ answers this entry's open questions got:
 A web page served on this machine for working with input files: list them,
 read them, edit and delete the ones in a workspace with the command reference
 beside the editor, and run the report on any of them in an embedded terminal
-pane. It is where the file
-builder ([U1](#u1)) lives once built.
+pane. Its editor is the file builder ([U1](#u1)).
 
 - **Terminal:** the page's embedded pane is a Herbie console that runs
   herbie-lite and nothing else, not a shell; the shell limit belongs to the
@@ -248,7 +250,7 @@ builder ([U1](#u1)) lives once built.
   and the builder, placed before U1). Limiting the terminal to Herbie, the
   workspace split, and the stack: LLM-suggested, accepted.
 
-Planned as T9f–T9j, with T9l for the README. Its open questions are PLAN §4's
+Planned as task T10 ([T10.1](./DECISIONS.md#t10-1)): T10a–T10f, with T10e as U1's file editor, and T10g for the README. Its open questions are PLAN §4's
 Q22–Q28: layout and packaging, testing, keeping the server local, workspace
 file names, two edits of one file, the console's transport, and how the
 console runs the analyzer.

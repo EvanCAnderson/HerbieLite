@@ -171,10 +171,10 @@ Three things in that file are worth pointing at:
   It is invisible in the file, and the warning shows it as
   `Partner Chris\u00a0Smith` ([T6.11](docs/DECISIONS.md#t6-11)) — which is the
   whole reason quoted input is escaped.
-- **The warnings are not in line order.** Lines 6 to 11 are reported as they are
-  read; lines 13 to 18 wait until the
-  whole file is in, because a name cannot be judged before then
-  ([T6.7](docs/DECISIONS.md#t6-7)).
+- **Two kinds of problem, one order.** Lines 6 to 11 fail on their own words,
+  and lines 13 to 18 only once the whole file is in, because a name cannot be
+  judged before then. Both kinds print together after input ends, in line
+  order, so stderr reads like the file ([T9.13](docs/DECISIONS.md#t9-13)).
 
 ---
 
@@ -230,9 +230,9 @@ The design decisions behind that, each with what it costs:
 - **`main` takes its streams as arguments** and returns an exit code
   ([T6.2](docs/DECISIONS.md#t6-2)), so every test drives the real entry point
   with no stubbing and `process` is named in exactly one file.
-- **Input is streamed, not slurped** ([T6.4](docs/DECISIONS.md#t6-4)), which is
-  what lets a bad line be warned about as soon as it is read. Lines are split on `\n`
-  alone: `readline` also breaks on a lone `\r`, which would silently renumber
+- **Input is read line by line with its own reader**
+  ([T6.4](docs/DECISIONS.md#t6-4)), so each line number is exact. Lines are
+  split on `\n` alone: `readline` also breaks on a lone `\r`, which would silently renumber
   every later line and make every later warning point at the wrong one.
 
 Tests sit beside the code they cover ([T1.1](docs/DECISIONS.md#t1-1)). The
@@ -357,10 +357,9 @@ herbie-lite: line 9: contact type must be one of email, call, coffee; expected "
 The alternative — refusing to report until the file is clean — withholds the
 answer over a typo. The tradeoff is that a discarded contact lowers that
 partner's strength and a close result can then name a different partner; the
-warning is the signal that the report may be affected. Warnings for malformed
-lines appear as each line is read, while
-warnings that need the whole file appear at the end; stderr is therefore in two
-passes rather than one run of line order ([T6.7](docs/DECISIONS.md#t6-7)).
+warning is the signal that the report may be affected. Every warning prints
+after input ends, in line order, whether the line failed on its own words or
+only once the whole file was known ([T9.13](docs/DECISIONS.md#t9-13)).
 
 **Quoted input is escaped and capped at 200 characters**
 ([T6.11](docs/DECISIONS.md#t6-11)). Control, format and separator characters are

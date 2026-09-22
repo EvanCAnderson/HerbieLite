@@ -174,9 +174,9 @@ Contact Laurie Chris email
     ]);
   });
 
-  it("prints malformed lines as they are read, before resolution warnings", async () => {
-    // The price of answering typed input immediately (Q7, T1.10): stderr is
-    // in two passes, not one run of input order (T6.7).
+  it("prints every warning in line order, whichever layer found it (T9.13)", async () => {
+    // Line 2 is only known to be a repeat once all input is in, and line 3
+    // fails in the parser as it is read; stderr still follows the file.
     const { err } = await run(
       [],
       `Partner Molly
@@ -185,8 +185,8 @@ Compny Globex
 `,
     );
     expect(err.split("\n").filter((line) => line !== "")).toEqual([
-      "herbie-lite: line 3: unknown command; expected one of Partner, Company, Employee, Contact; discarded: Compny Globex",
       "herbie-lite: line 2: repeats the declaration on line 1; discarded: Partner Molly",
+      "herbie-lite: line 3: unknown command; expected one of Partner, Company, Employee, Contact; discarded: Compny Globex",
     ]);
   });
 });
@@ -313,6 +313,25 @@ describe("an I/O failure and a bug are told apart (T6.12)", () => {
     await expect(main([], exploding, sink(), err)).resolves.toBe(1);
     expect(err.text()).toBe(
       "herbie-lite: cannot read standard input: stream gave up\n",
+    );
+  });
+
+  it("still prints the warnings for lines read before the failure (T9.13)", async () => {
+    let sent = false;
+    const failsAfterOneLine = new Readable({
+      read() {
+        if (sent) this.destroy(new Error("stream gave up"));
+        else {
+          sent = true;
+          this.push("partner Chris\n");
+        }
+      },
+    });
+    const err = sink();
+    await expect(main([], failsAfterOneLine, sink(), err)).resolves.toBe(1);
+    expect(err.text()).toBe(
+      "herbie-lite: line 1: unknown command; expected one of Partner, Company, Employee, Contact; discarded: partner Chris\n" +
+        "herbie-lite: cannot read standard input: stream gave up\n",
     );
   });
 

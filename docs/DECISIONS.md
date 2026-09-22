@@ -1156,6 +1156,8 @@ started.
   of stderr is in input order, which would make interactive entry silent
   until Ctrl+D.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T9.13](#t9-13) (two passes: every warning now
+  prints after input ends, in line order; the warning's shape stands).
 
 #### <a id="t6-8"></a>T6.8 — Q13's warning: a repeat reads differently from a claim
 
@@ -1719,6 +1721,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   with `chore:` commits and a section keyed by U ID, which leaves PLAN §6
   closed at the base but adds a second ID scheme for decisions to the Key.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T10.1](#t10-1) (the web UI and the file editor
+  are task T10; the other upgrades stay in T9).
 
 #### <a id="t9-2"></a>T9.2 — The base is tagged `base-submission`, and the README says so
 
@@ -1801,6 +1805,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   stderr shape after the console that displays them.
 - **Origin:** The UI before the builder: Mine. The order of U5, U6 and U4
   around it: LLM-suggested, accepted.
+- **Superseded in part by** [T10.2](#t10-2) (U1 is built inside the UI, as
+  its file editor, before the console; the rest of the order stands).
 
 #### <a id="t9-5"></a>T9.5 — A local web UI whose terminal runs Herbie, not a shell
 
@@ -1885,6 +1891,9 @@ Laurie Globex`: the program name, the line number and the name are gone.
   prompts; and both, which puts the same feature behind two interfaces to
   test.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T10.2](#t10-2) (the builder is the UI's file
+  editor, not a panel of typed lines; a panel of the UI rather than a CLI
+  mode stands).
 
 #### <a id="t9-9"></a><a id="q18"></a>T9.9 — Q18: The help text is built from the grammar table
 
@@ -2036,6 +2045,102 @@ Laurie Globex`: the program name, the line number and the name are gone.
   seen. Keeping the explanation, for a bare run and in `--help`: Mine. stdout
   with exit 1: LLM-suggested, accepted after the tradeoffs were set out.
   Keeping pipes: LLM-suggested, accepted.
+
+#### <a id="t9-13"></a>T9.13 — Warnings print once, in line order
+
+- **Decision:** Every warning waits until all input is in, then prints in one
+  pass sorted by line number, whether the parser or resolution found it. A
+  malformed line's warning is formatted when the line is read and held as
+  text. If the read fails partway, the warnings for the lines already read
+  print first, then the failure. The reader still streams, and warnings are
+  still not awaited ([T6.15](#t6-15)).
+- **Context:** T9e, from the reversal in [T9.12](#t9-12): commands now come
+  only from a file, and typed input was the reason stderr was in two passes.
+  [T6.7](#t6-7) printed a malformed line's warning as it was read, so a typed
+  mistake was answered at once, and recorded the out-of-order stderr as the
+  price.
+- **Why:** With nothing typed, the only thing two passes still bought was an
+  early warning on a slow pipe, which no use of this program involves, while
+  its cost fell on everyone: a warning for line 12 printed before one for line
+  2, and the README spent a paragraph explaining why. In line order, stderr
+  reads like the file, so problems can be fixed top to bottom. The order is
+  total, because a line yields at most one warning — a malformed line never
+  reaches resolution — which is [T4.3](#t4-3)'s argument extended to the
+  parser's warnings. Holding the formatted text rather than the line keeps
+  each held warning within [T6.11](#t6-11)'s 200-character cap, however long
+  the line was. Printing held warnings before a read failure keeps what the
+  two passes already showed: the lines that were read were still discarded,
+  and the user should hear about them. The streaming reader stays, because
+  its reason to exist is exact line numbering ([T6.4](#t6-4)), which does not
+  depend on when warnings print. **Rejected:** keeping two passes, which
+  costs nothing to leave alone but keeps an ordering whose only reason is
+  gone; and dropping the held warnings when a read fails, which is simpler
+  and silently loses discards the program had already found.
+- **Supersedes:** [T6.7](#t6-7), in part: malformed lines printed as they are
+  read, and stderr in two passes. The warning's shape stands.
+- **Origin:** Revisiting the order once typed input was gone: LLM-suggested,
+  accepted. One pass in line order: LLM-suggested, accepted after the
+  tradeoffs were set out. Printing held warnings before a read failure:
+  LLM-suggested, accepted (raised while building T9e).
+
+### T10 — Web UI and file editor
+
+#### <a id="t10-1"></a>T10.1 — The web UI and the file editor are their own task
+
+- **Decision:** The local web UI ([U9](./UPGRADES.md#u9)) and the file editor
+  that is U1's builder ([T10.2](#t10-2)) are PLAN task T10, not part of T9,
+  with subtasks T10a–T10g in the order already planned: scaffold, server,
+  file API, files panel, editor, console, README. Their commits are prefixed
+  `T10:` and their decisions go in this section. T9 ends with tie handling
+  (T9f). Decisions already made about the UI in T9 (T9.5–T9.8) stay where
+  they were made.
+- **Context:** Before T9f. [T9.1](#t9-1) put all upgrade work under T9, and
+  the UI's seven subtasks would have made T9 two tasks in one: small changes
+  to the command-line program, and a second program with its own server,
+  build and page.
+- **Why:** The UI is one feature built across seven commits, and a task of its
+  own lets its history read as one piece, from the scaffold to the README,
+  rather than as the tail of a list of CLI changes; it also gives the UI's
+  decisions one section to be read in. T9.1's rejection of a task per upgrade
+  still holds for small upgrades; the UI is the one large enough to be a task.
+  **Rejected:** keeping it in T9, which T9.1 chose and which buries the UI's
+  commits among unrelated ones; and a task per upgrade, T9.1's rejected
+  alternative, which would also split U4 and the tag into tasks of one commit
+  each.
+- **Supersedes:** [T9.1](#t9-1), in part: all upgrade work under T9. One task
+  with lettered subtasks, for the other upgrades, stands.
+- **Origin:** Mine.
+
+#### <a id="t10-2"></a>T10.2 — The file builder is the UI's file editor
+
+- **Decision:** [U1](./UPGRADES.md#u1) is built as the web UI's in-browser
+  file editor, not as a separate builder panel. It creates and edits
+  workspace files as text, with the command reference from `help.ts` beside
+  it ([T9.12](#t9-12)), checks each line as it is edited (Q29), and saves into
+  `inputs/`. It is its own subtask, T10e, between the files panel (T10d:
+  list, viewer, delete, copy an example) and the console (T10f). How a save
+  behaves on a clash or a failure (Q30) moves to the file API (T10c), which
+  is where saving is built.
+- **Context:** Before T9f, reviewing what was left. [T9.8](#t9-8) planned the
+  builder as a panel where lines are typed and checked one at a time; since
+  then [T9.12](#t9-12) made editing files the way commands are written, and
+  the files panel was already to have an editor.
+- **Why:** With editing as the way to write commands, a builder panel beside
+  an editor would be two ways to write one file, and the builder's only
+  distinct feature — checking each line as it is written — is as useful in
+  the editor, where it also covers files that already exist. One editor with
+  the checks is less to build and to test, and nothing a user can do is lost.
+  The editor gets its own subtask because it carries the checking and saving
+  logic, which is most of U1, and would make the files panel's subtask too
+  large for one commit. **Rejected:** the builder panel as planned in T9.8,
+  which duplicates the editor; and dropping U1, leaving a plain editor with
+  no line checks, which loses the convenience U1 was for.
+- **Supersedes:** in part, [T9.8](#t9-8) (lines typed into a builder panel;
+  a panel of the UI rather than a CLI mode stands) and [T9.4](#t9-4) (U1
+  built last, after the whole UI; it is now built inside it, before the
+  console).
+- **Origin:** The builder as an in-browser file editor: Mine. Giving it its
+  own subtask, and moving Q30 to the file API: LLM-suggested.
 
 ---
 

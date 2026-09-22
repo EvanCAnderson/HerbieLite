@@ -19,6 +19,12 @@ import {
   writeFailure,
 } from "./warnings.js";
 
+/** A warning ready to print, with the line it is about (T9.13). */
+interface Warning {
+  readonly lineNumber: number;
+  readonly text: string;
+}
+
 function writeLine(stream: NodeJS.WritableStream, text: string): void {
   stream.write(`${text}\n`);
 }
@@ -124,16 +130,21 @@ export async function main(
   }
   const input = file === undefined ? stdin : createReadStream(file);
 
-  // Warnings for malformed lines are printed as each line is read, so typed
-  // input is answered immediately (Q7, T1.10); everything else waits until
-  // all input is in (Q5, Q8).
+  // Every warning waits until all input is in, so stderr can follow the
+  // file's line order (T9.13). A malformed line's warning is formatted as the
+  // line is read and held as text, which is bounded (T6.11), rather than as
+  // the line itself, which is not.
   const commands: SourcedCommand[] = [];
+  const held: Warning[] = [];
   try {
     for await (const source of readLines(input)) {
       const line = parseLine(source);
       if (line.outcome === "command") commands.push(line);
       else if (line.outcome === "malformed") {
-        writeLine(stderr, malformedWarning(line));
+        held.push({
+          lineNumber: source.lineNumber,
+          text: malformedWarning(line),
+        });
       }
     }
   } catch (error) {
@@ -142,12 +153,24 @@ export async function main(
     // and neither leaves a report, so both exit 1. Anything else thrown in
     // this loop is a bug in another layer and must crash (T6.1, T6.12).
     if (!(error instanceof ReadError)) throw error;
+    // The lines read before the failure were still read, so their warnings
+    // print ahead of the failure that ended the run.
+    for (const warning of held) writeLine(stderr, warning.text);
     writeLine(stderr, readFailure(file, error.message));
     return 1;
   }
 
+  // One pass in line order: a line yields at most one warning, from the
+  // parser or from resolution but never both, so the order is total (T4.3).
   const { network, warnings } = buildNetwork(commands);
-  for (const warning of warnings) writeLine(stderr, networkWarning(warning));
+  const all = held.concat(
+    warnings.map((warning) => ({
+      lineNumber: warning.source.lineNumber,
+      text: networkWarning(warning),
+    })),
+  );
+  all.sort((a, b) => a.lineNumber - b.lineNumber);
+  for (const warning of all) writeLine(stderr, warning.text);
 
   // No declared companies is no output at all, not a blank line (T6.14):
   // FR4 lists companies, and there are none to list.
