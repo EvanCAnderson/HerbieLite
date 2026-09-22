@@ -1,0 +1,25 @@
+// The browser's own TypeScript project (Q22): DOM types instead of Node's,
+// and Vite's bundler resolution, so browser code can never reach for a Node
+// API and server code never sees `document`. Vite emits the bundle; tsc only
+// checks it (DECISIONS T9.7).
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": [],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+
+    /* The same strictness as the rest of the project (DECISIONS T1.5). */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "verbatimModuleSyntax": true,
+
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["."]
+}

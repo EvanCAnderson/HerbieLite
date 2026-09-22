@@ -77,16 +77,6 @@ planning the upgrades; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q22** — Where the UI's code lives and how it ships (U9). Default: the
-  server in `src/ui/`, under the existing tsconfig; the browser code in `web/`
-  with its own tsconfig for DOM types, bundled by Vite into `dist/web/`;
-  `npm run ui` builds and starts it. Packages the server needs at run time go
-  in `dependencies`, and the README's "no runtime dependencies" line is
-  revised. Settle in T10c.
-- **Q23** — How the UI is tested (U9). Default: the server in vitest against a
-  real server on an ephemeral port; browser logic kept in modules with no DOM,
-  tested in vitest; the DOM glue itself untested, with browser end-to-end
-  tests deferred to UPGRADES. Settle in T10c.
 - **Q24** — Keeping a local server local (U9). Default: listen on `127.0.0.1`
   only; refuse any request whose `Host` is not that address or `localhost` at
   the server's port (DNS rebinding), and any WebSocket or state-changing
@@ -148,6 +138,8 @@ point here rather than repeating them.
 - [**Q31**](./DECISIONS.md#q31) (T10.8) — A query is an option taking the next argument, and replaces the report.
 - [**Q32**](./DECISIONS.md#q32) (T10.9) — `--partners` ranks partners strongest first; `--employees` lists employees alphabetically.
 - [**Q33**](./DECISIONS.md#q33) (T10.10) — A company never declared is an error, after the input is read.
+- [**Q22**](./DECISIONS.md#q22) (T10.12) — The server in `src/ui/`, the page in `web/`, bundled into `dist/web/`.
+- [**Q23**](./DECISIONS.md#q23) (T10.13) — A real server in the tests; the page's DOM code untested.
 
 ## 5. Tooling
 
@@ -309,12 +301,13 @@ prefix).
   - [x] T10b — [U10](./UPGRADES.md#u10): `--partners` and `--employees`
         queries about one company, with the help text and README run forms
         updated ([T10.4](./DECISIONS.md#t10-4)). Settles Q31, Q32 and Q33.
-  - [ ] T10c — U9, scaffold: layout, a second tsconfig for the browser, the
+  - [x] T10c — U9, scaffold: layout, a second tsconfig for the browser, the
         Vite build, `npm run ui`, and the test setup, with an empty page
         served and `npm run check` covering the new code. Settles Q22 and
         Q23.
-  - [ ] T10d — U9, server: `node:http` on `127.0.0.1`, serving the built page,
-        with the `Host` and `Origin` checks and their tests. Settles Q24.
+  - [ ] T10d — U9, server: the `Host` and `Origin` checks and their tests,
+        on the server T10c built ([T10.14](./DECISIONS.md#t10-14)). Settles
+        Q24.
   - [ ] T10e — U9, file API: list `examples/` (read-only) and `inputs/`, read,
         create, save, and delete, plus copying an example into the workspace
         ([T9.6](./DECISIONS.md#t9-6)); `inputs/` added to `.gitignore`.

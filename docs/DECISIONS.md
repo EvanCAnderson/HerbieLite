@@ -2431,6 +2431,86 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Mine (UPGRADES as next steps, most being built now). The new
   section's shape: LLM-suggested, accepted.
 
+#### <a id="t10-12"></a><a id="q22"></a>T10.12 — Q22: The server in `src/ui/`, the page in `web/`, bundled into `dist/web/`
+
+- **Decision:** The UI's server lives in `src/ui/`, under the existing
+  tsconfig, with a logic-free `bin.ts` beside `server.ts`, as the CLI has
+  ([T1.6](#t1-6)). The browser code lives in `web/`, with its own
+  `web/tsconfig.json`: DOM types and no Node types, bundler resolution, no
+  emit. Vite bundles it into `dist/web/` from flags in a `build:web`
+  script, with no Vite config file. `npm run build` now builds the page as
+  well as the CLI and server; `npm run ui` builds the page and starts the
+  server from source. `typecheck` checks both projects, and ESLint, Prettier
+  and the tests cover `web/` with no change to their config; coverage adds
+  `web/`. No runtime dependency was needed, so the README's "no runtime
+  dependencies" line stands until one is.
+- **Context:** T10c, the UI's scaffold. The server and the page run in
+  different places, with different globals.
+- **Why:** Two TypeScript projects make each side's mistakes compile errors:
+  a `document` in the server or an `fs` in the page fails `typecheck` rather
+  than at run time. `web/` sits outside `src/` because the root project's
+  `rootDir` is `src/` and its types are Node's; putting the page under it
+  would need the root config split. Flags rather than a config file follow
+  [T9.3](#t9-3), which kept a tool's settings in its script until one could
+  not be set that way. `npm run build` covers the page so that "build" still
+  means everything a reviewer can run. **Rejected:** one tsconfig with both
+  DOM and Node types, which lets either side use the other's globals
+  unchecked; the page under `src/web/`, which puts browser files in the
+  Node project; a `vite.config.ts`, typed but a fourth TypeScript context for
+  three settings; and leaving the page out of `npm run build`, which makes
+  `node dist/ui/bin.js` fail after a build.
+- **Origin:** Q22's default, LLM-suggested, accepted, with the Vite flags
+  and the page in `npm run build` added in T10c: LLM-suggested, accepted.
+
+#### <a id="t10-13"></a><a id="q23"></a>T10.13 — Q23: A real server in the tests; the page's DOM code untested
+
+- **Decision:** The server is tested in vitest against a real server on an
+  ephemeral port, over a small page the test writes to a temporary folder,
+  not over Vite's build. Browser logic is to be kept in modules that do not
+  touch the DOM and tested in vitest like the rest; the code that does touch
+  the DOM is not tested. End-to-end tests in a browser are deferred to
+  [UPGRADES U11](./UPGRADES.md#u11).
+- **Context:** T10c. The scaffold has a server with real behaviour and a
+  page whose only code puts a heading in the DOM.
+- **Why:** A real server on port 0 tests what a browser will get, headers
+  included, with no mocking and no port clash between parallel runs. A page
+  written by the test keeps `npm test` free of a build step, as
+  [T6.10](#t6-10) did for the CLI's process test. Keeping logic out of DOM
+  code is what makes it testable without a browser, and it leaves the
+  untested part as thin as `bin.ts`. **Known cost:** nothing checks that the
+  page renders; the scaffold was checked by loading it in a browser by hand.
+  **Rejected:** a DOM emulation such as jsdom, one more dependency that
+  imitates a browser without being one; Playwright now, which needs browser
+  binaries on install for a page that does almost nothing yet; and testing
+  the server over Vite's real output, which would make `npm test` depend on
+  `npm run build`.
+- **Origin:** Q23's default, LLM-suggested, accepted.
+
+#### <a id="t10-14"></a>T10.14 — The scaffold's server serves only what it found at startup
+
+- **Decision:** The scaffold includes a minimal server rather than waiting
+  for T10d. It reads every file of the built page into memory at startup,
+  keyed by URL path with `/` for `index.html`, and answers GET and HEAD
+  from that map: 404 for anything else, 405 for other methods. A request is
+  never turned into a file path. It listens on `127.0.0.1`, port 5170,
+  fixed; a taken port or a missing build is one line on stderr and exit 1.
+  T10d keeps the `Host` and `Origin` checks (Q24).
+- **Context:** T10c promised an empty page served, and the server was
+  planned for T10d.
+- **Why:** An empty page no one can load does not show the scaffold works,
+  and a static server over a handful of files is small enough to build here.
+  Serving from a map removes path traversal as a class rather than guarding
+  against it, which a test holds by sending `/../package.json` and its
+  encoded forms unnormalised; the cost is a restart after a rebuild, which
+  `npm run ui` does anyway. `127.0.0.1` from the start, because listening
+  everywhere even for one subtask would be the unsafe default Q24 exists to
+  avoid. A fixed port, so the address is the same every run. **Rejected:**
+  `vite preview` for now, which serves the page but is not the server T10d
+  hardens; resolving the request path under `dist/web/` with a containment
+  check, the usual approach and one more thing to get right; and port 0,
+  which needs the address read from the log every time.
+- **Origin:** LLM-suggested, accepted.
+
 ---
 
 ## Open questions

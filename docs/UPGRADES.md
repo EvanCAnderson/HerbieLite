@@ -301,3 +301,23 @@ answers its open questions got:
   alphabetically, in the report's shape (Q32).
 - **A company never declared?** An error on stderr, exit 1, checked once the
   input is read (Q33).
+
+<a id="u11"></a>
+
+## U11 — End-to-end tests of the web page in a browser
+
+The UI's server is tested against a real server, and the page's logic is to
+be kept in modules tested without a browser; the code that touches the DOM is
+not tested ([DECISIONS T10.13](./DECISIONS.md#t10-13)). A browser test would
+load the page and use it as a person does.
+
+- **Origin:** LLM-suggested, deferred here as Q23's default.
+
+Open questions:
+
+- **Which tool?** Playwright is the usual choice, and downloads browser
+  binaries on install.
+- **In `npm run check`, or a separate script?** In `check` means every run
+  needs a browser and a build.
+- **When?** Once the page does enough that a broken render would go unnoticed
+  by the other tests: after the editor (T10g) or the console (T10h).
