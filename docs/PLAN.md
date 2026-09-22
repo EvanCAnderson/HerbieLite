@@ -313,7 +313,7 @@ prefix).
         to date ([T10.11](./DECISIONS.md#t10-11)), with
         [U12](./UPGRADES.md#u12) named as not built
         ([T10.22](./DECISIONS.md#t10-22)).
-- [ ] T11 — Follow-ups to T10: a bug, the examples explained in the page,
+- [x] T11 — Follow-ups to T10: a bug, the examples explained in the page,
       a console that takes typed herbie-lite commands and the queries, and a
       look of its own ([T11.1](./DECISIONS.md#t11-1),
       [T11.5](./DECISIONS.md#t11-5)).
@@ -326,9 +326,9 @@ prefix).
         herbie-lite only, typed or entered by a button, with **--partners**
         and **--employees** buttons and a company field
         ([T11.5](./DECISIONS.md#t11-5)).
-  - [ ] T11d — A terminal-forward look: dark throughout, monospace
+  - [x] T11d — A terminal-forward look: dark throughout, monospace
         headings, green and amber accents, the console at the centre
-        ([T11.3](./DECISIONS.md#t11-3)).
+        ([T11.3](./DECISIONS.md#t11-3), [T11.6](./DECISIONS.md#t11-6)).
 
 ## 7. Definition of done
 

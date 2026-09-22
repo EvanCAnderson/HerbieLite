@@ -32,7 +32,11 @@ const workspace = new Workspace(store);
 const panel = h("div");
 const consoleRoot = h("div");
 app.replaceChildren(
-  h("h1", { textContent: "Herbie Lite" }),
+  h("h1", { textContent: "herbie-lite" }),
+  h("p", {
+    className: "tagline",
+    textContent: "build your network. know your ties.",
+  }),
   panel,
   consoleRoot,
 );

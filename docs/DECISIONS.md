@@ -3149,6 +3149,28 @@ Laurie Globex`: the program name, the line number and the name are gone.
   their command at the prompt, the field with suggestions, and the
   `keyCode` fallback: LLM-suggested, accepted.
 
+#### <a id="t11-6"></a>T11.6 — The terminal look's decorations are seen, not read
+
+- **Decision:** The look T11.3 chose is drawn with CSS prefixes: `> ` and
+  a blinking `_` around the title, `# ` before each section heading, `>`
+  before the chosen file, and `// ` before an example's purpose. Each uses
+  CSS alt text, `content: "# " / ""`, so it shows on screen and is left out
+  of the element's accessible name. The title's text is `herbie-lite`, as
+  the program is named on every stderr line, with a one-line tagline under
+  it. The cursor stops blinking for a reader who asks for reduced motion.
+  The console's prompt is green and its stderr amber, from an xterm.js
+  theme that matches the page.
+- **Context:** T11d. With the prefixes as plain `content`, the section
+  headings' accessible names became "# Examples" and "# Workspace", which
+  four browser tests caught, and which a screen reader would read aloud.
+- **Why:** The prefixes are what make the page read as a terminal, and
+  they carry no meaning a screen reader needs; alt text keeps both the look
+  and the names intact with no extra markup. **Rejected:** decorations in
+  spans marked `aria-hidden`, which works in every browser but adds markup
+  to every heading for a visual effect; dropping the prefixes; and changing
+  the tests to expect "# Examples", which would hide the problem.
+- **Origin:** LLM-suggested, in T11d (the look itself: Mine, T11.3).
+
 ---
 
 ## Open questions

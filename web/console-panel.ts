@@ -30,7 +30,7 @@ export interface Console {
   run(file: Runnable, query?: Query): void;
 }
 
-const PROMPT = "\u001b[1m$\u001b[0m ";
+const PROMPT = "\u001b[1;32m$\u001b[0m ";
 
 export function mountConsole(root: HTMLElement, files: Files): Console {
   const terminal = new Terminal({
@@ -43,7 +43,20 @@ export function mountConsole(root: HTMLElement, files: Files): Console {
     fontSize: 13,
     scrollback: 5000,
     screenReaderMode: true,
-    theme: { background: "#15171b", foreground: "#e6e8eb" },
+    // The page's colours (T11.3): green for the prompt, amber for stderr.
+    theme: {
+      background: "#11150f",
+      foreground: "#d7e0d0",
+      cursor: "#7bd88f",
+      cursorAccent: "#11150f",
+      selectionBackground: "#1f3a24",
+      green: "#7bd88f",
+      brightGreen: "#9be6aa",
+      yellow: "#e5b567",
+      brightYellow: "#f0c987",
+      red: "#ff7a70",
+      brightBlack: "#5c6656",
+    },
   });
   const fit = new FitAddon();
   terminal.loadAddon(fit);
