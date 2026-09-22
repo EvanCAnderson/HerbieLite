@@ -75,11 +75,18 @@ test("copies an example, edits it, saves it, and keeps it across a reload", asyn
   );
 });
 
-test("marks a line naming a company not declared yet, until it is", async ({
+test("names a new file in the page, then marks a line naming a company not declared yet, until it is", async ({
   page,
 }) => {
-  page.once("dialog", (dialog) => void dialog.accept("draft.txt"));
   await page.getByRole("button", { name: "New file…" }).click();
+  const name = page.getByRole("textbox", { name: "New file name" });
+  await expect(name).toHaveValue("untitled.txt");
+  // A name the workspace refuses leaves the form open to correct it (Q25).
+  await name.fill("my draft");
+  await name.press("Enter");
+  await expect(page.getByText("my draft is not a valid name")).toBeVisible();
+  await name.fill("draft.txt");
+  await name.press("Enter");
   await expect(fileIn(page, "Workspace", "draft.txt")).toBeVisible();
 
   await editor(page).fill("Employee Pat Nowhere\n");

@@ -315,8 +315,9 @@ prefix).
         ([T10.22](./DECISIONS.md#t10-22)).
 - [ ] T11 — Follow-ups to T10: a bug, the examples explained in the page,
       and a look of its own ([T11.1](./DECISIONS.md#t11-1)).
-  - [ ] T11a — New file asks for its name in the page, not with `prompt()`,
-        which some browsers, the Claude app's among them, do not support.
+  - [x] T11a — New file asks for its name in the page, not with `prompt()`,
+        which some browsers, the Claude app's among them, do not support
+        ([T11.4](./DECISIONS.md#t11-4)).
   - [ ] T11b — Each example's purpose, one line, shown in the page
         ([T11.2](./DECISIONS.md#t11-2)).
   - [ ] T11c — A terminal-forward look: dark throughout, monospace

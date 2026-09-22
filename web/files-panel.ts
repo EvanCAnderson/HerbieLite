@@ -76,13 +76,76 @@ export function mountFilesPanel(
   }
 
   /**
-   * A new, empty workspace file under a name the user gives. A name already
-   * taken is overwritten only once the user confirms it (Q30).
+   * The form that names a new file, made once and kept across renders, so a
+   * redraw (another tab saving, say) never loses a half-typed name. It is a
+   * form in the page rather than `prompt()`, which some browsers do not
+   * support: the Claude app's throws on it (T11a).
    */
-  function newFile(): void {
-    const suggested = suggestName("untitled", new Set(workspace.list()));
-    const name = prompt("Name the new file:", suggested)?.trim();
-    if (name === undefined || name === "") return;
+  const nameInput = h("input", {
+    type: "text",
+    className: "name",
+    spellcheck: false,
+    autocomplete: "off",
+  });
+  nameInput.setAttribute("aria-label", "New file name");
+  const nameForm = h(
+    "form",
+    {
+      className: "new-file",
+      onsubmit: (event) => {
+        event.preventDefault();
+        createFile(nameInput.value.trim());
+      },
+      // Enter is handled here as well as by the form's own submission,
+      // which a synthetic keypress (as some embedded browsers send) does not
+      // trigger; preventing the default keeps a real one from creating twice.
+      onkeydown: (event) => {
+        if (event.key === "Escape") closeNameForm();
+        if (event.key === "Enter" && event.target === nameInput) {
+          event.preventDefault();
+          createFile(nameInput.value.trim());
+        }
+      },
+    },
+    nameInput,
+    h(
+      "div",
+      { className: "actions" },
+      h("button", {
+        type: "submit",
+        className: "action primary",
+        textContent: "Create",
+      }),
+      h("button", {
+        type: "button",
+        className: "action",
+        textContent: "Cancel",
+        onclick: () => closeNameForm(),
+      }),
+    ),
+  );
+  let naming = false;
+
+  function openNameForm(): void {
+    naming = true;
+    nameInput.value = suggestName("untitled", new Set(workspace.list()));
+    render();
+    nameInput.focus();
+    // Select the name without `.txt`, so typing replaces just that part.
+    nameInput.setSelectionRange(0, nameInput.value.length - ".txt".length);
+  }
+
+  function closeNameForm(): void {
+    naming = false;
+    render();
+  }
+
+  /**
+   * A new, empty workspace file under the name given. A name already taken
+   * is overwritten only once the user confirms it (Q30); a name the
+   * workspace refuses leaves the form open to correct it (Q25).
+   */
+  function createFile(name: string): void {
     let result = workspace.create(name, "");
     if (
       result.outcome === "exists" &&
@@ -97,8 +160,10 @@ export function mountFilesPanel(
       if (!select({ source: "workspace", name })) return;
       // An overwritten file is a new file, whatever the editor held.
       editor = undefined;
+      naming = false;
     }
     render();
+    if (naming) nameInput.focus();
   }
 
   // One file input, kept across renders, so choosing a file is not lost.
@@ -173,22 +238,24 @@ export function mountFilesPanel(
               {},
               ...names.map((name) => fileButton({ source: "workspace", name })),
             ),
-        h(
-          "div",
-          { className: "actions" },
-          h("button", {
-            type: "button",
-            className: "action",
-            textContent: "New file…",
-            onclick: newFile,
-          }),
-          h("button", {
-            type: "button",
-            className: "action",
-            textContent: "Open a file…",
-            onclick: () => picker.click(),
-          }),
-        ),
+        naming
+          ? nameForm
+          : h(
+              "div",
+              { className: "actions" },
+              h("button", {
+                type: "button",
+                className: "action",
+                textContent: "New file…",
+                onclick: openNameForm,
+              }),
+              h("button", {
+                type: "button",
+                className: "action",
+                textContent: "Open a file…",
+                onclick: () => picker.click(),
+              }),
+            ),
       ),
     );
   }
@@ -283,6 +350,9 @@ export function mountFilesPanel(
 
   function render(): void {
     statusLine.textContent = status;
+    // The name form moves into the redrawn list, and a moved element loses
+    // focus, so it is given back.
+    const typing = document.activeElement === nameInput;
     const view = viewer();
     // An editor already on the page is left where it is, so typing, the
     // cursor and the scroll position are never disturbed by a redraw.
@@ -291,6 +361,7 @@ export function mountFilesPanel(
     } else {
       layout.replaceChildren(fileList(), view, statusLine);
     }
+    if (typing) nameInput.focus();
   }
 
   // Another tab changed the workspace: redraw, and let go of a file it

@@ -3065,6 +3065,35 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Mine (chosen from three directions the LLM set out, of which
   it recommended the ledger look).
 
+#### <a id="t11-4"></a>T11.4 — A new file is named in a form in the page
+
+- **Decision:** **New file…** replaces the workspace's buttons with a form:
+  a name field holding a free suggested name (Q25), with the part before
+  `.txt` selected, and **Create** and **Cancel**. Enter creates and Escape
+  cancels. A name the workspace refuses leaves the form open with the
+  reason on the status line; a taken name still asks before replacing the
+  file (Q30). The form is made once and kept across redraws, so a redraw
+  keeps a half-typed name and its focus. Enter is handled by the field
+  itself as well as by the form's submission, and the default is
+  prevented so one keypress creates one file. `prompt()` is no longer used
+  anywhere in the page. The browser test for new files now fills the form,
+  including a name that is refused.
+- **Context:** T11a. New file did nothing in the Claude app's browser
+  pane, which throws "prompt() is not supported"; the browser test had
+  passed because Playwright answers a prompt dialog. In the same pane,
+  a synthetic Enter reached the field without submitting the form.
+- **Why:** A form in the page works wherever the page does, and it can
+  show why a name was refused and let it be corrected, which a prompt
+  cannot. Handling Enter directly costs three lines and makes the form work
+  whether or not a browser submits it on Enter. `confirm()` stays for
+  deleting, replacing and discarding: the pane supports it, and those are
+  yes-or-no questions a dialog suits. **Rejected:** a modal `<dialog>`,
+  which is closer to the prompt it replaces but takes the user away from the
+  list the file will join; keeping `prompt()` with the form as a fallback
+  when it throws, two ways to name a file; and relying on the form's own
+  submission alone, which failed in the pane.
+- **Origin:** LLM-suggested, in T11a (the bug was reported by me).
+
 ---
 
 ## Open questions
