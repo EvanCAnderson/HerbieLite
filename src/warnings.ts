@@ -89,6 +89,25 @@ export function unknownOption(option: string): string {
   return badInvocation(`unknown option "${escaped(option)}"`);
 }
 
+/** A query option with no company after it (Q31). */
+export function missingCompany(option: string): string {
+  return badInvocation(`${option} needs a company name`);
+}
+
+/** More than one query in one run (Q31). */
+export function tooManyQueries(): string {
+  return badInvocation("expected at most one of --partners and --employees");
+}
+
+/**
+ * A query naming a company the input never declared (Q33). Unlike a name in
+ * the input, it was never checked for letters only, so it is quoted and
+ * escaped like any other text the user supplied (T8.4).
+ */
+export function unknownCompany(company: string): string {
+  return errorMessage(`no company named "${escaped(company)}" was declared`);
+}
+
 /** Output that could not be written (Q17); the cause is escaped (T8.4). */
 export function writeFailure(cause: string): string {
   return errorMessage(`cannot write output: ${escaped(cause)}`);

@@ -1,7 +1,8 @@
 # Herbie Lite — Upgrades
 
-Ideas beyond the [brief](./BRIEF.md). Not built until the base submission is
-complete.
+Potential next steps beyond the [brief](./BRIEF.md), each with the questions
+it would have to answer. None was built until the base submission was
+complete; since then they are being built, and each entry says whether it is.
 
 <a id="u1"></a>
 
@@ -263,7 +264,7 @@ console runs the analyzer.
 
 <a id="u10"></a>
 
-## U10 — Queries about one company
+## U10 — Queries about one company — **built**
 
 The report answers one question per company: who knows it best. The brief's
 first example question, "Who do we know who works at ACME Co?", needs more
@@ -289,6 +290,14 @@ Laurie: Chris (2), Molly (1)
 - **Origin:** The queries: Mine. Command-line options: LLM-suggested,
   accepted.
 
-Planned as T10b, after the tie note and before the UI. Its open questions are
-PLAN §4's Q31–Q33: the options and how they meet the report, what each query
-prints, and a company that was never declared.
+Built in T10b; see [DECISIONS T10.8](./DECISIONS.md#t10-8),
+[T10.9](./DECISIONS.md#t10-9) and [T10.10](./DECISIONS.md#t10-10) for the
+answers its open questions got:
+
+- **Options and the report?** Each option takes the next argument as the
+  company, before or after the file; the answer replaces the report, one
+  query per run, with warnings but no tie notes (Q31).
+- **What each prints?** As above: partners strongest first, employees
+  alphabetically, in the report's shape (Q32).
+- **A company never declared?** An error on stderr, exit 1, checked once the
+  input is read (Q33).

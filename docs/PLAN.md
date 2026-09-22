@@ -121,28 +121,6 @@ point here rather than repeating them.
   (U1's first question). Default: into `inputs/` only; an existing name needs
   an explicit overwrite confirmation; the file is written to a temporary name
   and renamed, so a failed save leaves the old file whole. Settle in T10e.
-- **Q31** — The query options and how they meet the report (U10,
-  [T10.4](./DECISIONS.md#t10-4)). Default: `--partners <Company>` and
-  `--employees <Company>`, each taking the next argument as its company, with
-  the input file named or piped as today. A query replaces the report rather
-  than printing beside it; at most one query per run, and two is a bad
-  invocation (exit 1 with the usage line, Q19). Warnings still print on
-  stderr, since a discarded line can change a query's answer as it can the
-  report's (Q7). `--help` still wins wherever it appears. Settle in T10b.
-- **Q32** — What each query prints (U10). Default: `--partners` prints one
-  line, `<Company>: <Partner> (<n>), ...`, strongest first and ties in
-  alphabetical order (Q14), or `<Company>: No current relationship` as in the
-  report (Q2). `--employees` prints one line per employee in alphabetical
-  order, `<Employee>: <Partner> (<n>), ...` in the same order, or
-  `<Employee>: No contacts`; a company with no employees prints nothing, as
-  T6.14 does for no companies. Contact types are not broken out, since every
-  contact counts 1 (§1). Settle in T10b.
-- **Q33** — A query naming a company that was never declared (U10). Default:
-  one line on stderr naming the company, no output, exit 1, since no answer
-  was produced ([T6.1](./DECISIONS.md#t6-1)); checked after the input is
-  read, since a company may be declared anywhere in the file (Q8). The
-  company's name is escaped like any other user-supplied text
-  ([T8.4](./DECISIONS.md#t8-4)). Settle in T10b.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -167,6 +145,9 @@ point here rather than repeating them.
 - [**Q19**](./DECISIONS.md#q19) (T9.10) — `--help` and `-h` are the only options, and win wherever they appear.
 - [**Q20**](./DECISIONS.md#q20) (T9.12) — Commands come from a file; a bare run explains how.
 - [**Q21**](./DECISIONS.md#q21) (T10.6) — A tie is one note on stderr, after the report.
+- [**Q31**](./DECISIONS.md#q31) (T10.8) — A query is an option taking the next argument, and replaces the report.
+- [**Q32**](./DECISIONS.md#q32) (T10.9) — `--partners` ranks partners strongest first; `--employees` lists employees alphabetically.
+- [**Q33**](./DECISIONS.md#q33) (T10.10) — A company never declared is an error, after the input is read.
 
 ## 5. Tooling
 
@@ -325,7 +306,7 @@ prefix).
   - [x] T10a — [U4](./UPGRADES.md#u4): note a tie without changing the
         report line or ranking tied partners
         ([T10.3](./DECISIONS.md#t10-3)). Settles Q21.
-  - [ ] T10b — [U10](./UPGRADES.md#u10): `--partners` and `--employees`
+  - [x] T10b — [U10](./UPGRADES.md#u10): `--partners` and `--employees`
         queries about one company, with the help text and README run forms
         updated ([T10.4](./DECISIONS.md#t10-4)). Settles Q31, Q32 and Q33.
   - [ ] T10c — U9, scaffold: layout, a second tsconfig for the browser, the
@@ -351,7 +332,8 @@ prefix).
         ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
   - [ ] T10i — README: how to start the UI, what it can and cannot do (no
         shell, examples read-only), the changed dependency line, and the
-        "Deliberately left out" section brought up to date.
+        "Beyond the brief" section brought up to date
+        ([T10.11](./DECISIONS.md#t10-11)).
 
 ## 7. Definition of done
 

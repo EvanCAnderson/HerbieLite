@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { buildNetwork } from "./network.js";
 import type { Network } from "./network.js";
 import { parseLine } from "./parser.js";
-import { buildReport, type Report } from "./report.js";
+import { buildReport, employeesOf, partnersOf, type Report } from "./report.js";
 
 /**
  * Builds a network from the text of an input file, so each case reads as the
@@ -12,13 +12,23 @@ import { buildReport, type Report } from "./report.js";
  * Malformed and blank lines are dropped here exactly as the cli will drop
  * them (Q7, T6c).
  */
-function analyse(file: string): Report {
+function build(file: string): Network {
   const commands = file
     .split("\n")
     .map((text, index) => parseLine({ lineNumber: index + 1, text }))
     .filter((line) => line.outcome === "command");
-  return buildReport(buildNetwork(commands).network);
+  return buildNetwork(commands).network;
 }
+
+function analyse(file: string): Report {
+  return buildReport(build(file));
+}
+
+/** The brief's example, as shipped: the file a reviewer runs (T5.5). */
+const BRIEF = readFileSync(
+  join(import.meta.dirname, "..", "examples", "input.txt"),
+  "utf8",
+);
 
 function report(file: string): readonly string[] {
   return analyse(file).lines;
@@ -219,6 +229,81 @@ Contact Ada Bo email`).ties.map((tie) => tie.company),
   });
 });
 
+describe("--partners: who has contacted one company (Q32)", () => {
+  it("lists every partner with their strength, strongest first", () => {
+    expect(partnersOf(build(BRIEF), "Globex")).toEqual([
+      "Globex: Chris (2), Molly (1)",
+    ]);
+  });
+
+  it("puts equal strengths in alphabetical order (Q1)", () => {
+    expect(
+      partnersOf(
+        build(`Partner Cy
+Partner Bo
+Partner Ada
+Company Globex
+Employee Laurie Globex
+Contact Laurie Cy email
+Contact Laurie Bo email
+Contact Laurie Bo call
+Contact Laurie Ada coffee`),
+        "Globex",
+      ),
+    ).toEqual(["Globex: Bo (2), Ada (1), Cy (1)"]);
+  });
+
+  it("starts with the partner the report names, for every company", () => {
+    const network = build(BRIEF);
+    for (const line of buildReport(network).lines) {
+      const company = line.slice(0, line.indexOf(":"));
+      expect(partnersOf(network, company)?.[0]?.startsWith(line)).toBe(true);
+    }
+  });
+
+  it("says No current relationship as the report does (Q2)", () => {
+    expect(partnersOf(build(BRIEF), "ACME")).toEqual([
+      "ACME: No current relationship",
+    ]);
+  });
+
+  it("answers undefined for a company never declared (Q33)", () => {
+    expect(partnersOf(build(BRIEF), "Initech")).toBeUndefined();
+  });
+});
+
+describe("--employees: who at one company we know (Q32)", () => {
+  it("lists each employee alphabetically, with the partners who contacted them", () => {
+    expect(employeesOf(build(BRIEF), "Globex")).toEqual([
+      "Jamie: No contacts",
+      "Laurie: Chris (2), Molly (1)",
+    ]);
+  });
+
+  it("counts each employee's own contacts, not the company's", () => {
+    expect(
+      employeesOf(
+        build(`Partner Chris
+Company Globex
+Employee Laurie Globex
+Employee Jamie Globex
+Contact Laurie Chris email
+Contact Laurie Chris call
+Contact Jamie Chris coffee`),
+        "Globex",
+      ),
+    ).toEqual(["Jamie: Chris (1)", "Laurie: Chris (2)"]);
+  });
+
+  it("lists nothing for a company with no employees (T6.14)", () => {
+    expect(employeesOf(build(BRIEF), "ACME")).toEqual([]);
+  });
+
+  it("answers undefined for a company never declared (Q33)", () => {
+    expect(employeesOf(build(BRIEF), "Initech")).toBeUndefined();
+  });
+});
+
 describe("company order (Q14)", () => {
   it("sorts alphabetically, not by declaration order", () => {
     expect(
@@ -261,11 +346,7 @@ describe("a network that breaks its own invariants", () => {
 
 describe("the brief's example (PLAN §7)", () => {
   it("produces the expected output from the shipped examples/input.txt", () => {
-    const file = readFileSync(
-      join(import.meta.dirname, "..", "examples", "input.txt"),
-      "utf8",
-    );
-    expect(report(file)).toEqual([
+    expect(report(BRIEF)).toEqual([
       "ACME: No current relationship",
       "Globex: Chris (2)",
       "Hooli: Molly (1)",

@@ -13,7 +13,7 @@ Hooli: Molly (1)
 ```
 
 `examples/input.txt` is that example, verbatim from the brief and the same
-file the test suite asserts against; four more examples sit beside it.
+file the test suite asserts against; five more examples sit beside it.
 
 The submission that answers the brief is tagged `base-submission`; any later
 commit is an upgrade beyond it ([T9.2](docs/DECISIONS.md#t9-2)).
@@ -40,7 +40,9 @@ stopping at the first failure. It needs no build step.
 npm run build
 ```
 
-Compiles to `dist/`. Individual scripts are `npm run typecheck`, `npm run lint`,
+Compiles to `dist/`. Run it before any `node dist/bin.js` command below, and
+again after changing the source; `npm start --` runs the source directly and
+needs no build. Individual scripts are `npm run typecheck`, `npm run lint`,
 `npm run format:check`, `npm test`, and `npm run test:watch`.
 
 ```bash
@@ -63,9 +65,10 @@ npm start -- examples/input.txt            # the same, from source, no build
 cat examples/input.txt | npm start
 ```
 
-The general form is `node dist/bin.js [--help | file]`, and `--help` (or
-`-h`) prints it with the four commands and the contact types
-([Q19](docs/DECISIONS.md#q19)):
+The general form is
+`node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]`,
+and `--help` (or `-h`) prints it with the queries, the four commands and the
+contact types ([Q19](docs/DECISIONS.md#q19)):
 
 ```bash
 node dist/bin.js --help
@@ -74,6 +77,32 @@ npm start -- --help   # from source
 
 From source, the `--` matters: `npm start --help` is read by npm, which prints
 its own help instead.
+
+### Asking about one company
+
+Since the base was tagged, two queries answer the brief's first example
+question, "Who do we know who works at ACME Co?", and print instead of the
+report ([Q31](docs/DECISIONS.md#q31)):
+
+```
+$ node dist/bin.js --partners Globex examples/input.txt
+Globex: Chris (2), Molly (1)
+
+$ node dist/bin.js --employees Globex examples/input.txt
+Jamie: No contacts
+Laurie: Chris (2), Molly (1)
+```
+
+`--partners` lists every partner who has contacted the company, strongest
+first, with equal strengths alphabetical as in the report; its first partner is
+always the one the report names. `--employees` lists the company's employees
+alphabetically, each with the partners who contacted them
+([Q32](docs/DECISIONS.md#q32)). One query per run; the option can come before
+or after the file, and works with a pipe too. Warnings still print on stderr,
+since a discarded line can change an answer, but tie notes do not, since
+`--partners` already shows every tied partner. A company the input never
+declares is an error that exits 1, checked once the whole file is read
+([Q33](docs/DECISIONS.md#q33)).
 
 Commands come from a file: write them in any editor, then name the file or
 pipe it in. Running `node dist/bin.js` with neither, at a terminal, does not
@@ -84,11 +113,12 @@ at the line a warning names, and rerun, which a typed session cannot.
 
 ### Exit codes
 
-- **0** — a report was produced. Bad lines in the input never change this:
-  they are reported on stderr and the report still prints.
-- **1** — no report was produced: more than one argument, an unknown option,
-  no file at a terminal (which prints the opening instead), a file that could
-  not be read, or an I/O failure.
+- **0** — a report, or a query's answer, was produced. Bad lines in the input
+  never change this: they are reported on stderr and the output still prints.
+- **1** — nothing was produced: more than one file argument, an unknown option,
+  a query with no company, two queries, a company the input never declares, no
+  file at a terminal (which prints the opening instead), a file that could not
+  be read, or an I/O failure.
 
 Warnings and tie notes go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
 report.txt` gives a clean file with the warnings still on screen.
@@ -97,18 +127,19 @@ report.txt` gives a clean file with the warnings still on screen.
 
 ## Examples
 
-[`examples/`](examples) holds five inputs. Each one runs as it stands, and each
+[`examples/`](examples) holds six inputs. Each one runs as it stands, and each
 is asserted by the test suite for its exact report **and** its exact warnings,
 so none of them can quietly stop matching the program
 ([T7.5](docs/DECISIONS.md#t7-5)).
 
-| File                    | What it shows                                                                                                                                |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `input.txt`             | The brief's example, verbatim.                                                                                                               |
-| `late-declarations.txt` | Every name used before it is declared, and resolved anyway (Q5, Q8, Q12).                                                                    |
-| `ties.txt`              | The alphabetical tie-break (Q1) and its note on stderr (Q21), and code-unit sorting, where `Zebra` precedes `acme` (Q14).                    |
-| `names-and-repeats.txt` | A keyword used as a name (Q9), a person and a company sharing one (Q12), a repeated contact counting twice (Q13), and an empty company (Q2). |
-| `warnings.txt`          | Every warning the program can print, with the report still printing underneath (Q7).                                                         |
+| File                    | What it shows                                                                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `input.txt`             | The brief's example, verbatim.                                                                                                                                                  |
+| `late-declarations.txt` | Every name used before it is declared, and resolved anyway (Q5, Q8, Q12).                                                                                                       |
+| `ties.txt`              | The alphabetical tie-break (Q1) and its note on stderr (Q21), and code-unit sorting, where `Zebra` precedes `acme` (Q14).                                                       |
+| `names-and-repeats.txt` | A keyword used as a name (Q9), a person and a company sharing one (Q12), a repeated contact counting twice (Q13), and an empty company (Q2).                                    |
+| `queries.txt`           | Both queries (Q31, Q32): `--partners` ranking three partners, `--employees` with an employee nobody contacted, and a tie the report notes but `--partners Hooli` shows in full. |
+| `warnings.txt`          | Every warning the program can print, with the report still printing underneath (Q7).                                                                                            |
 
 The input format has no comment syntax — the brief marks the comment in its own
 example as illustration only — so none of these files is annotated; what each
@@ -432,51 +463,58 @@ anything counting lines would otherwise see one report where there is none.
 
 ### Every question, and where it was settled
 
-| ID    | Assumption                                                                | Settled in                       |
-| ----- | ------------------------------------------------------------------------- | -------------------------------- |
-| Q1 †  | Ties go to the alphabetically first partner                               | [T5.3](docs/DECISIONS.md#t5-3)   |
-| Q2    | No contacts, or no employees → `No current relationship`                  | [T1.14](docs/DECISIONS.md#t1-14) |
-| Q3    | Drive Capital never appears in the output                                 | [T1.15](docs/DECISIONS.md#t1-15) |
-| Q4    | Names are case-sensitive                                                  | [T1.16](docs/DECISIONS.md#t1-16) |
-| Q5    | Declarations are resolved at end of input; the first valid one stands     | [T1.17](docs/DECISIONS.md#t1-17) |
-| Q6    | Blank lines are skipped silently; every other bad line gets Q7            | [T1.18](docs/DECISIONS.md#t1-18) |
-| Q7    | A malformed line is discarded with a warning; the report still prints     | [T1.19](docs/DECISIONS.md#t1-19) |
-| Q8    | Contacts are resolved after all input; unresolved ones are warned         | [T1.20](docs/DECISIONS.md#t1-20) |
-| Q9 †  | A word is letters only, `[A-Za-z]+`                                       | [T1.21](docs/DECISIONS.md#t1-21) |
-| Q10   | Words split on runs of spaces or tabs; edges and a CRLF `\r` ignored      | [T3.2](docs/DECISIONS.md#t3-2)   |
-| Q11   | Command keywords are case-sensitive                                       | [T3.3](docs/DECISIONS.md#t3-3)   |
-| Q12 † | One name, one person; companies have their own namespace                  | [T2.7](docs/DECISIONS.md#t2-7)   |
-| Q13 † | Every `Contact` line counts; a repeated declaration is warned and dropped | [T2.6](docs/DECISIONS.md#t2-6)   |
-| Q14 † | "Sorted alphabetically" is UTF-16 code-unit order                         | [T5.4](docs/DECISIONS.md#t5-4)   |
-| Q15   | One optional file argument; a bad invocation exits 1                      | [T6.3](docs/DECISIONS.md#t6-3)   |
-| Q16   | A byte-order mark is stripped in the reader, silently                     | [T6.6](docs/DECISIONS.md#t6-6)   |
-| Q17   | A closed stdout ends quietly; other I/O fails loudly                      | [T6.9](docs/DECISIONS.md#t6-9)   |
-| Q18   | The help text is built from the parser's grammar table                    | [T9.9](docs/DECISIONS.md#t9-9)   |
-| Q19   | `--help` and `-h` are the only options, and win wherever they appear      | [T9.10](docs/DECISIONS.md#t9-10) |
-| Q20   | Commands come from a file; a bare run explains how, and exits 1           | [T9.12](docs/DECISIONS.md#t9-12) |
-| Q21   | A tie is one note on stderr, after the report; the line is unchanged      | [T10.6](docs/DECISIONS.md#t10-6) |
+| ID    | Assumption                                                                | Settled in                         |
+| ----- | ------------------------------------------------------------------------- | ---------------------------------- |
+| Q1 †  | Ties go to the alphabetically first partner                               | [T5.3](docs/DECISIONS.md#t5-3)     |
+| Q2    | No contacts, or no employees → `No current relationship`                  | [T1.14](docs/DECISIONS.md#t1-14)   |
+| Q3    | Drive Capital never appears in the output                                 | [T1.15](docs/DECISIONS.md#t1-15)   |
+| Q4    | Names are case-sensitive                                                  | [T1.16](docs/DECISIONS.md#t1-16)   |
+| Q5    | Declarations are resolved at end of input; the first valid one stands     | [T1.17](docs/DECISIONS.md#t1-17)   |
+| Q6    | Blank lines are skipped silently; every other bad line gets Q7            | [T1.18](docs/DECISIONS.md#t1-18)   |
+| Q7    | A malformed line is discarded with a warning; the report still prints     | [T1.19](docs/DECISIONS.md#t1-19)   |
+| Q8    | Contacts are resolved after all input; unresolved ones are warned         | [T1.20](docs/DECISIONS.md#t1-20)   |
+| Q9 †  | A word is letters only, `[A-Za-z]+`                                       | [T1.21](docs/DECISIONS.md#t1-21)   |
+| Q10   | Words split on runs of spaces or tabs; edges and a CRLF `\r` ignored      | [T3.2](docs/DECISIONS.md#t3-2)     |
+| Q11   | Command keywords are case-sensitive                                       | [T3.3](docs/DECISIONS.md#t3-3)     |
+| Q12 † | One name, one person; companies have their own namespace                  | [T2.7](docs/DECISIONS.md#t2-7)     |
+| Q13 † | Every `Contact` line counts; a repeated declaration is warned and dropped | [T2.6](docs/DECISIONS.md#t2-6)     |
+| Q14 † | "Sorted alphabetically" is UTF-16 code-unit order                         | [T5.4](docs/DECISIONS.md#t5-4)     |
+| Q15   | One optional file argument; a bad invocation exits 1                      | [T6.3](docs/DECISIONS.md#t6-3)     |
+| Q16   | A byte-order mark is stripped in the reader, silently                     | [T6.6](docs/DECISIONS.md#t6-6)     |
+| Q17   | A closed stdout ends quietly; other I/O fails loudly                      | [T6.9](docs/DECISIONS.md#t6-9)     |
+| Q18   | The help text is built from the parser's grammar table                    | [T9.9](docs/DECISIONS.md#t9-9)     |
+| Q19   | `--help` and `-h` are the only options, and win wherever they appear      | [T9.10](docs/DECISIONS.md#t9-10)   |
+| Q20   | Commands come from a file; a bare run explains how, and exits 1           | [T9.12](docs/DECISIONS.md#t9-12)   |
+| Q21   | A tie is one note on stderr, after the report; the line is unchanged      | [T10.6](docs/DECISIONS.md#t10-6)   |
+| Q31   | `--partners` and `--employees` answer instead of the report, one per run  | [T10.8](docs/DECISIONS.md#t10-8)   |
+| Q32   | A query lists partners strongest first, employees alphabetically          | [T10.9](docs/DECISIONS.md#t10-9)   |
+| Q33   | A query naming an undeclared company exits 1, after the input is read     | [T10.10](docs/DECISIONS.md#t10-10) |
 
 † The brief was open to more than one reading here.
 
 ---
 
-## Deliberately left out
+## Beyond the brief
 
-The brief grades how quality software is built rather than how much of it there
-is, so anything it does not ask for was written down in
-[UPGRADES](docs/UPGRADES.md) instead of being built: a guided input-file builder
-(U1), and a tie-break that reflects the relationship rather than the alphabet
-(U4). `--help` and a usage line (U5) were deferred the same way and built after
-the base was tagged ([T9.10](docs/DECISIONS.md#t9-10)). U4 was built after the
-tag as a note on stderr only, with no ranking
-([T10.3](docs/DECISIONS.md#t10-3)). An opening explanation
-(U6) was built too, and became what a run with no file prints once typed input
-was dropped ([T9.12](docs/DECISIONS.md#t9-12)).
-Each entry carries the open questions it would have to answer, so what was
-deferred is the work, not the thinking.
+The base submission, tagged `base-submission`, builds what the brief asks for
+and nothing more. Ideas outside it went into [UPGRADES](docs/UPGRADES.md) as
+potential next steps, each with the questions it would have to answer, rather
+than into the base. Since the tag, those next steps are being built, each as
+its own task with its decisions logged:
 
-Two exceptions were pulled into the base, each because leaving it out meant
-shipping a program that could be confidently wrong:
+- **Built:** `--help` and a usage line (U5,
+  [T9.10](docs/DECISIONS.md#t9-10)); an explanation of the commands for a run
+  with no file (U6, [T9.12](docs/DECISIONS.md#t9-12)); a note on stderr when
+  partners tie, with no other ranking (U4, [T10.6](docs/DECISIONS.md#t10-6));
+  and the `--partners` and `--employees` queries, which answer questions the
+  brief says Herbie answers but does not ask this program to (U10,
+  [T10.4](docs/DECISIONS.md#t10-4)). Also a tag on the base (U7) and a
+  coverage report (U8).
+- **In progress:** a local web UI for the input files, whose editor checks
+  each line as it is written (U9, U1; PLAN task T10).
+
+Two ideas were built into the base itself instead of waiting, each because
+leaving it out meant shipping a program that could be confidently wrong:
 
 - **Stripping a byte-order mark** ([T6.6](docs/DECISIONS.md#t6-6)) — one
   invisible byte in a file a reviewer could plausibly produce would otherwise
@@ -494,5 +532,6 @@ shipping a program that could be confidently wrong:
   index of the decisions worth reading first.
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — every decision in the order it was
   made, with its alternatives and where the idea came from.
-- [`docs/UPGRADES.md`](docs/UPGRADES.md) — what was deliberately deferred.
+- [`docs/UPGRADES.md`](docs/UPGRADES.md) — potential next steps beyond the
+  brief, and which of them are built.
 - [`CLAUDE.md`](CLAUDE.md) — the working rules those documents are kept under.

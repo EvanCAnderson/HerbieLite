@@ -78,7 +78,7 @@ describe("invalid invocation (Q15)", () => {
     expect(code).toBe(1);
     expect(out).toBe("");
     expect(err).toBe(
-      "herbie-lite: expected at most one file argument, got 2; usage: node dist/bin.js [--help | file]\n",
+      "herbie-lite: expected at most one file argument, got 2; usage: node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]\n",
     );
   });
 
@@ -124,7 +124,7 @@ describe("help and options (Q19)", () => {
     expect(await run(["--verbose", INPUT])).toEqual({
       code: 1,
       out: "",
-      err: 'herbie-lite: unknown option "--verbose"; usage: node dist/bin.js [--help | file]\n',
+      err: 'herbie-lite: unknown option "--verbose"; usage: node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]\n',
     });
   });
 
@@ -151,6 +151,102 @@ describe("help and options (Q19)", () => {
       stdout: failingSink("EPIPE"),
     });
     expect({ code, err }).toEqual({ code: 0, err: "" });
+  });
+});
+
+describe("queries about one company (Q31, Q33)", () => {
+  it("answers --partners instead of the report", async () => {
+    expect(await run(["--partners", "Globex", INPUT])).toEqual({
+      code: 0,
+      out: "Globex: Chris (2), Molly (1)\n",
+      err: "",
+    });
+  });
+
+  it("answers --employees, with the option after the file", async () => {
+    expect(await run([INPUT, "--employees", "Globex"])).toEqual({
+      code: 0,
+      out: "Jamie: No contacts\nLaurie: Chris (2), Molly (1)\n",
+      err: "",
+    });
+  });
+
+  it("answers from a pipe, for a company declared on the last line", async () => {
+    expect(
+      await run(
+        ["--partners", "Hooli"],
+        "Partner Molly\nEmployee Abdi Hooli\nContact Abdi Molly email\nCompany Hooli\n",
+      ),
+    ).toEqual({ code: 0, out: "Hooli: Molly (1)\n", err: "" });
+  });
+
+  it("still prints warnings, and no tie note", async () => {
+    const { code, out, err } = await run(
+      ["--partners", "Zebra"],
+      "Partner Bo\nPartner Al\nCompany Zebra\nEmployee Ada Zebra\nContact Ada Bo call\nContact Ada Al email\npartner Cy\n",
+    );
+    expect(code).toBe(0);
+    expect(out).toBe("Zebra: Al (1), Bo (1)\n");
+    expect(err).toBe(
+      "herbie-lite: line 7: unknown command; expected one of Partner, Company, Employee, Contact; discarded: partner Cy\n",
+    );
+  });
+
+  it("prints nothing for a company with no employees", async () => {
+    expect(await run(["--employees", "ACME", INPUT])).toEqual({
+      code: 0,
+      out: "",
+      err: "",
+    });
+  });
+
+  it("refuses a company never declared, after reading the input (Q33)", async () => {
+    expect(await run(["--partners", "Initech", INPUT])).toEqual({
+      code: 1,
+      out: "",
+      err: 'herbie-lite: no company named "Initech" was declared\n',
+    });
+  });
+
+  it("refuses a query with no company, with the usage", async () => {
+    const { code, err } = await run(["--partners"]);
+    expect(code).toBe(1);
+    expect(err).toMatch(
+      /^herbie-lite: --partners needs a company name; usage: /,
+    );
+  });
+
+  it("does not take the next option as the company", async () => {
+    const { code, err } = await run([
+      "--partners",
+      "--employees",
+      "ACME",
+      INPUT,
+    ]);
+    expect(code).toBe(1);
+    expect(err).toMatch(/^herbie-lite: --partners needs a company name; /);
+  });
+
+  it("refuses two queries in one run", async () => {
+    const { code, err } = await run([
+      "--partners",
+      "ACME",
+      "--employees",
+      "ACME",
+      INPUT,
+    ]);
+    expect(code).toBe(1);
+    expect(err).toMatch(
+      /^herbie-lite: expected at most one of --partners and --employees; usage: /,
+    );
+  });
+
+  it("still prints the help when --help appears with a query (Q19)", async () => {
+    expect(await run(["--partners", "Globex", "--help"])).toEqual({
+      code: 0,
+      out: HELP,
+      err: "",
+    });
   });
 });
 
@@ -429,6 +525,30 @@ describe("the shipped examples (T7e)", () => {
       code: 0,
       out: "Zebra: Al (1)\nacme: Bo (2)\n",
       err: "herbie-lite: Zebra is a tie between Al and Bo (1 contact each); Al is shown because it comes first alphabetically\n",
+    });
+  });
+
+  it("answers both queries, and notes the tie only in the report", async () => {
+    const file = join(EXAMPLES, "queries.txt");
+    expect(await run([file])).toEqual({
+      code: 0,
+      out: "Globex: Chris (3)\nHooli: Molly (1)\nInitech: No current relationship\n",
+      err: "herbie-lite: Hooli is a tie between Molly and Rezzan (1 contact each); Molly is shown because it comes first alphabetically\n",
+    });
+    expect(await run(["--partners", "Globex", file])).toEqual({
+      code: 0,
+      out: "Globex: Chris (3), Molly (2), Rezzan (1)\n",
+      err: "",
+    });
+    expect(await run(["--employees", "Globex", file])).toEqual({
+      code: 0,
+      out: "Jamie: Chris (1), Molly (1), Rezzan (1)\nLaurie: Chris (2), Molly (1)\nSam: No contacts\n",
+      err: "",
+    });
+    expect(await run(["--partners", "Hooli", file])).toEqual({
+      code: 0,
+      out: "Hooli: Molly (1), Rezzan (1)\n",
+      err: "",
     });
   });
 

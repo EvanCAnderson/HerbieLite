@@ -11,7 +11,8 @@ import { COMMAND_SYNTAX, CONTACT_TYPES, type CommandKind } from "./parser.js";
  * make that name runnable (T1.4). The README quotes it verbatim, and a test
  * holds the two together (Q18).
  */
-export const USAGE = "node dist/bin.js [--help | file]";
+export const USAGE =
+  "node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]";
 
 /** A command's expected shape, as the help and the warnings both quote it. */
 export function commandSyntax(kind: CommandKind): string {
@@ -60,7 +61,7 @@ const COMMANDS = [
   "Names are letters only, A-Z and a-z.",
 ];
 
-/** What `--help` prints to stdout (Q19). */
+/** What `--help` prints to stdout (Q19), including the queries (Q31). */
 export const HELP = [
   GREETING,
   "",
@@ -70,8 +71,15 @@ export const HELP = [
   "prints each company's strongest partner. Commands are written in a file,",
   "one command per line, not typed at the terminal.",
   "",
+  "Queries about one company, printed instead of the report:",
+  "  --partners <Company>",
+  "      Every partner who has contacted the company, strongest first.",
+  "  --employees <Company>",
+  "      Every employee of the company, with the partners who contacted them.",
+  "",
   "From source, put -- before the arguments, or npm keeps them for itself:",
   "  npm start -- [file]",
+  "  npm start -- --partners <Company> [file]",
   "  npm start -- --help",
   "",
   ...COMMANDS,

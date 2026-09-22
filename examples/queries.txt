@@ -1,0 +1,19 @@
+Partner Chris
+Partner Molly
+Partner Rezzan
+Company Globex
+Company Hooli
+Company Initech
+Employee Laurie Globex
+Employee Jamie Globex
+Employee Sam Globex
+Employee Abdi Hooli
+Employee Priya Hooli
+Contact Laurie Chris email
+Contact Laurie Chris coffee
+Contact Jamie Chris call
+Contact Laurie Molly call
+Contact Jamie Molly email
+Contact Jamie Rezzan coffee
+Contact Abdi Molly email
+Contact Priya Rezzan call

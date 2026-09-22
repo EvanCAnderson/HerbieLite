@@ -1496,6 +1496,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   each deferral where it is relevant, which scatters the boundary across the
   document so that no one place shows it was drawn on purpose.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T10.11](#t10-11) (the section framed as what
+  was deliberately left out; naming the base's boundary stands).
 
 #### <a id="t7-4"></a>T7.4 — Example inputs live in `examples/`, the brief's among them
 
@@ -2300,6 +2302,134 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Supersedes:** [T5.1](#t5-1), in part: `reportLines` returning lines only.
   One entry point, a private tally, and lines without newlines stand.
 - **Origin:** LLM-suggested, accepted.
+
+#### <a id="t10-8"></a><a id="q31"></a>T10.8 — Q31: A query is an option taking the next argument, and replaces the report
+
+- **Decision:** `--partners <Company>` and `--employees <Company>` each take
+  the next argument as the company, and may come before or after the file,
+  which is named or piped as before. The answer prints instead of the report,
+  with no tie notes. Warnings still print on stderr first. At most one query
+  per run, the same one twice included; a second is a bad invocation, one
+  line on stderr with the usage (Q19), exit 1. A query option with nothing
+  after it, or with another option after it (`--partners --employees ACME`),
+  is a bad invocation naming the option. `--help` still wins wherever it
+  appears. The arguments are read in one pass, and the first problem in
+  argument order is the one reported; the too-many-files error now counts
+  file arguments rather than all arguments. The usage becomes
+  `node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]`,
+  and `--help` gains a section on the queries.
+- **Context:** T10b, building [U10](./UPGRADES.md#u10) as command-line
+  options ([T10.4](#t10-4)).
+- **Why:** The next argument as the value is how most command-line tools
+  read an option with a value, and needs no `=` syntax to explain. Replacing
+  the report keeps stdout one kind of output, so a script reading a query's
+  answer never has to find it among report lines. Warnings stay, because a
+  discarded line can change an answer as it can the report (Q7). No tie
+  notes, because `--partners` lists every tied partner, and the notes
+  explain report lines, which a query does not print. One query per run
+  keeps stdout one answer; two would need a separator the brief's format has
+  no place for. An option is never taken as a company, because company names
+  are letters only (Q9), so `--employees` can never be one and is far more
+  likely to be a forgotten value. Counting only file arguments makes
+  `a.txt --partners ACME b.txt` report two files, not four arguments.
+  **Rejected:** `--partners=Globex`, one more form to parse and document for
+  no gain; printing the report and the answer together, which mixes two
+  shapes on stdout; several queries per run, printed in turn; and taking any
+  next argument as the company, which turns a forgotten value into
+  `no company named "--employees" was declared`.
+- **Origin:** The option shape, replacing the report, keeping warnings, and
+  one query per run: Q31's default, LLM-suggested, accepted. Refusing an
+  option as a value, and counting only file arguments: LLM-suggested,
+  accepted.
+
+#### <a id="t10-9"></a><a id="q32"></a>T10.9 — Q32: What each query prints
+
+- **Decision:** `--partners` prints one line in the report's shape,
+  `Globex: Chris (2), Molly (1)`: every partner who has contacted the
+  company, strongest first, equal strengths alphabetically (Q1, Q14); or
+  `Globex: No current relationship`, as the report says it (Q2).
+  `--employees` prints one line per employee, alphabetically,
+  `Laurie: Chris (2), Molly (1)` in the same order, or `Jamie: No contacts`;
+  a company with no employees prints nothing and exits 0. Contact types are
+  not broken out. In `report.ts`, one private ranking (strongest first, then
+  alphabetical) now serves the report, its ties and both queries, and one
+  tally groups contacts by company or by employee; `partnersOf` and
+  `employeesOf` are exported beside `buildReport` and return lines, as
+  `buildReport` does ([T10.7](#t10-7)).
+- **Context:** T10b. The report names one partner per company; a query is
+  where the rest of the ranking can be seen.
+- **Why:** The same shape as a report line means a reader who knows the
+  report can read the answer, and `--partners`' first entry is always the
+  partner the report names, which a test holds for every company in the
+  brief's example. Strongest first, because the question is who knows the
+  company best; alphabetical at equal strength, because that is the order
+  the report and the tie note already use. Employees alphabetically, because
+  they have no strength of their own to rank by. Nothing for a company with
+  no employees, as [T6.14](#t6-14) prints nothing for no companies. Types
+  not broken out, because every contact counts 1 (PLAN §1) and the report
+  never shows them. One ranking because four orders computed separately
+  could drift apart after a change to one. **Rejected:** partners in
+  alphabetical order, which buries the answer to the question asked; one
+  line per partner, which leaves the report's shape for no gain in
+  readability at this size; `No employees` for an empty company, a line
+  that says nothing, rejected by T6.14 for the report; and breaking out
+  contact types, which introduces a detail the program otherwise never
+  shows.
+- **Origin:** Q32's default, LLM-suggested, accepted. One shared ranking:
+  LLM-suggested, accepted.
+
+#### <a id="t10-10"></a><a id="q33"></a>T10.10 — Q33: A company never declared is an error, after the input is read
+
+- **Decision:** A query naming a company the input never declares prints
+  `herbie-lite: no company named "Initech" was declared` on stderr, nothing
+  on stdout, and exits 1. It is checked once all input is read and its
+  warnings printed, so a company declared on the last line is found. The
+  name is quoted and escaped like any other text the user supplied
+  ([T8.4](#t8-4)). A company that is declared but has no contacts or no
+  employees is not an error (Q2, [T10.9](#t10-9)).
+- **Context:** T10b. The name comes from the command line, where nothing
+  has checked it.
+- **Why:** No answer was produced, and exit 1 means exactly that
+  ([T6.1](#t6-1)), so a script asking about a misspelled company fails
+  rather than printing an empty result it would read as "no one". After the
+  input, because declarations may come in any order (Q8), so nothing can be
+  said about a name before the end. Quoted and escaped, unlike a company in
+  a warning, because a warning's names passed the letters-only check (Q9)
+  and this one did not. **Rejected:** `Initech: No current relationship`,
+  which reports a relationship about a company the input never mentions;
+  checking before reading, which cannot see a company declared later; and a
+  note without failing, exit 0, which makes a typo look like an answer.
+- **Origin:** Q33's default, LLM-suggested, accepted.
+
+#### <a id="t10-11"></a>T10.11 — UPGRADES is a list of next steps, and the README says so
+
+- **Decision:** The README's "Deliberately left out" section becomes
+  "Beyond the brief". It says the base builds what the brief asks and
+  nothing more, that ideas outside it went into
+  [UPGRADES](./UPGRADES.md) as potential next steps, and which of them are
+  built and which are in progress. The two ideas built into the base
+  ([T6.6](#t6-6), [T6.11](#t6-11)) are still named, with why each could not
+  wait. UPGRADES' own opening, and the README's one-line description of it,
+  say the same.
+- **Context:** T10b, after the queries were built. The section still said
+  that anything the brief does not ask for "was written down in UPGRADES
+  instead of being built", which was true at the tag and has not been since:
+  six of its entries are built and two are T10's work.
+- **Why:** UPGRADES was always a list of what could come next, kept out of
+  the base by the scope rule rather than ruled out; describing it as a
+  record of omissions made every built entry read as an exception. The
+  scope rule's point, that the base answers the brief and nothing more,
+  survives in the first sentence and in the `base-submission` tag
+  ([T9.2](#t9-2)). **Rejected:** keeping the old framing and appending each
+  upgrade as it lands, which is what the section had become — a paragraph of
+  exceptions to a rule it no longer described; and dropping the section,
+  which loses where the base's boundary was drawn and why the two early
+  exceptions crossed it.
+- **Supersedes:** [T7.3](#t7-3), in part: the section framed as what was
+  deliberately left out. Naming the base's boundary and the two ideas pulled
+  into it stands.
+- **Origin:** Mine (UPGRADES as next steps, most being built now). The new
+  section's shape: LLM-suggested, accepted.
 
 ---
 

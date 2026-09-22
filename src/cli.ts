@@ -9,13 +9,16 @@ import { HELP, OPENING } from "./help.js";
 import { ReadError, readLines } from "./lines.js";
 import { buildNetwork } from "./network.js";
 import { parseLine, type SourcedCommand } from "./parser.js";
-import { buildReport } from "./report.js";
+import { buildReport, employeesOf, partnersOf } from "./report.js";
 import {
   malformedWarning,
+  missingCompany,
   networkWarning,
   readFailure,
   tieNote,
   tooManyArguments,
+  tooManyQueries,
+  unknownCompany,
   unknownOption,
   writeFailure,
 } from "./warnings.js";
@@ -80,9 +83,72 @@ function isTerminal(stream: NodeJS.ReadableStream): boolean {
   return (stream as { isTTY?: boolean }).isTTY === true;
 }
 
-/** `--help` and `-h` are the only options; `-` alone is not STDIN (Q19). */
+/** `--help` and `-h`, which win wherever they appear (Q19). */
 function isHelp(arg: string): boolean {
   return arg === "--help" || arg === "-h";
+}
+
+/** A query about one company, asked instead of the report (Q31). */
+interface Query {
+  readonly kind: "partners" | "employees";
+  readonly company: string;
+}
+
+/** Each query option, and the report function that answers it (Q31, Q32). */
+const QUERIES = {
+  partners: partnersOf,
+  employees: employeesOf,
+} as const;
+
+const QUERY_OPTIONS: ReadonlyMap<string, Query["kind"]> = new Map([
+  ["--partners", "partners"],
+  ["--employees", "employees"],
+]);
+
+/** What the arguments ask for, or the one line saying why they cannot run. */
+type Invocation =
+  | { readonly outcome: "help" }
+  | { readonly outcome: "invalid"; readonly problem: string }
+  | {
+      readonly outcome: "run";
+      readonly file: string | undefined;
+      readonly query: Query | undefined;
+    };
+
+/**
+ * Reads the arguments (Q15, Q19, Q31). `--help` wins wherever it appears. A
+ * query option takes the next argument as its company, unless that argument
+ * is missing or is itself an option. Any other argument starting with `-` is
+ * an option this program does not have, so a file named that way is reached
+ * as `./-name`. At most one query and one file; the first problem found, in
+ * argument order, is the one reported.
+ */
+function parseArgs(args: readonly string[]): Invocation {
+  if (args.some(isHelp)) return { outcome: "help" };
+  const files: string[] = [];
+  const queries: Query[] = [];
+  const rest = [...args];
+  for (let arg = rest.shift(); arg !== undefined; arg = rest.shift()) {
+    const kind = QUERY_OPTIONS.get(arg);
+    if (kind !== undefined) {
+      const company = rest[0];
+      if (company === undefined || company.startsWith("-")) {
+        return { outcome: "invalid", problem: missingCompany(arg) };
+      }
+      rest.shift();
+      queries.push({ kind, company });
+    } else if (arg.startsWith("-")) {
+      return { outcome: "invalid", problem: unknownOption(arg) };
+    } else {
+      files.push(arg);
+    }
+  }
+  if (queries.length > 1)
+    return { outcome: "invalid", problem: tooManyQueries() };
+  if (files.length > 1) {
+    return { outcome: "invalid", problem: tooManyArguments(files.length) };
+  }
+  return { outcome: "run", file: files[0], query: queries[0] };
 }
 
 /**
@@ -106,25 +172,18 @@ export async function main(
   stdout.on("error", () => undefined);
   stderr.on("error", () => undefined);
 
-  // `--help` wins wherever it appears, as it does in most tools; any other
-  // argument starting with `-` is an option this program does not have, so a
-  // file named that way is reached as `./-name` (Q19).
-  if (args.some(isHelp)) return print(stdout, stderr, HELP);
-  const option = args.find((arg) => arg.startsWith("-"));
-  if (option !== undefined) {
-    writeLine(stderr, unknownOption(option));
+  const invocation = parseArgs(args);
+  if (invocation.outcome === "help") return print(stdout, stderr, HELP);
+  if (invocation.outcome === "invalid") {
+    writeLine(stderr, invocation.problem);
     return 1;
   }
-  if (args.length > 1) {
-    writeLine(stderr, tooManyArguments(args.length));
-    return 1;
-  }
+  const { file, query } = invocation;
 
   // Commands come from a file, named or piped in. At a terminal with no file
   // there is nothing to read, so the program explains how to give one and
   // exits 1, since no report was produced (Q20, T6.1). A failure to write the
   // explanation is still reported (Q17), and still exits 1.
-  const [file] = args;
   if (file === undefined && isTerminal(stdin)) {
     await print(stdout, stderr, OPENING);
     return 1;
@@ -172,6 +231,19 @@ export async function main(
   );
   all.sort((a, b) => a.lineNumber - b.lineNumber);
   for (const warning of all) writeLine(stderr, warning.text);
+
+  // A query answers instead of the report, and names a company that may be
+  // declared anywhere in the file, so it is checked only now (Q31, Q33). A
+  // company never declared leaves no answer, so the run exits 1 (T6.1).
+  if (query !== undefined) {
+    const answer = QUERIES[query.kind](network, query.company);
+    if (answer === undefined) {
+      writeLine(stderr, unknownCompany(query.company));
+      return 1;
+    }
+    if (answer.length === 0) return 0;
+    return print(stdout, stderr, `${answer.join("\n")}\n`);
+  }
 
   // No declared companies is no output at all, not a blank line (T6.14):
   // FR4 lists companies, and there are none to list.

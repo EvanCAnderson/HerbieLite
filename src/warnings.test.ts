@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { buildNetwork } from "./network.js";
 import { parseLine } from "./parser.js";
-import { malformedWarning, networkWarning, tieNote } from "./warnings.js";
+import {
+  malformedWarning,
+  missingCompany,
+  networkWarning,
+  tieNote,
+  tooManyQueries,
+  unknownCompany,
+} from "./warnings.js";
 
 /** Cases read as the input file a user would write (the T4.3 pattern). */
 function parse(file: string): ReturnType<typeof parseLine>[] {
@@ -215,6 +222,32 @@ describe("ties (Q21)", () => {
       }),
     ).toBe(
       "herbie-lite: Globex is a tie between Ada, Bo and Cy (1 contact each); Ada is shown because it comes first alphabetically",
+    );
+  });
+});
+
+describe("queries (Q31, Q33)", () => {
+  const usage =
+    "usage: node dist/bin.js [--help | [--partners <Company> | --employees <Company>] file]";
+
+  it("names the option that needs a company, with the usage", () => {
+    expect(missingCompany("--partners")).toBe(
+      `herbie-lite: --partners needs a company name; ${usage}`,
+    );
+  });
+
+  it("refuses a second query, with the usage", () => {
+    expect(tooManyQueries()).toBe(
+      `herbie-lite: expected at most one of --partners and --employees; ${usage}`,
+    );
+  });
+
+  it("quotes and escapes a company never declared (T8.4)", () => {
+    expect(unknownCompany("Initech")).toBe(
+      'herbie-lite: no company named "Initech" was declared',
+    );
+    expect(unknownCompany("bad\u001b[31m")).toBe(
+      'herbie-lite: no company named "bad\\u001b[31m" was declared',
     );
   });
 });

@@ -1,15 +1,16 @@
-// Report layer (DECISIONS T1.11, layer 3): a pure function from the resolved
-// network to the lines of the report (FR3, FR4) and the ties behind them
-// (Q21). No I/O — the cli prints what this returns (T6c).
+// Report layer (DECISIONS T1.11, layer 3): pure functions from the resolved
+// network to lines of output: the report (FR3, FR4) and the ties behind it
+// (Q21), and the queries about one company (Q31, Q32). No I/O — the cli prints
+// what these return (T6c).
 import type { Network } from "./network.js";
 
 /**
  * Orders two names by UTF-16 code unit: the machine-independent reading of
  * "sorted alphabetically" (Q14), under which every uppercase letter sorts
  * before every lowercase one. Names are letters only (Q9), so this is also
- * their code-point order. One rule serves both places an order is needed:
- * the company list (Q14) and the tie-break between equally strong partners
- * (Q1).
+ * their code-point order. One rule serves every place an order is needed:
+ * the company list (Q14), the tie-break between equally strong partners (Q1),
+ * and the employees a query lists (Q32).
  */
 function compareNames(a: string, b: string): number {
   if (a < b) return -1;
@@ -18,20 +19,22 @@ function compareNames(a: string, b: string): number {
 }
 
 /**
- * Relationship strength per partner, for one company: the number of contacts
- * between that partner and that company's employees (FR5). Every contact
- * counts 1 whatever its type, and a repeated Contact line counts again
- * (PLAN §1, Q13).
+ * Contacts per partner, for one company or one employee. For a company this
+ * is each partner's relationship strength (FR5). Every contact counts 1
+ * whatever its type, and a repeated Contact line counts again (PLAN §1, Q13).
  */
 type Strengths = ReadonlyMap<string, number>;
 
 /**
- * Tallies every contact onto the company its employee works for. A company
- * with no contacts gets no entry at all, which the caller reads as
- * "No current relationship" (Q2).
+ * Tallies every contact per partner, grouped by the key `group` gives it: the
+ * company its employee works for, or the employee. A group with no contacts
+ * gets no entry at all, which the caller reads as no relationship (Q2).
  */
-function tallyStrengths(network: Network): Map<string, Strengths> {
-  const byCompany = new Map<string, Map<string, number>>();
+function tally(
+  network: Network,
+  group: (employee: string, company: string) => string,
+): Map<string, Strengths> {
+  const groups = new Map<string, Map<string, number>>();
   for (const { employee, partner } of network.contacts) {
     const company = network.employers.get(employee);
     if (company === undefined) {
@@ -43,14 +46,43 @@ function tallyStrengths(network: Network): Map<string, Strengths> {
         `Network invariant broken: contact names an employee with no employer: ${employee}`,
       );
     }
-    let strengths = byCompany.get(company);
+    const key = group(employee, company);
+    let strengths = groups.get(key);
     if (strengths === undefined) {
       strengths = new Map<string, number>();
-      byCompany.set(company, strengths);
+      groups.set(key, strengths);
     }
     strengths.set(partner, (strengths.get(partner) ?? 0) + 1);
   }
-  return byCompany;
+  return groups;
+}
+
+const byCompany = (_employee: string, company: string): string => company;
+const byEmployee = (employee: string): string => employee;
+
+interface Ranked {
+  readonly partner: string;
+  readonly strength: number;
+}
+
+/**
+ * Partners strongest first, equal strengths alphabetically (Q1). The one
+ * ranking behind the report, its ties, and both queries, so they cannot
+ * disagree about who comes first. Empty when there are no contacts (Q2).
+ */
+function rank(strengths: Strengths | undefined): readonly Ranked[] {
+  return [...(strengths ?? [])]
+    .map(([partner, strength]) => ({ partner, strength }))
+    .sort(
+      (a, b) => b.strength - a.strength || compareNames(a.partner, b.partner),
+    );
+}
+
+/** `Chris (2), Molly (1)`: partners as a report line shows each one. */
+function listed(ranked: readonly Ranked[]): string {
+  return ranked
+    .map(({ partner, strength }) => `${partner} (${strength})`)
+    .join(", ");
 }
 
 /**
@@ -82,21 +114,13 @@ function strongest(strengths: Strengths | undefined):
       readonly strength: number;
     }
   | undefined {
-  if (strengths === undefined) return undefined;
-  let strength = 0;
-  let partners: string[] = [];
-  for (const [partner, count] of strengths) {
-    if (count > strength) {
-      strength = count;
-      partners = [partner];
-    } else if (count === strength) {
-      partners.push(partner);
-    }
-  }
-  const [first, ...rest] = partners.sort(compareNames);
-  return first === undefined
-    ? undefined
-    : { partners: [first, ...rest], strength };
+  const [top, ...rest] = rank(strengths);
+  if (top === undefined) return undefined;
+  const tied = rest.filter(({ strength }) => strength === top.strength);
+  return {
+    partners: [top.partner, ...tied.map(({ partner }) => partner)],
+    strength: top.strength,
+  };
 }
 
 /**
@@ -108,11 +132,11 @@ function strongest(strengths: Strengths | undefined):
  * does, since it is never declared with `Company` (Q3).
  */
 export function buildReport(network: Network): Report {
-  const byCompany = tallyStrengths(network);
+  const strengths = tally(network, byCompany);
   const lines: string[] = [];
   const ties: Tie[] = [];
   for (const company of [...network.companies].sort(compareNames)) {
-    const best = strongest(byCompany.get(company));
+    const best = strongest(strengths.get(company));
     if (best === undefined) {
       lines.push(`${company}: No current relationship`);
       continue;
@@ -122,4 +146,48 @@ export function buildReport(network: Network): Report {
     if (partners.length > 1) ties.push({ company, partners, strength });
   }
   return { lines, ties };
+}
+
+/**
+ * `--partners`: every partner who has contacted the company, with their
+ * strength, strongest first (Q32), on one line in the report's shape; or
+ * `No current relationship`, as the report says it (Q2). `undefined` when no
+ * such company was declared (Q33).
+ */
+export function partnersOf(
+  network: Network,
+  company: string,
+): readonly string[] | undefined {
+  if (!network.companies.has(company)) return undefined;
+  const ranked = rank(tally(network, byCompany).get(company));
+  return [
+    ranked.length === 0
+      ? `${company}: No current relationship`
+      : `${company}: ${listed(ranked)}`,
+  ];
+}
+
+/**
+ * `--employees`: one line per employee of the company, alphabetically, each
+ * with the partners who contacted them, strongest first (Q32); `No contacts`
+ * for an employee nobody contacted. A company with no employees has no lines,
+ * as no companies has no report (T6.14). `undefined` when no such company was
+ * declared (Q33).
+ */
+export function employeesOf(
+  network: Network,
+  company: string,
+): readonly string[] | undefined {
+  if (!network.companies.has(company)) return undefined;
+  const strengths = tally(network, byEmployee);
+  return [...network.employers]
+    .filter(([, employer]) => employer === company)
+    .map(([employee]) => employee)
+    .sort(compareNames)
+    .map((employee) => {
+      const ranked = rank(strengths.get(employee));
+      return ranked.length === 0
+        ? `${employee}: No contacts`
+        : `${employee}: ${listed(ranked)}`;
+    });
 }
