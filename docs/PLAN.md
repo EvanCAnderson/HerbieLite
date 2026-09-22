@@ -96,6 +96,26 @@ point here rather than repeating them.
   over the whole file on every change and shown as pending rather than
   errors, since a name may be declared later (Q8); a file with pending
   references or bad lines can still be saved. Settle in T10g.
+- **Q34** — Which tool drives the browser (U11). Default: Playwright's test
+  runner, `@playwright/test`, as a dev dependency, with Chromium only; its
+  browser is installed by a separate `npx playwright install chromium`, so
+  `npm install` stays free of browser downloads. The alternative is Vitest's
+  browser mode, one runner for everything, but it runs tests inside a page
+  rather than driving the built page from outside. Settle in T10h.
+- **Q35** — Where the browser tests run (U11). Default: their own script,
+  `npm run test:e2e`, which builds the page and runs the tests against
+  Vite's preview server; `npm run check` is unchanged, as coverage was kept
+  out of it ([T9.3](./DECISIONS.md#t9-3)). The alternative is putting them
+  in `check`, which catches a broken page on every commit but makes every
+  check need a browser and a build. Settle in T10h.
+- **Q36** — What the browser tests cover (U11). Default: one test per thing
+  a person does with the page, none of them repeating logic vitest already
+  asserts: it opens on the first example; running `examples/input.txt` in
+  the console shows PLAN §7's three lines; copying an example, editing it
+  and saving it keeps the edit across a reload; deleting a workspace file
+  asks first. The alternative is a single smoke test that the page renders,
+  which is cheaper and leaves the wiring in `main.ts` and the panels
+  unchecked. Settle in T10h.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -281,10 +301,13 @@ prefix).
         ([T9.13](./DECISIONS.md#t9-13)).
 - [ ] T10 — The remaining upgrades: a tie note, queries about one company,
       and [U9](./UPGRADES.md#u9)'s page, running in the browser alone, with
-      [U1](./UPGRADES.md#u1)'s builder as its editor
+      [U1](./UPGRADES.md#u1)'s builder as its editor, then
+      [U11](./UPGRADES.md#u11)'s browser tests of that page
       ([T10.1](./DECISIONS.md#t10-1), [T10.5](./DECISIONS.md#t10-5),
-      [T10.16](./DECISIONS.md#t10-16)). The tie note and the queries come first,
-      so the console is built against the program's final outputs.
+      [T10.16](./DECISIONS.md#t10-16), [T10.22](./DECISIONS.md#t10-22)). The
+      tie note and the queries come first, so the console is built against
+      the program's final outputs. [U12](./UPGRADES.md#u12), writing back to
+      a file opened from disk, is not part of T10.
   - [x] T10a — [U4](./UPGRADES.md#u4): note a tie without changing the
         report line or ranking tied partners
         ([T10.3](./DECISIONS.md#t10-3)). Settles Q21.
@@ -315,10 +338,15 @@ prefix).
         from `help.ts` beside it ([T9.12](./DECISIONS.md#t9-12)), each line
         checked as it is edited, pending references across the file, and
         saving into the workspace. Settles Q29.
-  - [ ] T10h — README: how to start the UI, what it can and cannot do
-        (browser only, files saved as downloads, examples read-only), and the
-        "Beyond the brief" section brought up to date
-        ([T10.11](./DECISIONS.md#t10-11)).
+  - [ ] T10h — [U11](./UPGRADES.md#u11): end-to-end tests that load the
+        built page in a browser and use it as a person does, once the editor
+        exists ([T10.22](./DECISIONS.md#t10-22)). Settles Q34, Q35 and Q36.
+  - [ ] T10i — README: how to start the UI, what it can and cannot do
+        (browser only, files saved as downloads, examples read-only), how to
+        run the browser tests, and the "Beyond the brief" section brought up
+        to date ([T10.11](./DECISIONS.md#t10-11)), with
+        [U12](./UPGRADES.md#u12) named as not built
+        ([T10.22](./DECISIONS.md#t10-22)).
 
 ## 7. Definition of done
 

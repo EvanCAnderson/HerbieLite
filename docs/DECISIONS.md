@@ -2497,6 +2497,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Q23's default, LLM-suggested, accepted.
 - **Superseded in part by** [T10.16](#t10-16) (the server tested live; there
   is no server).
+- **Superseded in part by** [T10.22](#t10-22) (end-to-end tests in a
+  browser deferred to U11; they are now planned as T10h).
 
 #### <a id="t10-14"></a>T10.14 — The scaffold's server serves only what it found at startup
 
@@ -2538,7 +2540,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
   committed, and Q24 is withdrawn: with no server there is nothing to keep
   local, and Vite's preview server checks `Host` itself. The rest of T10 is
   re-planned in PLAN §6 as T10d (the workspace), T10e (the files panel),
-  T10f (the console), T10g (the editor) and T10h (the README), in the
+  T10f (the console), T10g (the editor) and T10i (the README), in the
   order [T10.20](#t10-20) set, and Q25–Q30
   are rewritten for the browser.
 - **Context:** Reviewing T10d, whose checks existed only because the UI had
@@ -2705,6 +2707,43 @@ Laurie Globex`: the program name, the line number and the name are gone.
   storage; line numbers written into the text; and a second `assertNever`
   in `web/`.
 - **Origin:** LLM-suggested, accepted.
+
+#### <a id="t10-22"></a>T10.22 — Browser tests are planned as T10h; write-back to disk stays deferred
+
+- **Decision:** [U11](./UPGRADES.md#u11), end-to-end tests that load the
+  built page in a browser, is planned as T10h, after the editor (T10g) and
+  before the README, which moves to T10i. Its open questions become PLAN
+  §4's Q34 (the tool), Q35 (whether the tests run in `npm run check`) and
+  Q36 (what they cover), settled in T10h, and U11's own question of when to
+  build it is answered here. [U12](./UPGRADES.md#u12), writing back to a
+  file opened from disk in Chrome and Edge, stays in UPGRADES and is not
+  part of T10; the README (T10i) names it as not built. [T10.16](#t10-16)'s
+  citation of the README subtask is updated to T10i, as the Key allows when
+  IDs are restructured.
+- **Context:** Before T10f, reviewing what was left. [T10.13](#t10-13) left
+  the page's DOM code untested and deferred browser tests to U11; U12 was
+  deferred when the UI became browser-only.
+- **Why:** After the editor, the page is three panels wired together in
+  code no test runs: a panel that fails to draw, or a button wired to the
+  wrong action, passes every vitest test. That is the point U11 itself
+  named, "once the page does enough that a broken render would go
+  unnoticed". Before the README, so the README can say how to run them.
+  After the editor rather than after the console, so the tests are written
+  once against the finished page rather than extended in the next subtask.
+  U12 stays deferred because it works in two browsers of four, so the page
+  would need both write-back and downloads, with a permission that can
+  lapse between visits; downloads already cover getting a file to disk, and
+  the UI is a demonstration of the analyzer rather than a place files live.
+  **Rejected:** browser tests after the console (T10f), which U11 offered
+  and which checks the console sooner but tests a page the editor then
+  changes; leaving U11 deferred, which keeps [T10.13](#t10-13)'s known cost
+  that nothing checks the page renders; and planning U12 into T10, which
+  adds a second save path for part of the browsers.
+- **Supersedes:** [T10.13](#t10-13), in part: end-to-end tests in a browser
+  deferred to U11. Browser logic kept in DOM-free modules and tested in
+  vitest stands.
+- **Origin:** Planning U11 and deferring U12: Mine. Placing U11 after the
+  editor, and the defaults for Q34–Q36: LLM-suggested.
 
 ---
 

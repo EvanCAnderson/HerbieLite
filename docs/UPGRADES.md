@@ -259,7 +259,7 @@ the file builder ([U1](#u1)). It runs in the browser alone, with no server
 
 Planned as part of task T10 ([T10.1](./DECISIONS.md#t10-1)): the scaffold
 (T10c), the workspace (T10d), the files panel (T10e), the console (T10f),
-U1's editor (T10g), and the README (T10h). Its open questions are PLAN §4's
+U1's editor (T10g), and the README (T10i). Its open questions are PLAN §4's
 Q25–Q28 and Q30: workspace file names, a file open in two tabs, how the
 console shows a run, how the page runs the analyzer, and saving.
 
@@ -305,27 +305,22 @@ answers its open questions got:
 
 <a id="u11"></a>
 
-## U11 — End-to-end tests of the web page in a browser
+## U11 — End-to-end tests of the web page in a browser — **planned as T10h**
 
-The UI's server is tested against a real server, and the page's logic is to
-be kept in modules tested without a browser; the code that touches the DOM is
-not tested ([DECISIONS T10.13](./DECISIONS.md#t10-13)). A browser test would
-load the page and use it as a person does.
+The page's logic is kept in modules tested without a browser; the code that
+touches the DOM is not tested ([DECISIONS T10.13](./DECISIONS.md#t10-13)).
+A browser test would load the built page and use it as a person does.
 
 - **Origin:** LLM-suggested, deferred here as Q23's default.
 
-Open questions:
-
-- **Which tool?** Playwright is the usual choice, and downloads browser
-  binaries on install.
-- **In `npm run check`, or a separate script?** In `check` means every run
-  needs a browser and a build.
-- **When?** Once the page does enough that a broken render would go unnoticed
-  by the other tests: after the console (T10f) or the editor (T10g).
+Planned as T10h, after the editor and before the README
+([DECISIONS T10.22](./DECISIONS.md#t10-22)), which answers when to build it.
+Its other open questions are PLAN §4's Q34 (which tool), Q35 (in
+`npm run check`, or a script of its own) and Q36 (what the tests cover).
 
 <a id="u12"></a>
 
-## U12 — Save back to the file that was opened, in Chrome and Edge
+## U12 — Save back to the file that was opened, in Chrome and Edge — **deferred**
 
 The web UI saves files to disk as downloads, so editing a file from disk in
 the page produces a new copy in the downloads folder rather than changing the
@@ -343,3 +338,7 @@ Open questions:
   bring back something like the `inputs/` workspace on disk.
 - **How is a lost permission shown?** The browser can revoke it between
   visits.
+
+Not part of T10 ([DECISIONS T10.22](./DECISIONS.md#t10-22)): it works in two
+of the four main browsers, downloads already get a file to disk, and the
+README names it as not built.
