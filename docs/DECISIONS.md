@@ -3002,6 +3002,69 @@ Laurie Globex`: the program name, the line number and the name are gone.
   of the README.
 - **Origin:** LLM-suggested, in T10i.
 
+### T11 — Follow-ups
+
+#### <a id="t11-1"></a>T11.1 — Follow-ups to T10 are their own task
+
+- **Decision:** Work after T10 is PLAN task T11, with lettered subtasks:
+  T11a fixes New file, T11b shows each example's purpose in the page, and
+  T11c gives the page a look of its own. Two smaller findings from T10,
+  queries in the console and a status line that outlives its action, go to
+  UPGRADES as [U13](./UPGRADES.md#u13) and [U14](./UPGRADES.md#u14) rather
+  than into T11. Each subtask is committed before the next starts.
+- **Context:** After T10 was complete, reviewing the page in use.
+- **Why:** T10 is closed, and its commits read as the building of the UI;
+  a bug found afterwards and two requests about the page are a separate
+  stretch of work. One subtask per commit keeps the bug fix apart from the
+  styling, which touches every panel. U13 and U14 are ideas with open
+  questions rather than asked-for work, which is what UPGRADES holds.
+  **Rejected:** reopening T10, which makes a finished task unfinished; and
+  one commit for all three, which mixes a fix with a restyle.
+- **Origin:** The three pieces of work: Mine. U13 and U14, and a commit
+  per subtask: LLM-suggested, accepted. A task of their own: LLM-suggested.
+
+#### <a id="t11-2"></a>T11.2 — Each example's purpose is shown in the page
+
+- **Decision:** Each example gets a one-line purpose, shown in the page
+  where the example is: in the viewer under its name, and as the tooltip
+  of its button in the file list. The README's table of examples is left as
+  it is.
+- **Context:** T11b. The page lists six example files by name alone, and
+  their purposes were written down only in the README.
+- **Why:** Someone using the page choosing a file to run has only the names,
+  and `names-and-repeats.txt` says little until you know what it holds. The
+  README already explains each file at length for a reader of the
+  repository, which is a different reader. **Accepted cost:** two
+  descriptions of each example, the README's and the page's, which can
+  drift; the page's are one line each and a test holds that every bundled
+  example has one. **Rejected:** rewording the README table to match, which
+  shortens it for the reader who wanted the detail; and the README alone,
+  which leaves the page unexplained.
+- **Origin:** Mine (the LLM offered the page alone, the page and the README
+  together, and the README alone).
+
+#### <a id="t11-3"></a>T11.3 — The page looks like a terminal
+
+- **Decision:** The page is restyled terminal-forward: dark in every
+  theme, monospace headings and file names, a green accent with amber for
+  pending marks, and the console as the page's centrepiece, styled like
+  the rest rather than as a dark box in a light page. No web fonts: the
+  system's monospace fonts, so the page still loads nothing from anywhere
+  ([T10.16](#t10-16)).
+- **Context:** T11c. The page had a neutral light or dark look that could
+  belong to any tool.
+- **Why:** The program is a command-line tool and the page's centre is a
+  terminal pane running it, so a look taken from the terminal says what the
+  page is before any text is read, and removes the seam between a light
+  page and a dark console. System fonts because the README says the page
+  sends and fetches nothing, and a font from a CDN would make that false.
+  **Accepted cost:** no light theme, so the page ignores a reader's light
+  preference. **Rejected:** a warm light "network ledger" look, calmer and
+  more editorial but further from the console; and polishing the existing
+  look, which leaves the page generic.
+- **Origin:** Mine (chosen from three directions the LLM set out, of which
+  it recommended the ledger look).
+
 ---
 
 ## Open questions

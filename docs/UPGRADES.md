@@ -345,3 +345,44 @@ Open questions:
 Not part of T10 ([DECISIONS T10.22](./DECISIONS.md#t10-22)): it works in two
 of the four main browsers, downloads already get a file to disk, and the
 README names it as not built.
+
+<a id="u13"></a>
+
+## U13 — Queries in the console
+
+The console runs a file for its report only. The CLI's `--partners` and
+`--employees` queries ([U10](#u10)) are not offered in the page, though
+[DECISIONS T10.4](./DECISIONS.md#t10-4) expected they could be, and the
+console already calls the CLI's own `run` with arguments
+([T10.23](./DECISIONS.md#t10-23)), so no second implementation is needed.
+
+- **Origin:** LLM-suggested, after T10 was built.
+
+Open questions:
+
+- **How is a query asked?** A choice of report, partners or employees with a
+  company field beside **Run**, or a field for the arguments as typed, which
+  starts to look like a shell ([T9.5](./DECISIONS.md#t9-5)).
+- **Which companies are offered?** Any name typed, as the CLI takes it, or
+  the companies the file declares, which rules out Q33's error but hides it.
+- **Does the echoed command show the option?** It should, so the command can
+  still be copied into a terminal.
+
+<a id="u14"></a>
+
+## U14 — A status line that outlives its action
+
+The files panel keeps one status line, and nothing clears it when the editor
+reports on its own. Copying an example says `Saved input.txt.` there; saving
+the copy in the editor then says `Saved input.txt.` in the editor too, so the
+page shows the same message twice, and the first reads as a second save.
+
+- **Origin:** LLM-suggested, found while writing the browser tests (T10h).
+
+Open questions:
+
+- **Clear it, or fold the two together?** Clearing the panel's line when the
+  editor reports is the smallest change; one status line for the whole page
+  is the tidier one.
+- **Should messages expire?** A timed fade suits "Saved", and not a refusal
+  that still needs a choice ([Q26](./DECISIONS.md#q26)).

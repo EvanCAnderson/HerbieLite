@@ -313,6 +313,15 @@ prefix).
         to date ([T10.11](./DECISIONS.md#t10-11)), with
         [U12](./UPGRADES.md#u12) named as not built
         ([T10.22](./DECISIONS.md#t10-22)).
+- [ ] T11 — Follow-ups to T10: a bug, the examples explained in the page,
+      and a look of its own ([T11.1](./DECISIONS.md#t11-1)).
+  - [ ] T11a — New file asks for its name in the page, not with `prompt()`,
+        which some browsers, the Claude app's among them, do not support.
+  - [ ] T11b — Each example's purpose, one line, shown in the page
+        ([T11.2](./DECISIONS.md#t11-2)).
+  - [ ] T11c — A terminal-forward look: dark throughout, monospace
+        headings, green and amber accents, the console at the centre
+        ([T11.3](./DECISIONS.md#t11-3)).
 
 ## 7. Definition of done
 
