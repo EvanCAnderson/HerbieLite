@@ -1807,6 +1807,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   around it: LLM-suggested, accepted.
 - **Superseded in part by** [T10.2](#t10-2) (U1 is built inside the UI, as
   its file editor, before the console; the rest of the order stands).
+- **Superseded in part by** [T10.4](#t10-4) (U10, the company queries, is
+  built between U4 and the UI).
 
 #### <a id="t9-5"></a>T9.5 — A local web UI whose terminal runs Herbie, not a shell
 
@@ -1963,6 +1965,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   usage naming `node dist/bin.js`: LLM-suggested, accepted. The usage on the
   error's line rather than below it: LLM-suggested, accepted (raised while
   building T9c, chosen over a separate line with or without the prefix).
+- **Superseded in part by** [T10.4](#t10-4) (`--help` and `-h` as the only
+  options; the rest stands).
 
 #### <a id="t9-11"></a>T9.11 — Coverage settings live in `vitest.config.js`, and the table lists every file
 
@@ -2083,13 +2087,13 @@ Laurie Globex`: the program name, the line number and the name are gone.
   tradeoffs were set out. Printing held warnings before a read failure:
   LLM-suggested, accepted (raised while building T9e).
 
-### T10 — Web UI and file editor
+### T10 — Remaining upgrades
 
 #### <a id="t10-1"></a>T10.1 — The web UI and the file editor are their own task
 
 - **Decision:** The local web UI ([U9](./UPGRADES.md#u9)) and the file editor
   that is U1's builder ([T10.2](#t10-2)) are PLAN task T10, not part of T9,
-  with subtasks T10a–T10g in the order already planned: scaffold, server,
+  with subtasks T10c–T10i in the order already planned: scaffold, server,
   file API, files panel, editor, console, README. Their commits are prefixed
   `T10:` and their decisions go in this section. T9 ends with tie handling
   (T9f). Decisions already made about the UI in T9 (T9.5–T9.8) stay where
@@ -2110,6 +2114,7 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Supersedes:** [T9.1](#t9-1), in part: all upgrade work under T9. One task
   with lettered subtasks, for the other upgrades, stands.
 - **Origin:** Mine.
+- **Superseded in part by** [T10.5](#t10-5) (T10 holds every remaining upgrade, and T9 ends at T9e; the rest stands).
 
 #### <a id="t10-2"></a>T10.2 — The file builder is the UI's file editor
 
@@ -2117,9 +2122,9 @@ Laurie Globex`: the program name, the line number and the name are gone.
   file editor, not as a separate builder panel. It creates and edits
   workspace files as text, with the command reference from `help.ts` beside
   it ([T9.12](#t9-12)), checks each line as it is edited (Q29), and saves into
-  `inputs/`. It is its own subtask, T10e, between the files panel (T10d:
-  list, viewer, delete, copy an example) and the console (T10f). How a save
-  behaves on a clash or a failure (Q30) moves to the file API (T10c), which
+  `inputs/`. It is its own subtask, T10g, between the files panel (T10f:
+  list, viewer, delete, copy an example) and the console (T10h). How a save
+  behaves on a clash or a failure (Q30) moves to the file API (T10e), which
   is where saving is built.
 - **Context:** Before T9f, reviewing what was left. [T9.8](#t9-8) planned the
   builder as a panel where lines are typed and checked one at a time; since
@@ -2141,6 +2146,91 @@ Laurie Globex`: the program name, the line number and the name are gone.
   console).
 - **Origin:** The builder as an in-browser file editor: Mine. Giving it its
   own subtask, and moving Q30 to the file API: LLM-suggested.
+
+#### <a id="t10-3"></a>T10.3 — A tie is noted, not ranked
+
+- **Decision:** [U4](./UPGRADES.md#u4) is built as a note that a tie
+  happened and nothing more. The report line keeps the brief's format and
+  the alphabetical winner (Q1); no signal ranks tied partners, now or as an
+  option. Where the note goes and how it reads is left to Q21, settled in T10a.
+- **Context:** Planning the tie note, now T10a ([T10.5](#t10-5)). U4 listed four directions: weighting contact
+  types, recency, breadth of employees reached, and surfacing the tie.
+- **Why:** The cost Q1 recorded is that the alphabetical winner is arbitrary
+  and the output hides it; a note removes the hiding, which is the part that
+  misleads a reader. Every ranking departs from something the program rests
+  on: weighting from the brief's "total amount of Contacts", recency from an
+  input with no dates, and breadth from the one definition of strength the
+  report uses. The partners query planned beside this ([T10.4](#t10-4)) also
+  shows tied partners in full, for anyone who wants more than the note.
+  **Rejected:** weighting contact types behind an option, which puts a
+  second definition of strength into the program; breadth as a tie-break,
+  which is defensible but is a new rule to explain for a case the brief
+  never shows; and marking the report line, which changes the brief's
+  format.
+- **Origin:** Mine. Surfacing the tie while keeping the line and the ranking
+  was already Q21's default (LLM-suggested); ruling out the other directions
+  entirely: Mine.
+
+#### <a id="t10-4"></a>T10.4 — Queries about one company are command-line options
+
+- **Decision:** Two queries are added as an upgrade,
+  [U10](./UPGRADES.md#u10): which partners have contacted a given company,
+  and which of its employees each partner has contacted. They are asked for
+  with command-line options alongside the input file, such as
+  `node dist/bin.js input.txt --partners Globex`, not with lines in the file
+  and not only in the web UI. They are built as T10b, after the tie note and
+  before the UI. The option names, what each prints, and how a query meets
+  the report and a bad company name are PLAN §4's Q31–Q33.
+- **Context:** Planning the rest of the upgrades. The brief's first example question is "Who do we
+  know who works at ACME Co?", and [T1.13](#t1-13) kept raw contacts rather
+  than tallies partly so questions like it could be answered later. Commands
+  now come only from a file ([T9.12](#t9-12)), so there is no typed session
+  to ask a question in.
+- **Why:** An option keeps the input file as data alone and the question on
+  the command line where the file is named, so one file answers any number
+  of questions, and a script can ask them. The web console runs the program
+  on a file (Q28), so the same options can be offered there later with no
+  second implementation. Built before the UI for [T9.4](#t9-4)'s reason: the
+  console is built against the program's final set of outputs rather than
+  catching up with a new one. **Rejected:** query lines in the input file
+  (`Show Globex`), which mixes questions with the facts they ask about, so
+  every file becomes a query script and a new keyword enters the grammar;
+  and queries in the UI only, which waits for T10 and leaves the command-line
+  program unable to answer.
+- **Supersedes:** [Q19](#q19), in part: `--help` and `-h` as the only
+  options. `--help` winning wherever it appears, other dash arguments being
+  unknown options, and `-` not meaning STDIN stand. Also [T9.4](#t9-4), in
+  part: its order gains U10 between U4 and the UI.
+- **Origin:** The two queries: Mine. Command-line options, over lines in the
+  file or the UI alone: LLM-suggested, accepted. Building them before the
+  UI: LLM-suggested, accepted.
+
+#### <a id="t10-5"></a>T10.5 — Every remaining upgrade is part of T10
+
+- **Decision:** T9 closes at T9e. The upgrades still to build are all T10,
+  lettered in the order built: the tie note is T10a and the company queries
+  T10b (planned a moment earlier as T9f and T9g), and the web UI and file
+  editor move down two letters, to T10c–T10i. PLAN §4's questions and
+  [UPGRADES](./UPGRADES.md) point at the new letters, and so do the subtask
+  citations in [T10.1](#t10-1) and [T10.2](#t10-2), as the Key allows when
+  IDs are restructured.
+- **Context:** After planning the tie note ([T10.3](#t10-3)) and the queries
+  ([T10.4](#t10-4)). T10.1 had made T10 the UI alone and left tie handling
+  as the end of T9.
+- **Why:** The remaining upgrades are one stretch of work still to do, and
+  T9 is otherwise finished; one open task for them shows at a glance what is
+  left and what is done, instead of an almost-complete T9 with two stray
+  subtasks. The tie note and the queries keep their place before the UI for
+  [T9.4](#t9-4)'s reason, which is why they take the first letters.
+  **Rejected:** keeping them in T9, which T10.1 chose and which leaves two
+  unfinished tasks open at once; and lettering them after the UI (T10h,
+  T10i) so the UI keeps its letters, which breaks the rule that subtasks are
+  lettered in the order built ([T2.1](#t2-1)).
+- **Supersedes:** [T10.1](#t10-1), in part: T10 as the UI and file editor
+  alone, and T9 ending with tie handling. One task for the UI's subtasks,
+  and the decisions made about the UI in T9 staying where they were made,
+  stand.
+- **Origin:** Mine.
 
 ---
 

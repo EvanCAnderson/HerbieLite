@@ -14,7 +14,7 @@ entry, which only reads typed commands and prints a report.
 - **Origin:** Mine (raised during the T1 review; LLM recommended deferring it
   here rather than building it in the base).
 
-Planned as T10e: the web UI's file editor ([U9](#u9)) is the builder. Since
+Planned as T10g: the web UI's file editor ([U9](#u9)) is the builder. Since
 commands are written by editing files ([T9.12](./DECISIONS.md#t9-12)), a
 separate builder would be a second way to write one; the editor gives its
 convenience to any workspace file instead, with the command reference beside
@@ -23,7 +23,7 @@ the text and each line checked as it is edited. See
 Q30 and Q29, with their defaults there.
 
 - ~~Where the file is saved, and what happens on a clash or a failed save~~ —
-  Q30, settled with the file API in T10c.
+  Q30, settled with the file API in T10e.
 - ~~Accept lines whose references can't be checked yet?~~ — Q29.
 - ~~A separate mode or command from the analyzer?~~ — Neither: the UI's
   editor (T9.8, T10.2).
@@ -114,9 +114,10 @@ Directions to consider:
 - Surface the tie instead of hiding it — mark the line, or report the tied
   partners on stderr while the line stays in the brief's format.
 
-Planned as T9f. Its open question — which signal, if any, ranks first, and
-where a ranking would live — is PLAN §4's Q21, whose default is to surface the
-tie and keep the ranking as it is.
+Planned as T10a, as the last direction alone: the tie is noted and the
+ranking stays alphabetical ([DECISIONS T10.3](./DECISIONS.md#t10-3)). The
+other three directions are not planned. Where the note goes and how it reads
+is PLAN §4's Q21.
 
 <a id="u5"></a>
 
@@ -250,7 +251,39 @@ pane. Its editor is the file builder ([U1](#u1)).
   and the builder, placed before U1). Limiting the terminal to Herbie, the
   workspace split, and the stack: LLM-suggested, accepted.
 
-Planned as task T10 ([T10.1](./DECISIONS.md#t10-1)): T10a–T10f, with T10e as U1's file editor, and T10g for the README. Its open questions are PLAN §4's
+Planned as task T10 ([T10.1](./DECISIONS.md#t10-1)): T10c–T10h, with T10g as U1's file editor, and T10i for the README, after the tie note (T10a) and the queries (T10b). Its open questions are PLAN §4's
 Q22–Q28: layout and packaging, testing, keeping the server local, workspace
 file names, two edits of one file, the console's transport, and how the
 console runs the analyzer.
+
+<a id="u10"></a>
+
+## U10 — Queries about one company
+
+The report answers one question per company: who knows it best. The brief's
+first example question, "Who do we know who works at ACME Co?", needs more
+than that line. Two queries, asked with command-line options alongside the
+input file ([DECISIONS T10.4](./DECISIONS.md#t10-4)):
+
+- **Partners:** every partner who has contacted the company, each with their
+  strength to it.
+- **Employees:** every employee of the company, each with the partners who
+  have contacted them and how often.
+
+For example, on the brief's input:
+
+```
+$ node dist/bin.js examples/input.txt --partners Globex
+Globex: Chris (2), Molly (1)
+
+$ node dist/bin.js examples/input.txt --employees Globex
+Jamie: No contacts
+Laurie: Chris (2), Molly (1)
+```
+
+- **Origin:** The queries: Mine. Command-line options: LLM-suggested,
+  accepted.
+
+Planned as T10b, after the tie note and before the UI. Its open questions are
+PLAN §4's Q31–Q33: the options and how they meet the report, what each query
+prints, and a company that was never declared.

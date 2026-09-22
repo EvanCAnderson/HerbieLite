@@ -73,61 +73,82 @@ That log keeps the complete record, in task order.
 ### Open
 
 Every question the base raised is settled (listed below). These were opened by
-planning the rest of T9; each has its current default and the subtask that
+planning the upgrades; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q21** — What a tie does (U4). Default: the line keeps the brief's format
-  and the alphabetical winner (Q1), and the tie is surfaced as a note on
-  stderr naming the tied partners and the strength. That is a new kind of
-  stderr line, which T6.6 and T6.14 have so far avoided (a line that is not a
-  discarded line); weighting, recency and breadth stay deferred, since
-  weighting departs from the brief's count and recency needs dates. Settle in
-  T9f.
+- **Q21** — Where a tie's note goes and how it reads (U4). A tie is noted,
+  not ranked, and the report line is unchanged
+  ([T10.3](./DECISIONS.md#t10-3)). Default: one note on stderr naming the
+  company, the tied partners and the strength. That is a new kind of stderr
+  line, which T6.6 and T6.14 have so far avoided (a line that is not a
+  discarded line). Settle in T10a.
 - **Q22** — Where the UI's code lives and how it ships (U9). Default: the
   server in `src/ui/`, under the existing tsconfig; the browser code in `web/`
   with its own tsconfig for DOM types, bundled by Vite into `dist/web/`;
   `npm run ui` builds and starts it. Packages the server needs at run time go
   in `dependencies`, and the README's "no runtime dependencies" line is
-  revised. Settle in T10a.
+  revised. Settle in T10c.
 - **Q23** — How the UI is tested (U9). Default: the server in vitest against a
   real server on an ephemeral port; browser logic kept in modules with no DOM,
   tested in vitest; the DOM glue itself untested, with browser end-to-end
-  tests deferred to UPGRADES. Settle in T10a.
+  tests deferred to UPGRADES. Settle in T10c.
 - **Q24** — Keeping a local server local (U9). Default: listen on `127.0.0.1`
   only; refuse any request whose `Host` is not that address or `localhost` at
   the server's port (DNS rebinding), and any WebSocket or state-changing
   request whose `Origin` is not the page's own (another site calling it); no
-  login or token. Settle in T10b.
+  login or token. Settle in T10d.
 - **Q25** — Which workspace file names are allowed (U9). Default:
   `[A-Za-z0-9_-]+\.txt` in one flat folder, no subfolders; anything else is
   refused, and every resolved path must stay inside its folder; saves capped
-  at 1 MB. Settle in T10c.
+  at 1 MB. Settle in T10e.
 - **Q26** — A file edited in two places (U9). Default: a save carries the
   modification time the file had when it was opened, and a mismatch refuses
   the save and says so rather than overwriting; deletion is confirmed in the
-  page and is permanent. Settle in T10c.
+  page and is permanent. Settle in T10e.
 - **Q27** — How the console talks to the server (U9). Default: one HTTP
   request per run, naming the file; the response carries the stdout and
   stderr lines, each tagged with its stream, and the exit code. No WebSocket
   and no `ws` package, since nothing is typed into the console
   ([T9.12](./DECISIONS.md#t9-12)). The pane is xterm.js, as planned, showing
-  the run's output. Settle in T10f.
+  the run's output. Settle in T10h.
 - **Q28** — How the console runs the analyzer (U9). Default: in the server's
   process, calling `main` with the file as its argument and collecting stdout
   and stderr, which T6.2 made possible by having `main` take its streams; a
   throw from `main` (a bug, T6.1) fails that run and shows the stack in the
-  pane, and the server keeps running. Settle in T10f.
+  pane, and the server keeps running. Settle in T10h.
 - **Q29** — What the editor checks as a file is edited (U1's second
   question). Default: each line is parsed with `parseLine` as it changes and
   marked with its warning; references are checked by running `buildNetwork`
   over the whole file on every change and shown as pending rather than
   errors, since a name may be declared later (Q8); a file with pending
-  references or bad lines can still be saved. Settle in T10e.
+  references or bad lines can still be saved. Settle in T10g.
 - **Q30** — Where a file is saved, and what happens on a clash or failure
   (U1's first question). Default: into `inputs/` only; an existing name needs
   an explicit overwrite confirmation; the file is written to a temporary name
-  and renamed, so a failed save leaves the old file whole. Settle in T10c.
+  and renamed, so a failed save leaves the old file whole. Settle in T10e.
+- **Q31** — The query options and how they meet the report (U10,
+  [T10.4](./DECISIONS.md#t10-4)). Default: `--partners <Company>` and
+  `--employees <Company>`, each taking the next argument as its company, with
+  the input file named or piped as today. A query replaces the report rather
+  than printing beside it; at most one query per run, and two is a bad
+  invocation (exit 1 with the usage line, Q19). Warnings still print on
+  stderr, since a discarded line can change a query's answer as it can the
+  report's (Q7). `--help` still wins wherever it appears. Settle in T10b.
+- **Q32** — What each query prints (U10). Default: `--partners` prints one
+  line, `<Company>: <Partner> (<n>), ...`, strongest first and ties in
+  alphabetical order (Q14), or `<Company>: No current relationship` as in the
+  report (Q2). `--employees` prints one line per employee in alphabetical
+  order, `<Employee>: <Partner> (<n>), ...` in the same order, or
+  `<Employee>: No contacts`; a company with no employees prints nothing, as
+  T6.14 does for no companies. Contact types are not broken out, since every
+  contact counts 1 (§1). Settle in T10b.
+- **Q33** — A query naming a company that was never declared (U10). Default:
+  one line on stderr naming the company, no output, exit 1, since no answer
+  was produced ([T6.1](./DECISIONS.md#t6-1)); checked after the input is
+  read, since a company may be declared anywhere in the file (Q8). The
+  company's name is escaped like any other user-supplied text
+  ([T8.4](./DECISIONS.md#t8-4)). Settle in T10b.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -280,10 +301,11 @@ prefix).
         recorded ([T8.5](./DECISIONS.md#t8-5)); the ESLint version in
         `eslint.config.js`'s comment corrected; coverage deferred to
         [U8](./UPGRADES.md#u8).
-- [ ] T9 — Upgrades: work beyond the brief, one or more subtasks per
+- [x] T9 — Upgrades: work beyond the brief, one or more subtasks per
       [UPGRADES](./UPGRADES.md) entry, in the order built
       ([T9.1](./DECISIONS.md#t9-1)). The base submission is tagged
-      `base-submission`, and nothing below changes what it answers.
+      `base-submission`, and nothing below changes what it answers. The
+      upgrades still to build are T10 ([T10.5](./DECISIONS.md#t10-5)).
   - [x] T9a — [U7](./UPGRADES.md#u7): tag the base submission, and name the
         tag in the README ([T9.2](./DECISIONS.md#t9-2)). Pushing the tag is
         left to me.
@@ -300,33 +322,39 @@ prefix).
         input ends, sorted by line number, now that typed input no longer
         needs a bad line answered as it is read
         ([T9.13](./DECISIONS.md#t9-13)).
-  - [ ] T9f — [U4](./UPGRADES.md#u4): surface a tie without changing the
-        report line. Settles Q21.
-- [ ] T10 — Web UI and file editor: [U9](./UPGRADES.md#u9)'s local page, with
-      [U1](./UPGRADES.md#u1)'s builder as its editor, as a task of its own
-      ([T10.1](./DECISIONS.md#t10-1)).
-  - [ ] T10a — U9, scaffold: layout, a second tsconfig for the browser, the
+- [ ] T10 — The remaining upgrades: a tie note, queries about one company,
+      and [U9](./UPGRADES.md#u9)'s local page with [U1](./UPGRADES.md#u1)'s
+      builder as its editor ([T10.1](./DECISIONS.md#t10-1),
+      [T10.5](./DECISIONS.md#t10-5)). The tie note and the queries come first,
+      so the console is built against the program's final outputs.
+  - [ ] T10a — [U4](./UPGRADES.md#u4): note a tie without changing the
+        report line or ranking tied partners
+        ([T10.3](./DECISIONS.md#t10-3)). Settles Q21.
+  - [ ] T10b — [U10](./UPGRADES.md#u10): `--partners` and `--employees`
+        queries about one company, with the help text and README run forms
+        updated ([T10.4](./DECISIONS.md#t10-4)). Settles Q31, Q32 and Q33.
+  - [ ] T10c — U9, scaffold: layout, a second tsconfig for the browser, the
         Vite build, `npm run ui`, and the test setup, with an empty page
         served and `npm run check` covering the new code. Settles Q22 and
         Q23.
-  - [ ] T10b — U9, server: `node:http` on `127.0.0.1`, serving the built page,
+  - [ ] T10d — U9, server: `node:http` on `127.0.0.1`, serving the built page,
         with the `Host` and `Origin` checks and their tests. Settles Q24.
-  - [ ] T10c — U9, file API: list `examples/` (read-only) and `inputs/`, read,
+  - [ ] T10e — U9, file API: list `examples/` (read-only) and `inputs/`, read,
         create, save, and delete, plus copying an example into the workspace
         ([T9.6](./DECISIONS.md#t9-6)); `inputs/` added to `.gitignore`.
         Settles Q25, Q26 and Q30.
-  - [ ] T10d — U9, files panel: the list, a read-only viewer, deletion with
+  - [ ] T10f — U9, files panel: the list, a read-only viewer, deletion with
         confirmation, and "copy to workspace" on an example.
-  - [ ] T10e — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
+  - [ ] T10g — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
         create and edit workspace files as text, with the command reference
         from `help.ts` beside it ([T9.12](./DECISIONS.md#t9-12)), each line
         checked as it is edited, pending references across the file, and
         saving into `inputs/`. Settles Q29.
-  - [ ] T10f — U9, console: an xterm.js pane running herbie-lite only
+  - [ ] T10h — U9, console: an xterm.js pane running herbie-lite only
         ([T9.5](./DECISIONS.md#t9-5)) on a listed file and showing its report
         and warnings; it takes no typed commands
         ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
-  - [ ] T10g — README: how to start the UI, what it can and cannot do (no
+  - [ ] T10i — README: how to start the UI, what it can and cannot do (no
         shell, examples read-only), the changed dependency line, and the
         "Deliberately left out" section brought up to date.
 
