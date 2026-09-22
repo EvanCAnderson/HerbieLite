@@ -235,7 +235,7 @@ answers this entry's open questions got:
 
 <a id="u9"></a>
 
-## U9 — A web UI
+## U9 — A web UI — **built**
 
 A web page for working with input files: list them, read them, edit and
 delete the ones in a workspace with the command reference beside the editor,
@@ -258,11 +258,12 @@ the file builder ([U1](#u1)). It runs in the browser alone, with no server
   Limiting the terminal to Herbie, the workspace split, and the stack:
   LLM-suggested, accepted.
 
-Planned as part of task T10 ([T10.1](./DECISIONS.md#t10-1)): the scaffold
-(T10c), the workspace (T10d), the files panel (T10e), the console (T10f),
-U1's editor (T10g), and the README (T10i). Its open questions are PLAN §4's
-Q25–Q28 and Q30: workspace file names, a file open in two tabs, how the
-console shows a run, how the page runs the analyzer, and saving.
+Built in task T10 ([T10.1](./DECISIONS.md#t10-1)): the scaffold (T10c), the
+workspace (T10d), the files panel (T10e), the console (T10f), U1's editor
+(T10g), browser tests ([U11](#u11), T10h), and the README (T10i). Its
+questions were PLAN §4's Q22, Q23 and Q25–Q30: where the code lives, how it
+is tested, workspace file names, a file open in two tabs, how the console
+shows a run, how the page runs the analyzer, and saving.
 
 <a id="u10"></a>
 

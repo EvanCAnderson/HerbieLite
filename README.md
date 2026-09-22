@@ -40,8 +40,9 @@ stopping at the first failure. It needs no build step.
 npm run build
 ```
 
-Compiles to `dist/`. Run it before any `node dist/bin.js` command below, and
-again after changing the source; `npm start --` runs the source directly and
+Compiles the program to `dist/` and bundles the web page into `dist/web/`.
+Run it before any `node dist/bin.js` command below, and again after changing
+the source; `npm start --` runs the source directly and
 needs no build. Individual scripts are `npm run typecheck`, `npm run lint`,
 `npm run format:check`, `npm test`, and `npm run test:watch`.
 
@@ -49,9 +50,20 @@ needs no build. Individual scripts are `npm run typecheck`, `npm run lint`,
 npm run coverage
 ```
 
-Runs the tests with line and branch coverage over `src/`, printing a table and
-writing an HTML report to `coverage/`. It is a report, not part of `check`
-([T9.3](docs/DECISIONS.md#t9-3)).
+Runs the tests with line and branch coverage over `src/` and `web/`, printing a
+table and writing an HTML report to `coverage/`. It is a report, not part of
+`check` ([T9.3](docs/DECISIONS.md#t9-3)).
+
+```bash
+npx playwright install chromium   # once: downloads the browser, about 94MB
+npm run test:e2e
+```
+
+Builds the web page and runs five tests that use it in a real browser: opening
+it, running a file, editing and saving one, the editor's marks, and deleting
+([T10.29](docs/DECISIONS.md#t10-29)). They are not part of `check`, so `check`
+still needs no browser and no build, but `check` does type-check and lint them
+([T10.28](docs/DECISIONS.md#t10-28)).
 
 ### Running it
 
@@ -122,6 +134,49 @@ at the line a warning names, and rerun, which a typed session cannot.
 
 Warnings and tie notes go to stderr and the report to stdout, so `node dist/bin.js examples/input.txt >
 report.txt` gives a clean file with the warnings still on screen.
+
+### In a browser
+
+Since the base was tagged, a web page does the same work in a browser:
+
+```bash
+npm run ui
+```
+
+Builds the page and serves it at <http://127.0.0.1:5170>. On it:
+
+- **Files.** The six examples are listed read-only; any of them can be copied
+  into a workspace, and any `.txt` file on disk can be opened into it.
+- **Console.** **Run** runs herbie-lite on the file shown and prints what the
+  command line would: the command, then the warnings, the report and the tie
+  notes, then the exit code. It is the program's own code, not a copy, so the
+  output is the same, line for line ([T10.23](docs/DECISIONS.md#t10-23)).
+- **Editor.** A workspace file opens as text, with the four commands beside
+  it, or below it on a narrow screen. As you type, each line the program would
+  warn about is marked: _discarded_ if it would be thrown away as it stands,
+  _pending_ if it names a company or person not declared yet
+  ([Q29](docs/DECISIONS.md#q29)). A file saves with marks or without, and
+  **Run** runs what is in the editor, saved or not.
+
+What it does not do:
+
+- **It has no server** ([T10.16](docs/DECISIONS.md#t10-16)). `npm run ui` only
+  serves the built files; everything runs in the page, and nothing is sent
+  anywhere.
+- **The workspace lives in that browser**, in its local storage. Files reach
+  your disk only as downloads: editing a file opened from disk changes the
+  copy in the workspace, never the original. Writing back to the original
+  file is a next step not taken ([U12](docs/UPGRADES.md#u12)). If the browser
+  refuses storage, as some private windows do, the workspace lasts until the
+  page is reloaded, and the page says so.
+- **The examples cannot be edited**, since the tests assert every one
+  ([T9.6](docs/DECISIONS.md#t9-6)); copy one to change it.
+- **The console runs herbie-lite and nothing else**
+  ([T9.5](docs/DECISIONS.md#t9-5)): no shell, no typed commands, and no
+  `--partners` or `--employees` yet.
+- **Two tabs can edit one file**, but a save made from an older copy is
+  refused and offers to keep yours or load theirs, so neither is lost
+  ([Q26](docs/DECISIONS.md#q26)).
 
 ---
 
@@ -231,6 +286,15 @@ to stderr ([T6.5](docs/DECISIONS.md#t6-5)); and `help.ts` builds the usage line,
 table ([Q18](docs/DECISIONS.md#q18)). `bin.ts` is the executable entry and contains
 no logic, so nothing has to detect how it was loaded
 ([T1.6](docs/DECISIONS.md#t1-6)).
+
+The web page is a fifth consumer of the same layers, not a fifth layer. Its
+code is in `web/`, with its own TypeScript project, so browser code cannot
+reach for a Node API nor the program's code for the DOM
+([Q22](docs/DECISIONS.md#q22)). The parser, network, report and `run.ts` run
+in the page unchanged, which is only possible because none of them does any
+I/O. What the page decides is in modules with no DOM, tested in vitest beside
+the rest; the code that draws the page is covered by the browser tests
+instead ([Q23](docs/DECISIONS.md#q23), [Q36](docs/DECISIONS.md#q36)).
 
 The design decisions behind that, each with what it costs:
 
@@ -493,6 +557,23 @@ anything counting lines would otherwise see one report where there is none.
 | Q32   | A query lists partners strongest first, employees alphabetically          | [T10.9](docs/DECISIONS.md#t10-9)   |
 | Q33   | A query naming an undeclared company exits 1, after the input is read     | [T10.10](docs/DECISIONS.md#t10-10) |
 
+The web page raised questions of its own, about the page rather than the input:
+
+| ID  | Decision                                                                         | Settled in                         |
+| --- | -------------------------------------------------------------------------------- | ---------------------------------- |
+| Q22 | The page's code in `web/`, with its own TypeScript project, bundled by Vite      | [T10.12](docs/DECISIONS.md#t10-12) |
+| Q23 | DOM-free logic tested in vitest; the DOM code left to the browser tests          | [T10.13](docs/DECISIONS.md#t10-13) |
+| Q24 | Withdrawn: with no server, there is nothing to keep local                        | [T10.16](docs/DECISIONS.md#t10-16) |
+| Q25 | Workspace names are letters, digits, `_` and `-`, then `.txt`                    | [T10.17](docs/DECISIONS.md#t10-17) |
+| Q26 | Every save raises a version; a save from an older copy is refused                | [T10.18](docs/DECISIONS.md#t10-18) |
+| Q27 | The console is an xterm.js pane, showing a run as a terminal would               | [T10.24](docs/DECISIONS.md#t10-24) |
+| Q28 | The program's work is one function, which the CLI and the console both call      | [T10.23](docs/DECISIONS.md#t10-23) |
+| Q29 | The editor marks what the program would warn about, discarded or pending         | [T10.25](docs/DECISIONS.md#t10-25) |
+| Q30 | The workspace is in `localStorage`, one key a file; a refused save keeps the old | [T10.19](docs/DECISIONS.md#t10-19) |
+| Q34 | The browser tests use Playwright on Chromium                                     | [T10.27](docs/DECISIONS.md#t10-27) |
+| Q35 | The browser tests have their own script, outside `check`                         | [T10.28](docs/DECISIONS.md#t10-28) |
+| Q36 | One browser test per thing a person does with the page                           | [T10.29](docs/DECISIONS.md#t10-29) |
+
 † The brief was open to more than one reading here.
 
 ---
@@ -502,8 +583,8 @@ anything counting lines would otherwise see one report where there is none.
 The base submission, tagged `base-submission`, builds what the brief asks for
 and nothing more. Ideas outside it went into [UPGRADES](docs/UPGRADES.md) as
 potential next steps, each with the questions it would have to answer, rather
-than into the base. Since the tag, those next steps are being built, each as
-its own task with its decisions logged:
+than into the base. Since the tag, most of those next steps have been built,
+each as its own task with its decisions logged:
 
 - **Built:** `--help` and a usage line (U5,
   [T9.10](docs/DECISIONS.md#t9-10)); an explanation of the commands for a run
@@ -511,10 +592,15 @@ its own task with its decisions logged:
   partners tie, with no other ranking (U4, [T10.6](docs/DECISIONS.md#t10-6));
   and the `--partners` and `--employees` queries, which answer questions the
   brief says Herbie answers but does not ask this program to (U10,
-  [T10.4](docs/DECISIONS.md#t10-4)). Also a tag on the base (U7) and a
-  coverage report (U8).
-- **In progress:** a local web UI for the input files, whose editor checks
-  each line as it is written (U9, U1; PLAN task T10).
+  [T10.4](docs/DECISIONS.md#t10-4)); and the web page described under
+  [In a browser](#in-a-browser), running entirely in the browser (U9,
+  [T10.16](docs/DECISIONS.md#t10-16)), whose editor checks each line as it is
+  written (U1, [T10.2](docs/DECISIONS.md#t10-2)), with tests that drive it in
+  a real browser (U11, [T10.22](docs/DECISIONS.md#t10-22)). Also a tag on the
+  base (U7) and a coverage report (U8).
+- **Not built:** saving back to a file opened from disk, which only Chrome and
+  Edge support, while downloads already reach disk in every browser (U12,
+  [T10.22](docs/DECISIONS.md#t10-22)).
 
 Two ideas were built into the base itself instead of waiting, each because
 leaving it out meant shipping a program that could be confidently wrong:

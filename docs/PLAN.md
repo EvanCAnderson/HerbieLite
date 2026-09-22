@@ -265,7 +265,7 @@ prefix).
         input ends, sorted by line number, now that typed input no longer
         needs a bad line answered as it is read
         ([T9.13](./DECISIONS.md#t9-13)).
-- [ ] T10 — The remaining upgrades: a tie note, queries about one company,
+- [x] T10 — The remaining upgrades: a tie note, queries about one company,
       and [U9](./UPGRADES.md#u9)'s page, running in the browser alone, with
       [U1](./UPGRADES.md#u1)'s builder as its editor, then
       [U11](./UPGRADES.md#u11)'s browser tests of that page
@@ -307,7 +307,7 @@ prefix).
   - [x] T10h — [U11](./UPGRADES.md#u11): end-to-end tests that load the
         built page in a browser and use it as a person does, once the editor
         exists ([T10.22](./DECISIONS.md#t10-22)). Settles Q34, Q35 and Q36.
-  - [ ] T10i — README: how to start the UI, what it can and cannot do
+  - [x] T10i — README: how to start the UI, what it can and cannot do
         (browser only, files saved as downloads, examples read-only), how to
         run the browser tests, and the "Beyond the brief" section brought up
         to date ([T10.11](./DECISIONS.md#t10-11)), with

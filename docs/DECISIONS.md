@@ -2977,6 +2977,31 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Q36's default, LLM-suggested, accepted, with the pending-mark
   test added in T10h: LLM-suggested.
 
+#### <a id="t10-30"></a>T10.30 — The README documents the page as a way to run the program
+
+- **Decision:** The web page is documented in "Build, run, and test", as a
+  subsection "In a browser" after the command-line forms: how to start it,
+  what each panel does, and a list of what it does not do. The browser
+  tests' commands sit beside `check` and `coverage`. "How it works" gains a
+  paragraph placing the page as a consumer of the four layers, not a fifth.
+  The page's questions (Q22–Q30, Q34–Q36) get a table of their own after
+  the input assumptions' table. "Beyond the brief" lists the page and its
+  tests as built and U12 as not built.
+- **Context:** T10i. Every other section of the README was about the
+  command-line program.
+- **Why:** The page is another way to run the same program, and a reader
+  looking for how to run it looks under running it. The list of what it
+  does not do is the part a reviewer most needs, since a browser-only page
+  that keeps files in local storage behaves unlike what "a web UI" usually
+  suggests. A second table, because the first answers brief requirement
+  7.3's question about the input data, and page questions such as saving
+  or testing mixed into it would dilute that answer; kept at all, because
+  PLAN §7 asks for every question to be covered. **Rejected:** a top-level
+  "Web UI" section, which separates the page from the run forms it
+  parallels; the page's questions in the first table; and leaving them out
+  of the README.
+- **Origin:** LLM-suggested, in T10i.
+
 ---
 
 ## Open questions
