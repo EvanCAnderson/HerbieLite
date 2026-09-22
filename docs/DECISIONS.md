@@ -1861,6 +1861,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   unless the user names that folder, and makes path confinement depend on an
   argument.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T10.16](#t10-16) (the `inputs/` folder; the
+  workspace is in browser storage. Examples read-only stands).
 
 #### <a id="t9-7"></a>T9.7 — The page is plain TypeScript bundled by Vite, served by `node:http`
 
@@ -1878,6 +1880,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   submission that has none; and hand-written JavaScript with no build, which
   drops type checking from the one part of the project a browser runs.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded in part by** [T10.16](#t10-16) (served by `node:http`; the
+  page is static. Plain TypeScript bundled by Vite stands).
 
 #### <a id="t9-8"></a>T9.8 — The file builder is a panel of the UI, not a CLI mode
 
@@ -2150,6 +2154,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   console).
 - **Origin:** The builder as an in-browser file editor: Mine. Giving it its
   own subtask, and moving Q30 to the file API: LLM-suggested.
+- **Superseded in part by** [T10.16](#t10-16) (saving into `inputs/`; it
+  saves into the browser workspace).
 
 #### <a id="t10-3"></a>T10.3 — A tie is noted, not ranked
 
@@ -2461,6 +2467,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   `node dist/ui/bin.js` fail after a build.
 - **Origin:** Q22's default, LLM-suggested, accepted, with the Vite flags
   and the page in `npm run build` added in T10c: LLM-suggested, accepted.
+- **Superseded in part by** [T10.16](#t10-16) (the server in `src/ui/`; there
+  is no server).
 
 #### <a id="t10-13"></a><a id="q23"></a>T10.13 — Q23: A real server in the tests; the page's DOM code untested
 
@@ -2485,6 +2493,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   the server over Vite's real output, which would make `npm test` depend on
   `npm run build`.
 - **Origin:** Q23's default, LLM-suggested, accepted.
+- **Superseded in part by** [T10.16](#t10-16) (the server tested live; there
+  is no server).
 
 #### <a id="t10-14"></a>T10.14 — The scaffold's server serves only what it found at startup
 
@@ -2510,6 +2520,136 @@ Laurie Globex`: the program name, the line number and the name are gone.
   check, the usual approach and one more thing to get right; and port 0,
   which needs the address read from the log every time.
 - **Origin:** LLM-suggested, accepted.
+- **Superseded by** [T10.16](#t10-16).
+
+#### <a id="t10-16"></a>T10.16 — The UI runs in the browser alone, with no server
+
+- **Decision:** The web UI is a static page with no server of its own. The
+  parser, network and report layers run in the page, unchanged. The examples
+  are bundled into the page at build time and stay read-only. The workspace
+  is kept in the browser's storage, where files can be created, edited and
+  deleted; any file on disk can be opened into it, and any file downloaded.
+  There is no `inputs/` folder. `src/ui/` is removed, and `npm run ui` builds
+  the page and serves it with Vite's preview server on `127.0.0.1:5170`,
+  since a browser will not run a bundled module from a page opened off disk.
+  The `Host` and `Origin` checks built for T10d are dropped before being
+  committed, and Q24 is withdrawn: with no server there is nothing to keep
+  local, and Vite's preview server checks `Host` itself. The rest of T10 is
+  re-planned in PLAN §6 as T10d (the workspace), T10e (the files panel),
+  T10f (the editor), T10g (the console) and T10h (the README), and Q25–Q30
+  are rewritten for the browser.
+- **Context:** Reviewing T10d, whose checks existed only because the UI had
+  a server. The server was there to list, read, save and delete files on
+  disk and to run the CLI; the question was whether a UI for demonstrating
+  the program needs any of that.
+- **Why:** Everything the page does to a network (parse, resolve, report,
+  warn) is already pure TypeScript with no I/O, by T1.11's design, so it
+  runs in a browser as it is, and the page shows that layering at work. A
+  server brought a file API, a security boundary, and four open questions
+  (Q24, Q25, Q26, Q30 in their server form) that exist only to protect files
+  on disk. Without it there is no attack surface to defend, fewer moving
+  parts to explain in an interview, and the page could be hosted as a
+  static site. **Accepted cost:** files made in the page live in that
+  browser and reach disk only as downloads, and editing a file in place on
+  disk is left to [UPGRADES U12](./UPGRADES.md#u12). **Rejected:** keeping
+  the server as planned, which saves into the repository but spends two
+  subtasks on protecting it; and a server only for writing files, which
+  keeps the whole security question for one feature.
+- **Supersedes:** in part, [T9.6](#t9-6) (the `inputs/` folder as the
+  workspace; examples read-only, with a copy to edit, stands),
+  [T9.7](#t9-7) (served by `node:http`; plain TypeScript bundled by Vite
+  stands), [T10.2](#t10-2) (saving into `inputs/`; the editor as U1
+  stands), [T10.12](#t10-12) (the server in `src/ui/`; the page in `web/`
+  stands) and [T10.13](#t10-13) (the server tested live; DOM-free browser
+  logic tested in vitest stands). Wholly, [T10.14](#t10-14).
+- **Origin:** Mine (asking whether a local demo needs a server, then
+  choosing browser-only). Setting out the browser-only option, and the file
+  handling (bundled examples, browser storage, open and download, write-back
+  deferred): LLM-suggested, accepted.
+
+#### <a id="t10-17"></a><a id="q25"></a>T10.17 — Q25: Workspace names are letters, digits, `_` and `-`, then `.txt`
+
+- **Decision:** A workspace file's name matches
+  `[A-Za-z0-9_-]{1,100}\.txt`, and is compared exactly, so `a.txt` and
+  `A.txt` are two files. Names are unique within the workspace; an example's
+  name may be reused, since examples are listed apart. A file arriving from
+  elsewhere, opened from disk or copied from an example, is given a name by
+  `suggestName`: characters a name may not hold become `-`, `.txt` is added
+  if missing, `untitled` stands in for a name with nothing left, and a taken
+  name gets `-2`, `-3` and so on before `.txt`.
+- **Context:** T10d. With no server, a name is no longer a path on disk
+  ([T10.16](#t10-16)), but it is still the name a download is saved under.
+- **Why:** The name travels to the user's disk as a download and back as an
+  argument to the CLI, so it is kept to characters every file system and
+  shell takes without quoting; `.txt` makes the download open in a text
+  editor. Exact comparison matches how the program treats every other name
+  (Q4), at the cost that two files differing only in case collide when
+  downloaded to a case-insensitive disk, where the browser renames the
+  second. A suggested name rather than a refusal, because a file from disk
+  often has a space or another extension, and the user asked to open it, not
+  to rename it first. **Rejected:** any name at all, which is safe in browser
+  storage but produces downloads the CLI needs quoting to read; names
+  compared without case, one more rule unlike the rest of the program; and
+  refusing a file from disk whose name is not valid.
+- **Origin:** Q25's default, LLM-suggested, accepted, with `suggestName`
+  added in T10d: LLM-suggested, accepted.
+
+#### <a id="t10-18"></a><a id="q26"></a>T10.18 — Q26: Every save raises a version; a save from an older copy is refused
+
+- **Decision:** Each workspace file carries a version, 1 when created and
+  raised by every save, including an overwrite. A save names the version
+  its copy was opened at; if the stored file has moved on, the save is
+  refused with the current file, and nothing is overwritten. A save of a
+  file deleted since it was opened is refused as missing. Deletion is
+  permanent, and the page confirms it first.
+- **Context:** T10d. The workspace is shared by every tab of the page in the
+  same browser, so one file can be open in two tabs at once.
+- **Why:** Two tabs editing one file is the one way this page can lose work
+  without the user doing anything wrong, and the later save silently winning
+  is the loss. A version is the smallest thing that detects it: it needs no
+  clock, and it survives a save made in the same millisecond. Returning the
+  current file lets the page show what the other tab saved. **Rejected:**
+  last save wins, which is simplest and loses the other tab's edit; a
+  modification time, Q26's server-era default, which a browser offers no
+  file for and two quick saves can share; and locking a file to the first
+  tab that opens it, which leaves a closed tab's lock behind.
+- **Origin:** Q26's default, LLM-suggested, accepted, with the version replacing the
+  modification time when the UI became browser-only: LLM-suggested, accepted.
+
+#### <a id="t10-19"></a><a id="q30"></a>T10.19 — Q30: Files saved in `localStorage`, one key each; a refused save keeps the old file
+
+- **Decision:** The workspace is kept in `localStorage`, one key per file
+  under the prefix `herbie-lite:file:`, holding its text and version as
+  JSON; other keys are left alone, and a value under the prefix that does
+  not parse is treated as absent. Creating a file under a name already in
+  the workspace is refused as `exists` until the page, having asked the
+  user, sends it again with `overwrite`. A text over a million characters is
+  refused as `too-large`, and a write the storage throws on as
+  `storage-full`; either way the previous version stays as it was, and the
+  editor keeps its text, which can still be downloaded. The workspace is a
+  class over any object with `localStorage`'s methods, with no DOM, so the
+  tests pass an in-memory store. The examples are bundled from
+  `examples/*.txt` by Vite's `import.meta.glob`. Opening a file from disk and
+  starting a download are left to the files panel (T10e), the first code to
+  call them.
+- **Context:** T10d. Browser storage replaces `inputs/`
+  ([T10.16](#t10-16)).
+- **Why:** `localStorage` is synchronous and small, which suits a handful of
+  text files and keeps the module a set of plain functions; its limit, about
+  five megabytes, is why a file is capped and a full store is reported
+  rather than assumed away. One key per file means a failed write can only
+  fail that file, and `setItem` replaces a value whole or throws, which is
+  what keeps the old version intact without the temporary file the server
+  plan needed. A name clash asks rather than overwrites, because the
+  overwritten file is gone for good. The open and download helpers wait for
+  T10e because each is a few lines of DOM with no caller before the panel.
+  **Rejected:** IndexedDB, which holds far more but is asynchronous and adds
+  a transaction layer for files this small; all files under one key, which
+  makes every save rewrite every file and lets one failure lose them all;
+  and throwing on a damaged value, which would break the whole workspace
+  over one key edited by hand.
+- **Origin:** Q30's default, LLM-suggested, accepted, with the store, keys and limits
+  set in T10d: LLM-suggested, accepted.
 
 ---
 

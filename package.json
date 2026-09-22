@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "tsx src/bin.ts",
-    "ui": "npm run build:web && tsx src/ui/bin.ts",
+    "ui": "npm run build:web && vite preview web --outDir ../dist/web --host 127.0.0.1 --port 5170 --strictPort",
     "build": "tsc -p tsconfig.build.json && npm run build:web",
     "build:web": "vite build web --outDir ../dist/web --emptyOutDir",
     "typecheck": "tsc --noEmit && tsc --noEmit -p web",

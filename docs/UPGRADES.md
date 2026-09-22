@@ -234,33 +234,34 @@ answers this entry's open questions got:
 
 <a id="u9"></a>
 
-## U9 — A local web UI
+## U9 — A web UI
 
-A web page served on this machine for working with input files: list them,
-read them, edit and delete the ones in a workspace with the command reference
-beside the editor, and run the report on any of them in an embedded terminal
-pane. Its editor is the file builder ([U1](#u1)).
+A web page for working with input files: list them, read them, edit and
+delete the ones in a workspace with the command reference beside the editor,
+and run the report on any of them in an embedded terminal pane. Its editor is
+the file builder ([U1](#u1)). It runs in the browser alone, with no server
+([DECISIONS T10.16](./DECISIONS.md#t10-16)).
 
 - **Terminal:** the page's embedded pane is a Herbie console that runs
-  herbie-lite and nothing else, not a shell; the shell limit belongs to the
-  UI alone ([DECISIONS T9.5](./DECISIONS.md#t9-5)). It runs files and shows
-  their output, and takes no typed commands
-  ([T9.12](./DECISIONS.md#t9-12)).
-- **Files:** `examples/` listed read-only, since the tests assert every one;
-  a git-ignored `inputs/` workspace for everything editable
-  ([T9.6](./DECISIONS.md#t9-6)).
-- **Stack:** plain TypeScript bundled by Vite, served by `node:http`
-  ([T9.7](./DECISIONS.md#t9-7)).
-- **Order:** built after U5, U6 and U4, and before U1
-  ([T9.4](./DECISIONS.md#t9-4)).
+  herbie-lite and nothing else, not a shell
+  ([DECISIONS T9.5](./DECISIONS.md#t9-5)). It runs files and shows their
+  output, and takes no typed commands ([T9.12](./DECISIONS.md#t9-12)).
+- **Files:** the examples bundled into the page, read-only, since the tests
+  assert every one; a workspace in the browser's storage for everything
+  editable; files opened from disk and saved as downloads
+  ([T9.6](./DECISIONS.md#t9-6), [T10.16](./DECISIONS.md#t10-16)).
+- **Stack:** plain TypeScript bundled by Vite
+  ([T9.7](./DECISIONS.md#t9-7)), served locally by Vite's preview server.
 - **Origin:** Mine (a local page with an embedded terminal, file management,
-  and the builder, placed before U1). Limiting the terminal to Herbie, the
-  workspace split, and the stack: LLM-suggested, accepted.
+  and the builder, placed before U1; later, running it without a server).
+  Limiting the terminal to Herbie, the workspace split, and the stack:
+  LLM-suggested, accepted.
 
-Planned as task T10 ([T10.1](./DECISIONS.md#t10-1)): T10c–T10h, with T10g as U1's file editor, and T10i for the README, after the tie note (T10a) and the queries (T10b). Its open questions are PLAN §4's
-Q22–Q28: layout and packaging, testing, keeping the server local, workspace
-file names, two edits of one file, the console's transport, and how the
-console runs the analyzer.
+Planned as part of task T10 ([T10.1](./DECISIONS.md#t10-1)): the scaffold
+(T10c), the workspace (T10d), the files panel (T10e), U1's editor (T10f), the
+console (T10g), and the README (T10h). Its open questions are PLAN §4's
+Q25–Q28 and Q30: workspace file names, a file open in two tabs, how the
+console shows a run, how the page runs the analyzer, and saving.
 
 <a id="u10"></a>
 
@@ -321,3 +322,24 @@ Open questions:
   needs a browser and a build.
 - **When?** Once the page does enough that a broken render would go unnoticed
   by the other tests: after the editor (T10g) or the console (T10h).
+
+<a id="u12"></a>
+
+## U12 — Save back to the file that was opened, in Chrome and Edge
+
+The web UI saves files to disk as downloads, so editing a file from disk in
+the page produces a new copy in the downloads folder rather than changing the
+original ([DECISIONS T10.16](./DECISIONS.md#t10-16)). Chrome and Edge's File
+System Access API can write back to the file that was opened, after a
+permission prompt.
+
+- **Origin:** LLM-suggested, deferred here when the UI became browser-only.
+
+Open questions:
+
+- **Only where supported?** Firefox and Safari do not have the API, so the
+  page would offer write-back in some browsers and downloads in all.
+- **A folder, or a file?** The same API can open a whole folder, which would
+  bring back something like the `inputs/` workspace on disk.
+- **How is a lost permission shown?** The browser can revoke it between
+  visits.

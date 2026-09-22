@@ -77,40 +77,25 @@ planning the upgrades; each has its current default and the subtask that
 settles it ([T2.2](./DECISIONS.md#t2-2)). The UPGRADES entries they came from
 point here rather than repeating them.
 
-- **Q24** — Keeping a local server local (U9). Default: listen on `127.0.0.1`
-  only; refuse any request whose `Host` is not that address or `localhost` at
-  the server's port (DNS rebinding), and any WebSocket or state-changing
-  request whose `Origin` is not the page's own (another site calling it); no
-  login or token. Settle in T10d.
-- **Q25** — Which workspace file names are allowed (U9). Default:
-  `[A-Za-z0-9_-]+\.txt` in one flat folder, no subfolders; anything else is
-  refused, and every resolved path must stay inside its folder; saves capped
-  at 1 MB. Settle in T10e.
-- **Q26** — A file edited in two places (U9). Default: a save carries the
-  modification time the file had when it was opened, and a mismatch refuses
-  the save and says so rather than overwriting; deletion is confirmed in the
-  page and is permanent. Settle in T10e.
-- **Q27** — How the console talks to the server (U9). Default: one HTTP
-  request per run, naming the file; the response carries the stdout and
-  stderr lines, each tagged with its stream, and the exit code. No WebSocket
-  and no `ws` package, since nothing is typed into the console
-  ([T9.12](./DECISIONS.md#t9-12)). The pane is xterm.js, as planned, showing
-  the run's output. Settle in T10h.
-- **Q28** — How the console runs the analyzer (U9). Default: in the server's
-  process, calling `main` with the file as its argument and collecting stdout
-  and stderr, which T6.2 made possible by having `main` take its streams; a
-  throw from `main` (a bug, T6.1) fails that run and shows the stack in the
-  pane, and the server keeps running. Settle in T10h.
+- **Q27** — How the console shows a run (U9). Default: an xterm.js pane, as
+  planned, showing stdout and stderr in the order the CLI writes them,
+  stderr in its own colour, then the exit code. xterm.js is bundled into the
+  page, so it is a dev dependency and the README's "no runtime dependencies"
+  stands. The alternative is a plain `<pre>`, with no dependency. Settle in
+  T10g.
+- **Q28** — How the page runs the analyzer (U9). Default: the cli's work is
+  split into a function that takes the input text and the arguments and
+  returns stdout, stderr and the exit code, with no streams; `main` calls it
+  for the CLI and the console calls it in the page, so both print the same
+  text. Reading files and streams and writing to the process stay in
+  `cli.ts`. A throw (a bug, [T6.1](./DECISIONS.md#t6-1)) shows its stack in
+  the pane. Settle in T10g.
 - **Q29** — What the editor checks as a file is edited (U1's second
   question). Default: each line is parsed with `parseLine` as it changes and
   marked with its warning; references are checked by running `buildNetwork`
   over the whole file on every change and shown as pending rather than
   errors, since a name may be declared later (Q8); a file with pending
-  references or bad lines can still be saved. Settle in T10g.
-- **Q30** — Where a file is saved, and what happens on a clash or failure
-  (U1's first question). Default: into `inputs/` only; an existing name needs
-  an explicit overwrite confirmation; the file is written to a temporary name
-  and renamed, so a failed save leaves the old file whole. Settle in T10e.
+  references or bad lines can still be saved. Settle in T10f.
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -140,6 +125,10 @@ point here rather than repeating them.
 - [**Q33**](./DECISIONS.md#q33) (T10.10) — A company never declared is an error, after the input is read.
 - [**Q22**](./DECISIONS.md#q22) (T10.12) — The server in `src/ui/`, the page in `web/`, bundled into `dist/web/`.
 - [**Q23**](./DECISIONS.md#q23) (T10.13) — A real server in the tests; the page's DOM code untested.
+- **Q24** (T10.16) — Withdrawn: the UI has no server, so there is nothing to keep local.
+- [**Q25**](./DECISIONS.md#q25) (T10.17) — Workspace names are letters, digits, `_` and `-`, then `.txt`.
+- [**Q26**](./DECISIONS.md#q26) (T10.18) — Every save raises a version; a save from an older copy is refused.
+- [**Q30**](./DECISIONS.md#q30) (T10.19) — Files saved in `localStorage`, one key each; a refused save keeps the old file.
 
 ## 5. Tooling
 
@@ -291,9 +280,10 @@ prefix).
         needs a bad line answered as it is read
         ([T9.13](./DECISIONS.md#t9-13)).
 - [ ] T10 — The remaining upgrades: a tie note, queries about one company,
-      and [U9](./UPGRADES.md#u9)'s local page with [U1](./UPGRADES.md#u1)'s
-      builder as its editor ([T10.1](./DECISIONS.md#t10-1),
-      [T10.5](./DECISIONS.md#t10-5)). The tie note and the queries come first,
+      and [U9](./UPGRADES.md#u9)'s page, running in the browser alone, with
+      [U1](./UPGRADES.md#u1)'s builder as its editor
+      ([T10.1](./DECISIONS.md#t10-1), [T10.5](./DECISIONS.md#t10-5),
+      [T10.16](./DECISIONS.md#t10-16)). The tie note and the queries come first,
       so the console is built against the program's final outputs.
   - [x] T10a — [U4](./UPGRADES.md#u4): note a tie without changing the
         report line or ranking tied partners
@@ -305,26 +295,26 @@ prefix).
         Vite build, `npm run ui`, and the test setup, with an empty page
         served and `npm run check` covering the new code. Settles Q22 and
         Q23.
-  - [ ] T10d — U9, server: the `Host` and `Origin` checks and their tests,
-        on the server T10c built ([T10.14](./DECISIONS.md#t10-14)). Settles
-        Q24.
-  - [ ] T10e — U9, file API: list `examples/` (read-only) and `inputs/`, read,
-        create, save, and delete, plus copying an example into the workspace
-        ([T9.6](./DECISIONS.md#t9-6)); `inputs/` added to `.gitignore`.
-        Settles Q25, Q26 and Q30.
-  - [ ] T10f — U9, files panel: the list, a read-only viewer, deletion with
-        confirmation, and "copy to workspace" on an example.
-  - [ ] T10g — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
+  - [x] T10d — U9, workspace: the examples bundled into the page,
+        read-only; workspace files kept in browser storage, created, read,
+        saved and deleted; names for files from disk or copied examples
+        ([T10.16](./DECISIONS.md#t10-16)). In modules with no DOM, tested in
+        vitest ([T10.13](./DECISIONS.md#t10-13)). Settles Q25, Q26 and Q30.
+  - [ ] T10e — U9, files panel: the examples and workspace files listed, a
+        read-only viewer, open from disk, download, deletion with
+        confirmation, and "copy to workspace" on an example, with the DOM
+        code for opening and downloading ([T10.19](./DECISIONS.md#t10-19)).
+  - [ ] T10f — U1, the in-browser file editor ([T10.2](./DECISIONS.md#t10-2)):
         create and edit workspace files as text, with the command reference
         from `help.ts` beside it ([T9.12](./DECISIONS.md#t9-12)), each line
         checked as it is edited, pending references across the file, and
-        saving into `inputs/`. Settles Q29.
-  - [ ] T10h — U9, console: an xterm.js pane running herbie-lite only
-        ([T9.5](./DECISIONS.md#t9-5)) on a listed file and showing its report
-        and warnings; it takes no typed commands
+        saving into the workspace. Settles Q29.
+  - [ ] T10g — U9, console: an xterm.js pane running herbie-lite only
+        ([T9.5](./DECISIONS.md#t9-5)) on a listed file, in the page, showing
+        its report and warnings; it takes no typed commands
         ([T9.12](./DECISIONS.md#t9-12)). Settles Q27 and Q28.
-  - [ ] T10i — README: how to start the UI, what it can and cannot do (no
-        shell, examples read-only), the changed dependency line, and the
+  - [ ] T10h — README: how to start the UI, what it can and cannot do
+        (browser only, files saved as downloads, examples read-only), and the
         "Beyond the brief" section brought up to date
         ([T10.11](./DECISIONS.md#t10-11)).
 
