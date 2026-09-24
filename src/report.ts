@@ -2,21 +2,8 @@
 // network to lines of output: the report (FR3, FR4) and the ties behind it
 // (Q21), and the queries about one company (Q31, Q32). No I/O — the cli prints
 // what these return (T6c).
+import { compareNames } from "./compare-names.js";
 import type { Network } from "./network.js";
-
-/**
- * Orders two names by UTF-16 code unit: the machine-independent reading of
- * "sorted alphabetically" (Q14), under which every uppercase letter sorts
- * before every lowercase one. Names are letters only (Q9), so this is also
- * their code-point order. One rule serves every place an order is needed:
- * the company list (Q14), the tie-break between equally strong partners (Q1),
- * and the employees a query lists (Q32).
- */
-function compareNames(a: string, b: string): number {
-  if (a < b) return -1;
-  if (a > b) return 1;
-  return 0;
-}
 
 /**
  * Contacts per partner, for one company or one employee. For a company this

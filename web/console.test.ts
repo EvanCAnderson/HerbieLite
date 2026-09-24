@@ -4,7 +4,6 @@ import {
   companiesIn,
   pathOf,
   output,
-  runFile,
   UNSAVED_NOTE,
 } from "./console.js";
 import { EXAMPLES } from "./examples.js";
@@ -48,53 +47,6 @@ describe("the companies a file declares", () => {
     expect(
       await companiesIn("Company zeta\nCompany Beta\ncompany Nope\n"),
     ).toEqual(["Beta", "zeta"]);
-  });
-});
-
-describe("running a file in the page (Q28)", () => {
-  it("prints the brief's report for examples/input.txt (PLAN §7)", async () => {
-    expect(await runFile(input)).toEqual({
-      stderr: [],
-      stdout:
-        "ACME: No current relationship\nGlobex: Chris (2)\nHooli: Molly (1)\n",
-      notes: [],
-      code: 0,
-    });
-  });
-
-  it("warns about a bad line and still prints the report (Q7)", async () => {
-    const result = await runFile({
-      source: "workspace",
-      name: "draft.txt",
-      text: "Company ACME\nPartner chris9\n",
-    });
-    expect(result.stderr).toEqual([
-      'herbie-lite: line 2: names must be letters only; expected "Partner <Name>"; discarded: Partner chris9',
-    ]);
-    expect(result.stdout).toBe("ACME: No current relationship\n");
-    expect(result.code).toBe(0);
-  });
-
-  it("splits lines as the CLI's reader does, byte-order mark and all (Q16)", async () => {
-    const result = await runFile({
-      source: "workspace",
-      name: "bom.txt",
-      text: "﻿Company ACME\r\nCompany Hooli",
-    });
-    expect(result.stderr).toEqual([]);
-    expect(result.stdout).toBe(
-      "ACME: No current relationship\nHooli: No current relationship\n",
-    );
-  });
-
-  it("returns a tie's note separately, to follow the report (Q21)", async () => {
-    const result = await runFile({
-      source: "example",
-      name: "ties.txt",
-      text: EXAMPLES.get("ties.txt") ?? "",
-    });
-    expect(result.notes.length).toBeGreaterThan(0);
-    expect(result.notes[0]).toMatch(/^herbie-lite: \w+ is a tie between /);
   });
 });
 

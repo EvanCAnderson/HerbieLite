@@ -4,8 +4,22 @@
 // Apart from the DOM, so it is tested in vitest (T10.13); the pane is
 // console-panel.ts.
 import { USAGE } from "../src/help.js";
+import { escaped } from "../src/warnings.js";
 import { COMMAND_SYNTAX } from "../src/parser.js";
 import { run, type Run } from "../src/run.js";
+
+/**
+ * Text the console echoes that the program did not print, made safe for the
+ * pane (Q38): a typed or entered line, `cat`'s complaint, a refused line.
+ * A control, format or separator character other than a space shows in the
+ * warnings' notation (`\u009b`, T6.11), so it can neither act on the
+ * terminal nor pass unseen. A backslash stays as typed.
+ */
+export function visible(text: string): string {
+  return text.replace(/[\p{C}\p{Z}]/gu, (character) =>
+    character === " " ? character : escaped(character),
+  );
+}
 
 /** What a typed line asks the console to do. */
 export type CommandLine =
@@ -70,8 +84,9 @@ function program(
     if (rest.length === 0) return { args: [] };
     if (rest[0] === "--") return { args: rest.slice(1) };
     // npm reads what comes before `--` itself, as the README warns.
+    const typed = visible(rest.join(" "));
     return {
-      refused: `npm start ${rest.join(" ")}: npm would read these arguments itself; put -- before them: npm start -- ${rest.join(" ")}`,
+      refused: `npm start ${typed}: npm would read these arguments itself; put -- before them: npm start -- ${typed}`,
     };
   }
   if (first !== undefined && Object.hasOwn(COMMAND_SYNTAX, first)) {
@@ -80,7 +95,7 @@ function program(
     };
   }
   return {
-    refused: `${first ?? ""}: not available here; this console runs herbie-lite only (type help)`,
+    refused: `${visible(first ?? "")}: not available here; this console runs herbie-lite only (type help)`,
   };
 }
 
@@ -196,7 +211,7 @@ export async function runLine(
   if (line.piped !== undefined) {
     const text = files(normal(line.piped));
     if (text === undefined) {
-      cat.push(`cat: ${line.piped}: No such file or directory`);
+      cat.push(`cat: ${visible(line.piped)}: No such file or directory`);
     }
     stdin = [text ?? ""];
   }
@@ -208,18 +223,59 @@ export async function runLine(
   return { cat, result };
 }
 
-/** What a keypress does: text to echo, a line to run, or a cleared pane. */
+/**
+ * Runs tasks one at a time, in the order added, so a paste of several lines,
+ * or quick clicks, cannot interleave their output. A task that throws is
+ * handed to `onError`, and the tasks after it still run (T12e).
+ */
+export class TaskQueue {
+  private tail: Promise<void> = Promise.resolve();
+  private count = 0;
+
+  constructor(private readonly onError: (error: unknown) => void) {}
+
+  /** Tasks added and not yet finished, the one running included. */
+  get pending(): number {
+    return this.count;
+  }
+
+  add(task: () => Promise<void> | void): void {
+    this.count += 1;
+    this.tail = this.tail
+      .then(task)
+      .catch((error: unknown) => {
+        try {
+          this.onError(error);
+        } catch (again) {
+          // The handler failed too; the queue must still move on.
+          console.error(again);
+        }
+      })
+      .finally(() => {
+        this.count -= 1;
+      });
+  }
+}
+
+/**
+ * What a keypress does: text to echo, a line to run, or a cleared pane. A
+ * submitted line carries `echo`, the text that shows it once it runs; it is
+ * empty when the line is on screen already (Q39).
+ */
 export type KeyEffect =
   | { readonly kind: "write"; readonly text: string }
-  | { readonly kind: "submit"; readonly line: string }
+  | { readonly kind: "submit"; readonly line: string; readonly echo: string }
   | { readonly kind: "clear" };
 
 /**
  * Builds a line from what the terminal sends: printable text, Backspace,
  * Enter, Up and Down through history, Ctrl+C to drop the line and Ctrl+L to
  * clear. Other keys, the arrows left and right among them, are ignored, so
- * the cursor is always at the end of the line. Pasted text arrives as one
- * chunk, and each line in it runs in turn.
+ * the cursor is always at the end of the line, and so is every control
+ * character, C1 included, which could otherwise act on the pane (Q38). The
+ * line is echoed by `visible`. Pasted text arrives as one chunk: its first
+ * line is echoed as it arrives, and each later one when it runs, so each
+ * answer sits under its own command (Q39).
  */
 export class LineEditor {
   private line = "";
@@ -236,52 +292,79 @@ export class LineEditor {
     return this.line;
   }
 
+  /** The prompt and the line so far, as the pane shows them. */
+  promptLine(): string {
+    return `${this.prompt}${visible(this.line)}`;
+  }
+
   feed(data: string): KeyEffect[] {
     const effects: KeyEffect[] = [];
     let echo = "";
+    // After a line is submitted, the rest of the chunk waits to run behind
+    // it, so nothing more is echoed now; each later line shows as it runs.
+    let waiting = false;
+    const show = (text: string): void => {
+      if (!waiting) echo += text;
+    };
     const flush = (): void => {
       if (echo !== "") effects.push({ kind: "write", text: echo });
       echo = "";
     };
-    for (let i = 0; i < data.length; i++) {
-      const character = data[i] ?? "";
+    // By code point, so a character outside the BMP is one character.
+    const characters = [...data];
+    for (let i = 0; i < characters.length; i++) {
+      const character = characters[i] ?? "";
       const wasReturn = this.afterReturn;
       this.afterReturn = false;
       if (character === "\u001b") {
         // An escape sequence: ESC [ then parameters, then a final letter.
         let end = i + 1;
-        if (data[end] === "[" || data[end] === "O") end++;
-        while (end < data.length && !/[A-Za-z~]/.test(data[end] ?? "")) end++;
-        const final = data[end];
-        if (final === "A") echo += this.recall(1);
-        if (final === "B") echo += this.recall(-1);
+        if (characters[end] === "[" || characters[end] === "O") end++;
+        while (
+          end < characters.length &&
+          !/[A-Za-z~]/.test(characters[end] ?? "")
+        ) {
+          end++;
+        }
+        const final = characters[end];
+        if (final === "A") show(this.recall(1));
+        if (final === "B") show(this.recall(-1));
         i = end;
       } else if (character === "\r" || character === "\n") {
         // A pasted CRLF is one line break, not two.
         if (character === "\n" && wasReturn) continue;
         this.afterReturn = character === "\r";
-        echo += "\r\n";
-        flush();
-        effects.push({ kind: "submit", line: this.line });
-        this.remember(this.line);
+        const line = this.line;
+        if (waiting) {
+          effects.push({ kind: "submit", line, echo: `${visible(line)}\r\n` });
+        } else {
+          echo += "\r\n";
+          flush();
+          effects.push({ kind: "submit", line, echo: "" });
+        }
+        waiting = true;
+        this.remember(line);
         this.line = "";
       } else if (character === "\u007f" || character === "\b") {
-        if (this.line !== "") {
-          this.line = [...this.line].slice(0, -1).join("");
-          echo += "\b \b";
+        const kept = [...this.line];
+        const last = kept.pop();
+        if (last !== undefined) {
+          this.line = kept.join("");
+          // An escaped character takes more than one cell to erase.
+          show("\b \b".repeat(visible(last).length));
         }
       } else if (character === "\u0003") {
-        echo += `^C\r\n${this.prompt}`;
+        show(`^C\r\n${this.prompt}`);
         this.line = "";
         this.back = 0;
       } else if (character === "\u000c") {
         flush();
         effects.push({ kind: "clear" });
-        echo += this.prompt + this.line;
-      } else if (character >= " ") {
+        show(this.promptLine());
+      } else if (!/\p{Cc}/u.test(character)) {
         this.line += character;
         this.back = 0;
-        echo += character;
+        show(visible(character));
       }
     }
     flush();
@@ -290,13 +373,13 @@ export class LineEditor {
 
   /**
    * Enters `line` as if it were typed, in place of whatever was on the
-   * prompt, and returns the text that shows it; a button uses this to run
-   * its command in the console (T11c).
+   * prompt, and returns the text that shows it when it runs; a button uses
+   * this to run its command in the console (T11c).
    */
   enter(line: string): string {
     this.remember(line);
     this.line = "";
-    return `\r\u001b[K${this.prompt}${line}\r\n`;
+    return `\r\u001b[K${this.prompt}${visible(line)}\r\n`;
   }
 
   private remember(line: string): void {
@@ -317,6 +400,6 @@ export class LineEditor {
       back === 0
         ? this.draft
         : (this.history[this.history.length - back] ?? "");
-    return `\r\u001b[K${this.prompt}${this.line}`;
+    return `\r\u001b[K${this.promptLine()}`;
   }
 }

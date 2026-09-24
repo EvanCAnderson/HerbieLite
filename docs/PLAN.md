@@ -74,19 +74,10 @@ Every question, open or decided, is covered in the README.
 
 ### Open
 
-An open question states its
-current default and the subtask that settles it
-([T2.2](./DECISIONS.md#t2-2)). All those raised by the base and the upgrades
-are settled (below). Open now, from the audit follow-ups (T12):
-
-- **Q38** — Should control characters in text the console echoes be escaped
-  (`\u009b`, as warnings do under T6.11) or stripped? _Default:_ escape. It
-  is one rule with the warnings, and a pasted control character stays
-  visible rather than silently vanishing. _Settle in T12d._
-- **Q39** — When several lines are pasted into the console, should each be
-  echoed as it runs, so each answer sits under its own command, or should
-  the current echo stay and the comment claiming no interleaving be fixed?
-  _Default:_ echo each line as it runs. _Settle in T12e._
+None. Every question raised by the base, the upgrades and the audit
+follow-ups (T12) is settled (below). A new one is written here as a
+numbered question, with its current default and the subtask that settles
+it ([T2.2](./DECISIONS.md#t2-2)).
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -127,6 +118,8 @@ are settled (below). Open now, from the audit follow-ups (T12):
 - [**Q35**](./DECISIONS.md#q35) (T10.28) — `npm run test:e2e` builds the page and tests it; `check` is unchanged.
 - [**Q36**](./DECISIONS.md#q36) (T10.29) — One browser test per thing a person does with the page.
 - [**Q37**](./DECISIONS.md#q37) (T12.2) — A committed entry's decoded escapes may be restored, and nothing else in it changed.
+- [**Q38**](./DECISIONS.md#q38) (T12.12) — A control character the console echoes is escaped, as in a warning.
+- [**Q39**](./DECISIONS.md#q39) (T12.14) — Pasted lines run in turn, each echoed as it runs.
 - [**Q40**](./DECISIONS.md#q40) (T12.11) — A quote holds at most 200 characters, counted as characters.
 
 ## 5. Tooling
@@ -341,7 +334,7 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
   - [x] T11d — A terminal-forward look: dark throughout, monospace
         headings, green and amber accents, the console at the centre
         ([T11.3](./DECISIONS.md#t11-3), [T11.6](./DECISIONS.md#t11-6)).
-- [ ] T12 — Audit follow-ups: what an audit of the whole repository after
+- [x] T12 — Audit follow-ups: what an audit of the whole repository after
       T11 found the docs, a test or the page claiming but not doing
       ([T12.1](./DECISIONS.md#t12-1)). The record is repaired first, then
       the docs are made easier to read ([T12.6](./DECISIONS.md#t12-6),
@@ -389,7 +382,7 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
         kills it. Also fix the stale `reportLines` comment
         (`cli.test.ts:503`), and `code ?? 0` in the process test
         (`cli.test.ts:621`), which reads a signal-killed child as exit 0.
-  - [ ] T12d — Keep control characters out of the console:
+  - [x] T12d — Keep control characters out of the console:
     - `Workspace.list()` checks `isValidName` (Q25), so a stored key the
       workspace would refuse to create is not listed. Today such a name is
       echoed raw on Run, and a U+009B in it wiped the console in a
@@ -404,7 +397,7 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
 
     A test for each path. Settles Q38.
 
-  - [ ] T12e — Make web failures visible:
+  - [x] T12e — Make web failures visible:
     - The console's run queue (`console-panel.ts:141`) survives a throw
       outside `execute`'s `try`; today one such throw stops every later
       command until reload.
@@ -420,7 +413,7 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
 
     Settles Q39.
 
-  - [ ] T12f — Tidy the code:
+  - [x] T12f — Tidy the code:
     - Remove `runFile` (`console.ts:65`), which has had no production
       caller since T11c, and move its tests to `shell.ts`'s `runLine`,
       the path the page actually runs.
@@ -439,7 +432,7 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
         32 and 64 MB; the entry records the timings after. Searching only
         new text proved not enough, so each chunk is searched on its own
         ([T12.10](./DECISIONS.md#t12-10)).
-  - [ ] T12h — Downloads outside Chromium: install Playwright's Firefox and
+  - [x] T12h — Downloads outside Chromium: install Playwright's Firefox and
         WebKit, and check that **Download** saves a file in each, since
         `dom.ts:19` revokes the URL straight after the click. Fix the timing
         if either fails. The browser tests stay Chromium-only (T10.27)

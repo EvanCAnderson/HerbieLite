@@ -163,3 +163,80 @@ test("asks before deleting a workspace file, and keeps it if refused", async ({
   await expect(copy).toHaveCount(0);
   await expect(page.getByText("Deleted input.txt.")).toBeVisible();
 });
+
+test("runs each line of a paste in turn, each answer under its own command", async ({
+  page,
+}) => {
+  await page.locator(".console .xterm").click();
+  // A paste as the browser delivers it, which xterm.js turns into one chunk.
+  await page.locator(".console .xterm-helper-textarea").evaluate((area) => {
+    const data = new DataTransfer();
+    data.setData(
+      "text/plain",
+      "node dist/bin.js --partners Globex examples/input.txt\n" +
+        "node dist/bin.js --partners Hooli examples/input.txt\n",
+    );
+    area.dispatchEvent(
+      new ClipboardEvent("paste", { clipboardData: data, bubbles: true }),
+    );
+  });
+  const shown = consoleText(page);
+  await expect(shown).toContainText("Hooli: Molly (1)");
+  const rows = (await shown.innerText()).split("\n").map((row) => row.trim());
+  const at = (text: string): number =>
+    rows.findIndex((row) => row.includes(text));
+  expect(at("--partners Globex")).toBeLessThan(at("Globex: Chris (2)"));
+  expect(at("Globex: Chris (2)")).toBeLessThan(at("--partners Hooli"));
+  expect(at("--partners Hooli")).toBeLessThan(at("Hooli: Molly (1)"));
+});
+
+test("asks before New file discards unsaved edits, and creates nothing if refused", async ({
+  page,
+}) => {
+  await page.getByRole("button", { name: "Copy to workspace" }).click();
+  await editor(page).fill("Company Initech\n");
+  await page.getByRole("button", { name: "New file…" }).click();
+  const name = page.getByRole("textbox", { name: "New file name" });
+
+  let asked = "";
+  page.once("dialog", (dialog) => {
+    asked = dialog.message();
+    void dialog.dismiss();
+  });
+  await name.fill("other.txt");
+  await name.press("Enter");
+  expect(asked).toBe("Discard your unsaved changes to input.txt?");
+  await expect(fileIn(page, "Workspace", "other.txt")).toHaveCount(0);
+  expect(
+    await page.evaluate(() =>
+      localStorage.getItem("herbie-lite:file:other.txt"),
+    ),
+  ).toBeNull();
+  await expect(editor(page)).toHaveValue("Company Initech\n");
+
+  // Agreeing asks nothing more: the name is still free.
+  const questions: string[] = [];
+  page.on("dialog", (dialog) => {
+    questions.push(dialog.message());
+    void dialog.accept();
+  });
+  await name.press("Enter");
+  await expect(fileIn(page, "Workspace", "other.txt")).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  await expect(editor(page)).toHaveValue("");
+  expect(questions).toEqual(["Discard your unsaved changes to input.txt?"]);
+});
+
+test("downloads the file shown, with its text", async ({ page }) => {
+  const saved = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download" }).click();
+  const download = await saved;
+  expect(download.suggestedFilename()).toBe("input.txt");
+  const path = await download.path();
+  const { readFile } = await import("node:fs/promises");
+  expect(await readFile(path, "utf8")).toMatch(
+    /^Partner Chris\nPartner Molly\n/,
+  );
+});

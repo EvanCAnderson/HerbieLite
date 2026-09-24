@@ -22,6 +22,8 @@ import {
   LineEditor,
   readCommandLine,
   runLine,
+  TaskQueue,
+  visible,
   type Files,
 } from "./shell.js";
 
@@ -96,10 +98,49 @@ export function mountConsole(root: HTMLElement, files: Files): Console {
   );
 
   /**
-   * Runs one line. `override` supplies the file a button ran, so an editor's
-   * unsaved text is what runs, as on screen (T10g).
+   * Resolves once everything written so far is drawn: xterm.js parses a
+   * write later, while `clear()` acts at once.
    */
-  async function execute(line: string, override?: Runnable): Promise<void> {
+  function drawn(): Promise<void> {
+    return new Promise((resolve) => {
+      terminal.write("", resolve);
+    });
+  }
+
+  /** A throw is a bug, not data (T6.1): the pane shows its stack, as Node
+   * would, and the console carries on. */
+  function showBug(error: unknown): void {
+    const stack = error instanceof Error ? (error.stack ?? error.message) : "";
+    terminal.write(`\u001b[31m${visible(stack)}\u001b[0m\n\n`);
+    console.error(error);
+    promptAgain();
+  }
+
+  // Lines run one at a time, in the order entered; a throw anywhere in one
+  // is shown and the next still runs (T12e).
+  const queue = new TaskQueue(showBug);
+
+  /**
+   * The prompt, once a line has run. While more lines wait, the prompt
+   * alone, and the next line shows itself as it runs (Q39); after the last,
+   * with anything typed meanwhile.
+   */
+  function promptAgain(): void {
+    terminal.write(queue.pending > 1 ? PROMPT : editor.promptLine());
+    terminal.scrollToBottom();
+  }
+
+  /**
+   * Runs one line, first writing `echo`, the text that shows it, unless it
+   * is on screen already. `override` supplies the file a button ran, so an
+   * editor's unsaved text is what runs, as on screen (T10g).
+   */
+  async function execute(
+    line: string,
+    echo: string,
+    override?: Runnable,
+  ): Promise<void> {
+    terminal.write(echo);
     const asked = readCommandLine(line);
     switch (asked.kind) {
       case "empty":
@@ -108,6 +149,9 @@ export function mountConsole(root: HTMLElement, files: Files): Console {
         terminal.write(CONSOLE_HELP);
         break;
       case "clear":
+        // A pasted clear follows lines whose output may not be drawn yet,
+        // and clearing first would leave that output on screen (Q39).
+        await drawn();
         terminal.clear();
         break;
       case "refused":
@@ -118,36 +162,19 @@ export function mountConsole(root: HTMLElement, files: Files): Console {
         const read: Files = (file) =>
           override !== undefined && file === path ? override.text : files(file);
         if (override?.unsaved === true) terminal.write(`${UNSAVED_NOTE}\n`);
-        try {
-          const { cat, result } = await runLine(asked, read);
-          terminal.write(cat.map(stderrLine).join("") + output(result));
-        } catch (error) {
-          // A throw is a bug, not data (T6.1): the pane shows its stack, as
-          // Node would, and the console carries on.
-          const stack =
-            error instanceof Error ? (error.stack ?? error.message) : "";
-          terminal.write(`\u001b[31m${stack}\u001b[0m\n\n`);
-          console.error(error);
-        }
+        const { cat, result } = await runLine(asked, read);
+        terminal.write(cat.map(stderrLine).join("") + output(result));
         break;
       }
     }
-    terminal.write(PROMPT + editor.current);
-    terminal.scrollToBottom();
-  }
-
-  // Lines run one at a time, in the order entered, so a paste of several
-  // lines, or quick clicks, cannot interleave their output.
-  let queue: Promise<void> = Promise.resolve();
-  function enqueue(line: string, override?: Runnable): void {
-    queue = queue.then(() => execute(line, override));
+    promptAgain();
   }
 
   function feed(data: string): void {
     for (const effect of editor.feed(data)) {
       if (effect.kind === "write") terminal.write(effect.text);
       else if (effect.kind === "clear") terminal.clear();
-      else enqueue(effect.line);
+      else queue.add(() => execute(effect.line, effect.echo));
     }
   }
   terminal.onData(feed);
@@ -169,8 +196,8 @@ export function mountConsole(root: HTMLElement, files: Files): Console {
   return {
     run(file, query) {
       const command = commandLine(file, query);
-      terminal.write(editor.enter(command));
-      enqueue(command, file);
+      const echo = editor.enter(command);
+      queue.add(() => execute(command, echo, file));
       // The pane may be below the fold, where a run would go unseen.
       pane.scrollIntoView({ behavior: "smooth", block: "nearest" });
     },

@@ -1,12 +1,13 @@
 // What the console does apart from the DOM (T10f): the command a listed file
-// is run with, running it through the same run() the CLI calls (Q28), and
-// turning what it printed into the text the terminal pane shows (Q27).
-// Typed lines are shell.ts (T11c). Tested in vitest; the pane itself is
+// is run with, and turning what a run printed into the text the terminal pane
+// shows (Q27). Running a line, typed or entered by a button, is shell.ts
+// (T11c). Tested in vitest; the pane itself is
 // console-panel.ts (DECISIONS T10.13).
+import { compareNames } from "../src/compare-names.js";
 import { readLines } from "../src/lines.js";
 import { buildNetwork } from "../src/network.js";
 import { parseLine, type SourcedCommand } from "../src/parser.js";
-import { run, type Run } from "../src/run.js";
+import type { Run } from "../src/run.js";
 
 /** A file the console can run: where it is listed, its name, and its text. */
 export interface Runnable {
@@ -56,15 +57,7 @@ export async function companiesIn(text: string): Promise<string[]> {
     const line = parseLine(source);
     if (line.outcome === "command") commands.push(line);
   }
-  return [...buildNetwork(commands).network.companies].sort((a, b) =>
-    a < b ? -1 : a > b ? 1 : 0,
-  );
-}
-
-/** Runs herbie-lite on the file, as `commandLine` shows it. */
-export function runFile(file: Runnable): Promise<Run> {
-  // The whole text as one chunk: the reader splits it as it does a file.
-  return run([pathOf(file)], () => [file.text]);
+  return [...buildNetwork(commands).network.companies].sort(compareNames);
 }
 
 /** SGR sequences for the pane. Only this module's own text carries them. */
@@ -95,7 +88,9 @@ export function stderrLine(text: string): string {
  * stdout and the notes in the order the CLI writes them, stderr in its own
  * colour, then the exit code (Q27). Every line ends `\n`; the pane turns
  * that into a line break. What the program prints needs no escaping here:
- * quoted input is already escaped (T6.11), and names are letters only (Q9).
+ * text it quotes from a file or an argument is escaped already (T6.11, T8.4),
+ * and names are letters only (Q9). Text the console echoes itself, which the
+ * program never saw, is escaped by shell.ts's `visible` (Q38, T12.12).
  */
 export function output(result: Run): string {
   return (

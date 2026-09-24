@@ -2682,6 +2682,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   over one key edited by hand.
 - **Origin:** Q30's default, LLM-suggested, accepted, with the store, keys and limits
   set in T10d: LLM-suggested, accepted.
+- **Superseded in part by** [T12.13](#t12-13) (every failed write
+  reported as `storage-full`: only a full store is; the rest stands).
 
 #### <a id="t10-20"></a>T10.20 — The console comes before the editor
 
@@ -2849,6 +2851,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   T10f.
 - **Superseded in part by** [T11.5](#t11-5) (no input and no query
   options; the console now takes typed herbie-lite commands).
+- **Superseded in part by** [T12.12](#t12-12) (the only escape sequences
+  in the pane being its own: the console's echo is now escaped too).
 
 #### <a id="t10-25"></a><a id="q29"></a>T10.25 — Q29: The editor marks what the CLI would warn about, as discarded or pending
 
@@ -3386,6 +3390,8 @@ Laurie Globex`: the program name, the line number and the name are gone.
   out of T11), and [T10.29](#t10-29) (five tests).
 - **Origin:** LLM-suggested, in T12b (the gaps found by the audit after
   T11).
+- **Superseded in part by** [T12.16](#t12-16) (seven browser tests: there
+  are now ten).
 
 #### <a id="t12-6"></a>T12.6 — A docs readability pass is T12's last subtask
 
@@ -3549,6 +3555,203 @@ Laurie Globex`: the program name, the line number and the name are gone.
     line to count it.
 - **Origin:** Q40's default, LLM-suggested, accepted when T12f was planned.
   The count without allocating: LLM-suggested, in T12f.
+
+#### <a id="t12-12"></a><a id="q38"></a>T12.12 — Q38: What the console echoes is escaped, as a warning is
+
+- **Decision:** Text the console echoes that the program never printed is
+  escaped by `visible` in `shell.ts`. A control, format or separator
+  character other than a space shows in the notation warnings use
+  ([T6.11](#t6-11)), `\u009b`, from the same function in `warnings.ts`,
+  now exported as `escaped`. A backslash stays as typed. This covers:
+  - a typed or pasted line as it is echoed, and a line recalled from
+    history;
+  - the command a button enters, which holds the company field's text;
+  - `cat`'s missing-file line;
+  - the first word of a refused line, and the arguments `npm start` would
+    read itself;
+  - a stack trace shown for a bug.
+
+  Beside it:
+  - `LineEditor` accepts no control character, C1 included (U+0080 to
+    U+009F), so none is typed or pasted into a line. It reads input by
+    code point, so a character outside the BMP is one character, and
+    Backspace erases every cell an escaped character took.
+  - `Workspace.read()` treats a name it would refuse to create (Q25) as
+    absent, so `list()` never lists one and the console never echoes one.
+
+  Each path has a test in `shell.test.ts` or `workspace.test.ts`, except the
+  stack trace, which is written by the pane's own DOM code.
+
+- **Context:** T12d. The audit after T11 stored a workspace key named with
+  U+009B and pressed **Run** in Chromium: the console echoed the name raw,
+  and the terminal took it as the start of a control sequence that cleared
+  the pane. [T10.24](#t10-24) said the only escape sequences in the pane
+  were its own. That held for what the program prints, since quoted input is
+  escaped and names are letters only, but not for what the console itself
+  echoes.
+- **Why:** One notation for the program's stderr and the console's echo
+  means a reader who knows one knows the other. Escaping keeps a pasted
+  control character visible, where stripping it would make the line run as
+  something other than what was pasted, with nothing on screen to say so.
+  Refusing control characters as they are typed stops them at the one place
+  a person can enter them. Escaping the echo covers what arrives another
+  way, such as the company field or a stored name. The backslash stays as
+  typed, unlike in a warning. A warning doubles it so an escape can never be
+  mistaken for text the file held. Here the only escapes come from a
+  button's field or storage, and doubling a backslash someone typed would
+  show them something other than what they typed. Validating names on read
+  rather than only on create closes the stored-key path at its source.
+  **Rejected:**
+  - Stripping control characters, the other half of Q38, which hides them.
+  - Escaping in `console-panel.ts` as text is written, which would reach
+    nothing vitest can test.
+  - Escaping the backslash too, for the reason above.
+- **Supersedes:** [T10.24](#t10-24), in part: its claim that the only escape
+  sequences in the pane are its own because everything the program prints is
+  escaped or letters only. That holds for the program's output; the
+  console's own echo is escaped by this entry.
+- **Origin:** Q38's default (escape), LLM-suggested, accepted when T12d was
+  planned. The backslash left as typed, reading input by code point, and
+  validating names on read: LLM-suggested, in T12d.
+
+#### <a id="t12-13"></a>T12.13 — Web failures are shown, and nothing is created before asking
+
+- **Decision:** Four changes, from T12e:
+  - The console runs lines through a `TaskQueue` in `shell.ts`. A task that
+    throws, anywhere in it, is handed to a handler that shows the stack in
+    the pane and brings the prompt back, and the next task still runs. If
+    the handler throws too, the error is logged and the queue still moves
+    on.
+  - A file chosen with **Open a file…** that cannot be read says so on the
+    status line: `Could not open network.txt: <reason>`, from
+    `describeOpenFailure` in `actions.ts`.
+  - **New file** asks about discarding unsaved edits before it creates
+    anything, and redraws whichever way the user answers. Refused, nothing is
+    created and the name form stays open. Agreed, the file is created and
+    opened, with no second question.
+  - A write that storage refuses is reported as full only when the error
+    says so: `QuotaExceededError`, or Firefox's
+    `NS_ERROR_DOM_QUOTA_REACHED`. Any other refusal is a new outcome,
+    `storage-error`, which gives the browser's reason. The old version is
+    kept either way (Q30).
+- **Context:** T12e, from the audit after T11:
+  - The console's queue was a promise chain with no rejection handler, so
+    one throw outside `execute`'s `try` stopped every later command until
+    reload.
+  - A file that failed to read left an unhandled rejection and no message.
+  - New file created the file, then asked. Keeping your edits left the new
+    file stored but missing from the list.
+  - Every storage failure read as "storage is full".
+- **Why:** Each was a failure the user could not see, or one reported as
+  something else. The queue lives in `shell.ts` so vitest can test it, as
+  [T10.13](#t10-13) keeps logic out of DOM code. New file asks first because
+  a question whose "no" still changes the workspace is not really a
+  question. A storage failure that is not a full store usually means
+  storage is blocked, and advice to free space would not help. The page's
+  own message says only what it knows and passes on the browser's reason.
+  **Rejected:**
+  - A `catch` wrapped around all of `execute`, which also works but leaves
+    the queue safe only while every task remembers its own catch.
+  - Asking after creating and deleting the file again if refused, which
+    briefly changes the workspace another tab can see.
+  - Keeping `storage-full` for every failure with a vaguer message, which
+    loses the distinction that matters.
+- **Supersedes:** [T10.19](#t10-19), in part: a write the storage throws on
+  reported as `storage-full`. The store, its keys, and a refused save keeping
+  the old file stand.
+- **Origin:** LLM-suggested, in T12e (the four failures found by the audit
+  after T11).
+
+#### <a id="t12-14"></a><a id="q39"></a>T12.14 — Q39: Pasted lines run in turn, each shown as it runs
+
+- **Decision:** When a paste holds several lines, the console echoes the
+  first as it arrives and each later one only when it runs. Each answer then
+  sits under its own command, as it would in a terminal. `LineEditor.feed`
+  gives each submitted line an `echo`: empty when the line is already on
+  screen, and otherwise the text to write when it runs. While lines are
+  waiting, the prompt comes back alone between them. After the last one it
+  comes back with anything typed after the final line break. A button's
+  command is echoed the same way, when it runs. A queued `clear` waits for
+  earlier output to be drawn before clearing the pane, because xterm.js
+  draws a write later while `clear()` acts at once.
+- **Context:** T12e. The console echoed a whole paste at once and then ran
+  its lines, so every command printed above every answer. The comment on the
+  queue said pasted lines "cannot interleave their output", which was true
+  of the output and false of the echo. Checking the fix in WebKit showed a
+  pasted `help` then `clear` clearing the pane before `help`'s text was
+  drawn.
+- **Why:** A paste of commands is a script, and a script's output reads
+  best with each command above its own answer. The echo moved rather than
+  the runs, so lines still run one at a time and in order. **Rejected:**
+  - Keeping the single echo and fixing the comment, the other half of Q39,
+    which leaves a paste of five commands as five commands and then five
+    answers to match up.
+  - Refusing a paste of more than one line, which removes the problem and
+    the use.
+- **Origin:** Q39's default, LLM-suggested, accepted when T12e was planned.
+  The `echo` carried by each submitted line, and waiting for the pane before
+  `clear`: LLM-suggested, in T12e.
+
+#### <a id="t12-15"></a>T12.15 — One name comparator, and the console's dead runner removed
+
+- **Decision:**
+  - `compareNames` moves from `report.ts` into `src/compare-names.ts`, its
+    own module like `assert-never.ts`. The report, the workspace's list, the
+    examples' order and the console's company suggestions all use it.
+  - `runFile` is removed from `console.ts`. Its tests move to `shell.ts`'s
+    `runLine`, the path the page runs, and the editor's test that compares
+    marks with the CLI's warnings calls `runLine` too. The byte-order-mark
+    test moves with them and keeps its literal mark, now in
+    `web/shell.test.ts` rather than `web/console.test.ts`, under
+    [T8.3](#t8-3)'s rule.
+  - `help.ts`'s opening comment is rewrapped.
+- **Context:** T12f. Three copies of `(a < b ? -1 : a > b ? 1 : 0)` sat in
+  `web/` beside the report's `compareNames`. Nothing in production had called
+  `runFile` since T11c, when the console became a shell.
+- **Why:** Q14 is one rule, and one function stated once means the page
+  cannot sort differently from the report. Its own module because two
+  layers use it, the reason [T2.3](#t2-3) gave `assertNever` its own.
+  Tests of a function nothing calls prove nothing about the page, so they
+  now run through the path it does call. **Rejected:**
+  - Exporting it from `report.ts`, which would have the page import the
+    report layer for a comparison.
+  - Keeping `runFile` as a convenience for tests, which is dead code
+    kept for its tests.
+- **Origin:** LLM-suggested, in T12f (both found by the audit after T11).
+
+#### <a id="t12-16"></a>T12.16 — Downloads work in Firefox and WebKit; three browser tests added
+
+- **Decision:**
+  - **Download** was checked in Playwright's Firefox 155 and WebKit 26.6,
+    five runs each, with a new browser test that clicks it on
+    `examples/input.txt` and reads the saved file. It saved the right name
+    and text every time, so `dom.ts` still revokes the URL straight after the
+    click. The browser tests stay Chromium-only ([T10.27](#t10-27)), and
+    Firefox and WebKit are not needed to run them.
+  - The browser tests go from seven to ten. The new ones cover pasting
+    several commands ([Q39](#q39)), keeping unsaved edits when New file is
+    refused ([T12.13](#t12-13)), and downloading. The New file test checks
+    storage as well as the list, since the old code stored the file without
+    listing it.
+- **Context:** T12h, from the audit after T11. The audit could not say
+  whether revoking the URL at once cut a download short outside Chromium.
+  The other two tests came with the T12d and T12e fixes, whose DOM wiring
+  only a browser runs.
+- **Why:** The difference T12h looked for was not there, so the timing
+  stays. The download test is kept because nothing else checked that
+  **Download** saves anything, even in Chromium. Every test in all three
+  browsers passed five times, except the paste test in Firefox. Firefox
+  ignores the data on a paste event a script builds, so that test cannot
+  paste there. A real paste was not checked in Firefox, and this is a limit
+  of how the test pastes, not a difference in the page. **Rejected:**
+  - Adding Firefox and WebKit to `playwright.config.js`, which
+    [T10.27](#t10-27) rejected for the download size and run time, with no
+    difference found to justify them.
+  - Delaying the revoke to be safe, a change with nothing to fix.
+- **Supersedes:** [T12.5](#t12-5), in part: seven browser tests. One test
+  per thing a person does, each crossing a boundary, stands.
+- **Origin:** Checking the browsers: planned in T12h. The download test, and
+  the paste and New file tests: LLM-suggested, in T12h and T12e.
 
 ---
 

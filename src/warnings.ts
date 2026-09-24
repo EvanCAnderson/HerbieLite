@@ -50,9 +50,10 @@ function escape(character: string): string {
 
 /**
  * Text made safe to print but not bounded (T8.4): for a file path or an I/O
- * error, where cutting the message short would lose the cause.
+ * error, where cutting the message short would lose the cause. The web
+ * console escapes what it echoes by the same rule (Q38).
  */
-function escaped(text: string): string {
+export function escaped(text: string): string {
   let out = "";
   for (const character of text) out += escape(character);
   return out;

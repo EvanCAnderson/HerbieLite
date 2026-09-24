@@ -2,7 +2,11 @@
 // shown read-only with line numbers, a workspace file in the editor (T10g),
 // and the actions on each. The work on the workspace is in actions.ts; this
 // module only draws and wires it.
-import { addToWorkspace, describeSave } from "./actions.js";
+import {
+  addToWorkspace,
+  describeOpenFailure,
+  describeSave,
+} from "./actions.js";
 import { companiesIn, type Query, type Runnable } from "./console.js";
 import { download, h } from "./dom.js";
 import { Editor } from "./editor-panel.js";
@@ -144,11 +148,21 @@ export function mountFilesPanel(
   }
 
   /**
-   * A new, empty workspace file under the name given. A name already taken
-   * is overwritten only once the user confirms it (Q30); a name the
-   * workspace refuses leaves the form open to correct it (Q25).
+   * A new, empty workspace file under the name given. Unsaved edits in the
+   * editor are given up only once the user agrees, before anything is
+   * created, so keeping them leaves the workspace as it was (T12e). A name
+   * already taken is overwritten only once the user confirms it (Q30); a
+   * name the workspace refuses leaves the form open to correct it (Q25).
    */
   function createFile(name: string): void {
+    if (
+      editor?.dirty === true &&
+      !confirm(`Discard your unsaved changes to ${editor.name}?`)
+    ) {
+      render();
+      nameInput.focus();
+      return;
+    }
     let result = workspace.create(name, "");
     if (
       result.outcome === "exists" &&
@@ -160,9 +174,10 @@ export function mountFilesPanel(
     }
     status = describeSave(result, name);
     if (result.outcome === "saved") {
-      if (!select({ source: "workspace", name })) return;
-      // An overwritten file is a new file, whatever the editor held.
+      // The editor's edits were given up above, and an overwritten file is
+      // a new file, whatever the editor held.
       editor = undefined;
+      selection = { source: "workspace", name };
       naming = false;
     }
     render();
@@ -176,14 +191,22 @@ export function mountFilesPanel(
     const file = picker.files?.[0];
     picker.value = "";
     if (file === undefined) return;
-    void file.text().then((text) => {
-      const result = addToWorkspace(workspace, file.name, text);
-      status = describeSave(result, file.name);
-      if (result.outcome === "saved") {
-        select({ source: "workspace", name: result.file.name });
-      }
-      render();
-    });
+    // A file moved or deleted after it was chosen cannot be read; the
+    // status line says so rather than nothing happening (T12e).
+    file.text().then(
+      (text) => {
+        const result = addToWorkspace(workspace, file.name, text);
+        status = describeSave(result, file.name);
+        if (result.outcome === "saved") {
+          select({ source: "workspace", name: result.file.name });
+        }
+        render();
+      },
+      (error: unknown) => {
+        status = describeOpenFailure(file.name, error);
+        render();
+      },
+    );
   });
 
   function textOf(chosen: Selection): string | undefined {

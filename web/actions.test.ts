@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { addToWorkspace, describeSave } from "./actions.js";
+import {
+  addToWorkspace,
+  describeOpenFailure,
+  describeSave,
+} from "./actions.js";
 import { MemoryStore, Workspace, type SaveResult } from "./workspace.js";
 
 describe("adding a file from elsewhere (Q25)", () => {
@@ -58,5 +62,28 @@ describe("the status line", () => {
     expect(describeSave({ outcome: "storage-full" }, "a.txt")).toBe(
       "The browser's storage is full, so a.txt was not saved; download it instead.",
     );
+  });
+
+  it("gives the reason for any other storage failure (T12e)", () => {
+    expect(
+      describeSave(
+        { outcome: "storage-error", reason: "The operation is insecure." },
+        "a.txt",
+      ),
+    ).toBe(
+      "The browser would not save a.txt (The operation is insecure.); download it instead.",
+    );
+  });
+
+  it("says a file from disk could not be read, and why (T12e)", () => {
+    expect(
+      describeOpenFailure(
+        "network.txt",
+        new DOMException(
+          "The requested file could not be read.",
+          "NotReadableError",
+        ),
+      ),
+    ).toBe("Could not open network.txt: The requested file could not be read.");
   });
 });

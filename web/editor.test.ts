@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { runFile } from "./console.js";
 import { checkText, summary } from "./editor.js";
 import { EXAMPLES } from "./examples.js";
+import { runLine } from "./shell.js";
 
 describe("checking a file as it is edited (Q29)", () => {
   it("marks nothing in the brief's example", async () => {
@@ -60,7 +60,11 @@ describe("checking a file as it is edited (Q29)", () => {
   it("marks exactly the lines the CLI warns about, in its words, for every example", async () => {
     for (const [name, text] of EXAMPLES) {
       const marks = await checkText(text);
-      const { stderr } = await runFile({ source: "example", name, text });
+      const { result } = await runLine(
+        { args: [`examples/${name}`], piped: undefined },
+        () => text,
+      );
+      const { stderr } = result;
       expect(
         marks.map(
           (mark) =>

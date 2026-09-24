@@ -1,6 +1,7 @@
 // The web UI's workspace: files the user creates, edits and deletes, kept in
 // the browser's storage (DECISIONS T10.16). No DOM here, so it is tested in
 // vitest with an in-memory store (T10.13); the page passes localStorage.
+import { compareNames } from "../src/compare-names.js";
 
 /** The part of the Web Storage API the workspace uses. */
 export interface Store {
@@ -14,11 +15,13 @@ export interface Store {
 /**
  * A store held in memory, for a browser that refuses `localStorage`, as some
  * private modes do: the page still works, and forgets its files on reload.
- * The tests use it too; `full` makes every write throw, as a full store does.
+ * The tests use it too: `full` makes every write throw as a full store does,
+ * and `broken` makes it throw some other error.
  */
 export class MemoryStore implements Store {
   private readonly items = new Map<string, string>();
   full = false;
+  broken = false;
   get length(): number {
     return this.items.size;
   }
@@ -29,7 +32,13 @@ export class MemoryStore implements Store {
     return this.items.get(key) ?? null;
   }
   setItem(key: string, value: string): void {
-    if (this.full) throw new Error("storage is full");
+    if (this.full) {
+      throw new DOMException(
+        "The quota has been exceeded.",
+        "QuotaExceededError",
+      );
+    }
+    if (this.broken) throw new Error("The operation is insecure.");
     this.items.set(key, value);
   }
   removeItem(key: string): void {
@@ -53,7 +62,9 @@ export type SaveResult =
   | { readonly outcome: "missing" }
   | { readonly outcome: "stale"; readonly current: WorkspaceFile }
   | { readonly outcome: "too-large" }
-  | { readonly outcome: "storage-full" };
+  | { readonly outcome: "storage-full" }
+  /** The storage refused the write for another reason, given here (T12e). */
+  | { readonly outcome: "storage-error"; readonly reason: string };
 
 /** Letters, digits, `_` and `-`, then `.txt`, as a download is named (Q25). */
 const NAME = /^[A-Za-z0-9_-]{1,100}\.txt$/;
@@ -86,6 +97,18 @@ export function suggestName(raw: string, taken: ReadonlySet<string>): string {
   return name;
 }
 
+/**
+ * Whether the storage threw because it is full: Firefox names the error
+ * apart from every other browser's QuotaExceededError.
+ */
+function isQuotaError(error: unknown): boolean {
+  return (
+    error instanceof DOMException &&
+    (error.name === "QuotaExceededError" ||
+      error.name === "NS_ERROR_DOM_QUOTA_REACHED")
+  );
+}
+
 function parse(name: string, value: string | null): WorkspaceFile | undefined {
   if (value === null) return undefined;
   try {
@@ -109,7 +132,11 @@ function parse(name: string, value: string | null): WorkspaceFile | undefined {
 export class Workspace {
   constructor(private readonly store: Store) {}
 
-  /** Every workspace file's name, in code-unit order (Q14). */
+  /**
+   * Every workspace file's name, in code-unit order (Q14). A stored name the
+   * workspace would refuse to create is not listed, so nothing the console
+   * echoes as a file's name can hold a control character (Q25, T12.12).
+   */
   list(): string[] {
     const names: string[] = [];
     for (let i = 0; i < this.store.length; i++) {
@@ -118,15 +145,17 @@ export class Workspace {
       const name = key.slice(PREFIX.length);
       if (this.read(name) !== undefined) names.push(name);
     }
-    return names.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    return names.sort(compareNames);
   }
 
   /**
    * One file, or `undefined` if there is none. A stored value that does not
    * parse as a workspace file is treated as absent rather than thrown on:
    * only this module writes these keys, so such a value was edited by hand.
+   * An invalid name reads as absent for the same reason (Q25).
    */
   read(name: string): WorkspaceFile | undefined {
+    if (!isValidName(name)) return undefined;
     return parse(name, this.store.getItem(PREFIX + name));
   }
 
@@ -171,8 +200,10 @@ export class Workspace {
     if (text.length > MAX_LENGTH) return { outcome: "too-large" };
     try {
       this.store.setItem(PREFIX + name, JSON.stringify({ text, version }));
-    } catch {
-      return { outcome: "storage-full" };
+    } catch (error) {
+      if (isQuotaError(error)) return { outcome: "storage-full" };
+      const reason = error instanceof Error ? error.message : String(error);
+      return { outcome: "storage-error", reason };
     }
     return { outcome: "saved", file: { name, text, version } };
   }

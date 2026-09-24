@@ -60,13 +60,15 @@ npx playwright install chromium   # once: downloads the browser, about 94MB
 npm run test:e2e
 ```
 
-Builds the web page and runs seven tests that use it in a real browser. They
-cover opening the page, running a file, typing a command, asking a query with
-the buttons, editing and saving, naming a new file and watching its marks,
-and deleting ([T10.29](docs/DECISIONS.md#t10-29),
-[T12.5](docs/DECISIONS.md#t12-5)). They are not part of `check`, so `check`
-still needs no browser. `check` does type-check and lint them
-([T10.28](docs/DECISIONS.md#t10-28)).
+Builds the web page and runs ten tests that use it in a real browser. They
+cover opening the page, running a file, typing a command, pasting several
+commands, asking a query with the buttons, editing and saving, naming a new
+file and watching its marks, keeping unsaved edits when starting a new file,
+deleting, and downloading ([T10.29](docs/DECISIONS.md#t10-29),
+[T12.16](docs/DECISIONS.md#t12-16)). They run in Chromium. Downloading was
+also checked in Firefox and WebKit, where it works the same. They are not
+part of `check`, so `check` still needs no browser. `check` does type-check
+and lint them ([T10.28](docs/DECISIONS.md#t10-28)).
 
 ### Running it
 
@@ -167,7 +169,12 @@ parts:
   **--partners** and **--employees** types a query. Each run prints what the
   command line would, then the exit code. It is the program's own code, not a
   copy, so the output matches line for line
-  ([T10.23](docs/DECISIONS.md#t10-23)).
+  ([T10.23](docs/DECISIONS.md#t10-23)). Pasted lines run one after another,
+  each shown as it runs, so each answer sits under its own command
+  ([Q39](docs/DECISIONS.md#q39)). A control character is never typed into
+  the console. Anything the console echoes that could hold one, such as a
+  company typed in the field, shows it escaped, as a warning would
+  ([Q38](docs/DECISIONS.md#q38)).
 - **Editor.** A workspace file opens as text, with the four commands beside
   it, or below it on a narrow screen. As you type, each line the program would
   warn about is marked. It is _discarded_ if it would be thrown away as it
@@ -615,6 +622,8 @@ input:
 | Q34 | The browser tests use Playwright on Chromium                                     | [T10.27](docs/DECISIONS.md#t10-27) |
 | Q35 | The browser tests have their own script, outside `check`                         | [T10.28](docs/DECISIONS.md#t10-28) |
 | Q36 | One browser test per thing a person does with the page                           | [T10.29](docs/DECISIONS.md#t10-29) |
+| Q38 | A control character the console echoes is escaped, as in a warning               | [T12.12](docs/DECISIONS.md#t12-12) |
+| Q39 | Pasted lines run in turn, each shown as it runs                                  | [T12.14](docs/DECISIONS.md#t12-14) |
 
 † The brief was open to more than one reading here.
 

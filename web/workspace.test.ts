@@ -39,6 +39,17 @@ describe("creating and reading files", () => {
     expect(store.getItem("theme")).toBe("dark");
   });
 
+  it("neither lists nor reads a stored name it would refuse to create (Q25)", () => {
+    const { store, files } = workspace();
+    const value = JSON.stringify({ text: "Company ACME\n", version: 1 });
+    store.setItem("herbie-lite:file:\u009b2J.txt", value);
+    store.setItem("herbie-lite:file:a b.txt", value);
+    files.create("ok.txt", "");
+    expect(files.list()).toEqual(["ok.txt"]);
+    expect(files.read("\u009b2J.txt")).toBeUndefined();
+    expect(files.read("a b.txt")).toBeUndefined();
+  });
+
   it("treats a value damaged by hand as absent", () => {
     const { store, files } = workspace();
     store.setItem("herbie-lite:file:a.txt", "not json");
@@ -150,6 +161,32 @@ describe("a save the storage cannot hold (Q30)", () => {
       text: "one",
       version: 1,
     });
+  });
+});
+
+describe("a save the storage refuses for another reason (T12e)", () => {
+  it("reports the reason, not a full store, keeping the old version", () => {
+    const { store, files } = workspace();
+    files.create("a.txt", "one");
+    store.broken = true;
+    expect(files.save("a.txt", "two", 1)).toEqual({
+      outcome: "storage-error",
+      reason: "The operation is insecure.",
+    });
+    expect(files.read("a.txt")?.text).toBe("one");
+  });
+
+  it("knows Firefox's name for a full store", () => {
+    const files = new Workspace({
+      length: 0,
+      key: () => null,
+      getItem: () => null,
+      removeItem: () => undefined,
+      setItem: () => {
+        throw new DOMException("full", "NS_ERROR_DOM_QUOTA_REACHED");
+      },
+    });
+    expect(files.create("a.txt", "")).toEqual({ outcome: "storage-full" });
   });
 });
 

@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { OPENING } from "../src/help.js";
+import type { Run } from "../src/run.js";
 import { EXAMPLES } from "./examples.js";
 import {
   CONSOLE_HELP,
@@ -7,6 +8,8 @@ import {
   pageFiles,
   readCommandLine,
   runLine,
+  TaskQueue,
+  visible,
   words,
   type Files,
 } from "./shell.js";
@@ -95,6 +98,18 @@ describe("what a typed line asks for (T11.5)", () => {
     });
   });
 
+  it("escapes a control character in a refusal (Q38)", () => {
+    expect(readCommandLine("\u009b2J")).toEqual({
+      kind: "refused",
+      message:
+        "\\u009b2J: not available here; this console runs herbie-lite only (type help)",
+    });
+    expect(readCommandLine("npm start \u001b[31m")).toMatchObject({
+      kind: "refused",
+      message: expect.stringContaining("npm start -- \\u001b[31m") as string,
+    });
+  });
+
   it("refuses every other program", () => {
     for (const line of [
       "ls",
@@ -118,6 +133,38 @@ describe("running an accepted line (Q28)", () => {
     );
     expect(cat).toEqual([]);
     expect(result).toEqual({ stderr: [], stdout: REPORT, notes: [], code: 0 });
+  });
+
+  /** Runs the text as the workspace file draft.txt, by name. */
+  async function runText(text: string): Promise<Run> {
+    const { result } = await runLine(
+      { args: ["draft.txt"], piped: undefined },
+      (path) => (path === "draft.txt" ? text : undefined),
+    );
+    return result;
+  }
+
+  it("warns about a bad line and still prints the report (Q7)", async () => {
+    const result = await runText("Company ACME\nPartner chris9\n");
+    expect(result.stderr).toEqual([
+      'herbie-lite: line 2: names must be letters only; expected "Partner <Name>"; discarded: Partner chris9',
+    ]);
+    expect(result.stdout).toBe("ACME: No current relationship\n");
+    expect(result.code).toBe(0);
+  });
+
+  it("splits lines as the CLI's reader does, byte-order mark and all (Q16)", async () => {
+    const result = await runText("﻿Company ACME\r\nCompany Hooli");
+    expect(result.stderr).toEqual([]);
+    expect(result.stdout).toBe(
+      "ACME: No current relationship\nHooli: No current relationship\n",
+    );
+  });
+
+  it("returns a tie's note separately, to follow the report (Q21)", async () => {
+    const result = await runText(EXAMPLES.get("ties.txt") ?? "");
+    expect(result.notes.length).toBeGreaterThan(0);
+    expect(result.notes[0]).toMatch(/^herbie-lite: \w+ is a tie between /);
   });
 
   it("answers a query about a workspace file", async () => {
@@ -154,6 +201,11 @@ describe("running an accepted line (Q28)", () => {
     );
     expect(cat).toEqual(["cat: nope.txt: No such file or directory"]);
     expect(result).toEqual({ stderr: [], stdout: "", notes: [], code: 0 });
+  });
+
+  it("escapes a control character in cat's complaint (Q38)", async () => {
+    const { cat } = await runLine({ args: [], piped: "a\u009b.txt" }, files);
+    expect(cat).toEqual(["cat: a\\u009b.txt: No such file or directory"]);
   });
 
   it("prints the opening with no file, since the console is a terminal (Q20)", async () => {
@@ -196,7 +248,7 @@ describe("building a line from keys", () => {
     expect(editor.feed("help")).toEqual([{ kind: "write", text: "help" }]);
     expect(editor.feed("\r")).toEqual([
       { kind: "write", text: "\r\n" },
-      { kind: "submit", line: "help" },
+      { kind: "submit", line: "help", echo: "" },
     ]);
     expect(editor.current).toBe("");
   });
@@ -212,10 +264,20 @@ describe("building a line from keys", () => {
     const submitted = editor
       .feed("help\r\nclear\n")
       .filter((effect) => effect.kind === "submit");
-    expect(submitted).toEqual([
-      { kind: "submit", line: "help" },
-      { kind: "submit", line: "clear" },
+    expect(submitted.map((effect) => effect.line)).toEqual(["help", "clear"]);
+  });
+
+  it("echoes a paste's first line now, and each later one as it runs (Q39)", () => {
+    const editor = new LineEditor("$ ");
+    expect(editor.feed("help\nclear\nnode\u007fde\u0003\rpart")).toEqual([
+      { kind: "write", text: "help\r\n" },
+      { kind: "submit", line: "help", echo: "" },
+      { kind: "submit", line: "clear", echo: "clear\r\n" },
+      { kind: "submit", line: "", echo: "\r\n" },
     ]);
+    // What follows the last line break is shown with the prompt, once the
+    // lines before it have run.
+    expect(editor.promptLine()).toBe("$ part");
   });
 
   it("recalls earlier lines with Up and returns to the draft with Down", () => {
@@ -250,6 +312,47 @@ describe("building a line from keys", () => {
     expect(editor.current).toBe("node dist/bin.js a.txt");
   });
 
+  it("refuses every control character, C1 included (Q38)", () => {
+    const editor = new LineEditor("$ ");
+    expect(editor.feed("a\u009b2J\u0007\u0000\u0085b")).toEqual([
+      { kind: "write", text: "a2Jb" },
+    ]);
+    expect(editor.current).toBe("a2Jb");
+  });
+
+  it("echoes a format or separator character escaped, and erases it whole (Q38)", () => {
+    const editor = new LineEditor("$ ");
+    expect(editor.feed("a\u00a0b\u202e")).toEqual([
+      { kind: "write", text: "a\\u00a0b\\u202e" },
+    ]);
+    editor.feed("\u007f");
+    expect(editor.feed("\u007f")).toEqual([{ kind: "write", text: "\b \b" }]);
+    expect(editor.feed("\u007f")).toEqual([
+      { kind: "write", text: "\b \b".repeat(6) },
+    ]);
+    expect(editor.current).toBe("a");
+  });
+
+  it("keeps a character outside the BMP whole, and shows it as typed", () => {
+    const editor = new LineEditor("$ ");
+    expect(editor.feed("\u{1f600}")).toEqual([
+      { kind: "write", text: "\u{1f600}" },
+    ]);
+    editor.feed("\u007f");
+    expect(editor.current).toBe("");
+  });
+
+  it("escapes a control character in a line a button enters, and when recalled (Q38)", () => {
+    const editor = new LineEditor("$ ");
+    const line = "node dist/bin.js --partners '\u009b2J' a.txt";
+    const shown = "node dist/bin.js --partners '\\u009b2J' a.txt";
+    expect(editor.enter(line)).toBe(`\r\u001b[K$ ${shown}\r\n`);
+    expect(editor.feed("\u001b[A")).toEqual([
+      { kind: "write", text: `\r\u001b[K$ ${shown}` },
+    ]);
+    expect(editor.current).toBe(line);
+  });
+
   it("asks for a cleared pane on Ctrl+L, keeping the line", () => {
     const editor = new LineEditor("$ ");
     editor.feed("abc");
@@ -257,5 +360,85 @@ describe("building a line from keys", () => {
       { kind: "clear" },
       { kind: "write", text: "$ abc" },
     ]);
+  });
+});
+
+describe("text the console echoes (Q38)", () => {
+  it("shows controls, format and separator characters as the warnings do", () => {
+    expect(visible("a\u009b\u001b[2J\u00a0\u200b b")).toBe(
+      "a\\u009b\\u001b[2J\\u00a0\\u200b b",
+    );
+  });
+
+  it("leaves a backslash and visible non-ASCII as typed", () => {
+    expect(visible("a\\b Zo\u00eb")).toBe("a\\b Zo\u00eb");
+  });
+});
+
+describe("running lines in turn (T12e)", () => {
+  it("runs each task after the last has finished", async () => {
+    const order: string[] = [];
+    const queue = new TaskQueue(() => undefined);
+    let finish = (): void => undefined;
+    queue.add(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = () => {
+            order.push("first");
+            resolve();
+          };
+        }),
+    );
+    queue.add(() => {
+      order.push("second");
+    });
+    expect(queue.pending).toBe(2);
+    await Promise.resolve();
+    finish();
+    await vi.waitFor(() => {
+      expect(queue.pending).toBe(0);
+    });
+    expect(order).toEqual(["first", "second"]);
+  });
+
+  it("hands a throw to its handler, and still runs the tasks after it", async () => {
+    const errors: unknown[] = [];
+    const ran: string[] = [];
+    const queue = new TaskQueue((error) => errors.push(error));
+    const bug = new Error("bug");
+    queue.add(() => {
+      throw bug;
+    });
+    queue.add(() => Promise.reject(bug));
+    queue.add(() => {
+      ran.push("after");
+    });
+    await vi.waitFor(() => {
+      expect(queue.pending).toBe(0);
+    });
+    expect(errors).toEqual([bug, bug]);
+    expect(ran).toEqual(["after"]);
+  });
+
+  it("still moves on when the handler itself throws", async () => {
+    const quiet = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const ran: string[] = [];
+    const queue = new TaskQueue(() => {
+      throw new Error("handler");
+    });
+    queue.add(() => {
+      throw new Error("bug");
+    });
+    queue.add(() => {
+      ran.push("after");
+    });
+    await vi.waitFor(() => {
+      expect(queue.pending).toBe(0);
+    });
+    expect(ran).toEqual(["after"]);
+    expect(quiet).toHaveBeenCalledOnce();
+    quiet.mockRestore();
   });
 });

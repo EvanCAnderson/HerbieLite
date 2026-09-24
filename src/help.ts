@@ -1,8 +1,8 @@
 // The grammar as text for a person to read: each command's shape, the usage
-// line, `--help`, and the opening shown when no file is given. A helper of the cli layer, like warnings.ts (DECISIONS
-// T6.5). Every shape is built from COMMAND_SYNTAX and the contact types from
-// CONTACT_TYPES, so the help cannot describe a grammar the parser does not
-// accept (Q18).
+// line, `--help`, and the opening shown when no file is given. A helper of
+// the cli layer, like warnings.ts (DECISIONS T6.5). Every shape is built from
+// COMMAND_SYNTAX and the contact types from CONTACT_TYPES, so the help cannot
+// describe a grammar the parser does not accept (Q18).
 import { COMMAND_SYNTAX, CONTACT_TYPES, type CommandKind } from "./parser.js";
 
 /**

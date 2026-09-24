@@ -16,6 +16,15 @@ export function addToWorkspace(
   return workspace.create(suggestName(from, new Set(workspace.list())), text);
 }
 
+/**
+ * One sentence for the status line when a file chosen from disk could not be
+ * read, as happens when it is moved or deleted after it was chosen (T12e).
+ */
+export function describeOpenFailure(name: string, error: unknown): string {
+  const reason = error instanceof Error ? error.message : String(error);
+  return `Could not open ${name}: ${reason}`;
+}
+
 /** One sentence for the status line: what a save did, or why it did not. */
 export function describeSave(result: SaveResult, name: string): string {
   switch (result.outcome) {
@@ -33,6 +42,8 @@ export function describeSave(result: SaveResult, name: string): string {
       return `${name} is too large for the workspace.`;
     case "storage-full":
       return `The browser's storage is full, so ${name} was not saved; download it instead.`;
+    case "storage-error":
+      return `The browser would not save ${name} (${result.reason}); download it instead.`;
     default:
       return assertNever(result);
   }
