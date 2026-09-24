@@ -87,10 +87,6 @@ are settled (below). Open now, from the audit follow-ups (T12):
   echoed as it runs, so each answer sits under its own command, or should
   the current echo stay and the comment claiming no interleaving be fixed?
   _Default:_ echo each line as it runs. _Settle in T12e._
-- **Q40** — Should the quote cap be exactly 200 characters, with
-  "(N characters)" counting characters rather than UTF-16 units, or should
-  the docs describe today's soft cap instead? _Default:_ change the code to
-  match the docs. _Settle in T12f._
 
 ### Decided (full text in [DECISIONS](./DECISIONS.md))
 
@@ -131,6 +127,7 @@ are settled (below). Open now, from the audit follow-ups (T12):
 - [**Q35**](./DECISIONS.md#q35) (T10.28) — `npm run test:e2e` builds the page and tests it; `check` is unchanged.
 - [**Q36**](./DECISIONS.md#q36) (T10.29) — One browser test per thing a person does with the page.
 - [**Q37**](./DECISIONS.md#q37) (T12.2) — A committed entry's decoded escapes may be restored, and nothing else in it changed.
+- [**Q40**](./DECISIONS.md#q40) (T12.11) — A quote holds at most 200 characters, counted as characters.
 
 ## 5. Tooling
 
@@ -350,7 +347,8 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
       the docs are made easier to read ([T12.6](./DECISIONS.md#t12-6),
       [T12.7](./DECISIONS.md#t12-7)), then the code under them is fixed.
       Running the gates on every push is [U15](./UPGRADES.md#u15), not part
-      of T12.
+      of T12. T12c–T12h were built together and go in two commits,
+      the program and then the page ([T12.9](./DECISIONS.md#t12-9)).
   - [x] T12a — Repair the decision log's decoded escapes. In T6.11, T8.3
         and T8.4 the escape notation was written as the characters it
         names (DECISIONS lines 1245, 1277–1279, 1642, 1654, 1661: a
@@ -381,7 +379,7 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
     - PLAN §8 counts 3 tests for Q2; there are 4.
     - T8.3's list of literal byte-order marks misses
       `web/console.test.ts:82` and `web/editor.test.ts:76`.
-  - [ ] T12c — Make the T6.12 test able to fail. `cli.test.ts` › "lets any
+  - [x] T12c — Make the T6.12 test able to fail. `cli.test.ts` › "lets any
         other throw from inside the read loop propagate" no longer reaches
         the rethrow at `run.ts:169`: since T9.13 its throw comes from
         `main`'s stderr write, after `run()` returns. Deleting the rethrow
@@ -435,10 +433,12 @@ natural commit boundary. Commits still use the `T<n>:` prefix.
 
     Settles Q40.
 
-  - [ ] T12g — Reader cost on one very long line: `readLines` looks for
+  - [x] T12g — Reader cost on one very long line: `readLines` looks for
         `\n` only in text it has not yet searched (`lines.ts:47`). Before
         the fix a single line took 0.14, 0.42, 1.46 and 4.38 s at 8, 16,
-        32 and 64 MB; the entry records the timings after.
+        32 and 64 MB; the entry records the timings after. Searching only
+        new text proved not enough, so each chunk is searched on its own
+        ([T12.10](./DECISIONS.md#t12-10)).
   - [ ] T12h — Downloads outside Chromium: install Playwright's Firefox and
         WebKit, and check that **Download** saves a file in each, since
         `dom.ts:19` revokes the URL straight after the click. Fix the timing

@@ -3238,6 +3238,9 @@ Laurie Globex`: the program name, the line number and the name are gone.
 - **Origin:** Turning the audit's findings into planned work: Mine. The
   subtasks, their order, the questions and their defaults, and CI as U15:
   LLM-suggested.
+- **Superseded in part by** [T12.9](#t12-9) (each subtask as one commit:
+  T12c–T12h go in two, the program and then the page; the subtasks and their
+  order stand).
 
 #### <a id="t12-2"></a><a id="q37"></a>T12.2 — Q37: A committed entry's decoded escapes may be restored
 
@@ -3438,6 +3441,114 @@ Laurie Globex`: the program name, the line number and the name are gone.
   that T12c–T12h write their doc changes to the same standard: LLM-suggested.
   Keeping UPGRADES' original text and changing only its order: Mine, after
   the LLM pointed out that the first version of the pass had reworded it.
+
+#### <a id="t12-8"></a>T12.8 — The T6.12 test throws from a mocked parser
+
+- **Decision:** The test that a bug inside the read loop propagates
+  ([T6.12](#t6-12)) makes `parseLine` throw, through `vi.mock` of
+  `./parser.js` in `cli.test.ts`. The mock calls the real parser unless a
+  test sets a fault, and the one test that does clears it in a `finally`.
+  The test asserts that `main` rejects with the thrown error and that
+  stderr is empty, so no `cannot read` line appears. `run` is unchanged.
+  Deleting the rethrow in `run.ts` now fails this test, and no other.
+- **Context:** T12c. Since [T9.13](#t9-13), warnings are written by `main`
+  after `run` returns, so the old test's throw came from outside the loop.
+  With the rethrow deleted, every test stayed green.
+- **Why:** The parser is the code the loop actually calls on every line, so
+  a throw from it is the case T6.12 is about. A mock keeps `run`'s signature
+  the one the CLI and the web console share ([T10.23](#t10-23)). This is
+  the first mock in the suite, and it stays in the one file that needs it.
+  **Rejected:**
+  - Passing the parser into `run` as a parameter. That changes a shared
+    signature so that one test can reach it.
+  - Throwing from `open`'s stream. Those errors become `ReadError`, which is
+    the case the catch is meant to handle.
+
+- **Origin:** LLM-suggested, in T12c (the mocked parser was named in the T12
+  plan).
+
+#### <a id="t12-9"></a>T12.9 — T12c to T12h go in two commits: the program, then the page
+
+- **Decision:** T12c through T12h are built together and committed as two
+  `T12:` commits, not one commit per subtask:
+  1. The program: T12c's test (T12.8), T12g's reader (T12.10) and Q40's
+     quote cap (T12.11), all in `src/`.
+  2. The page: T12d's escaping (T12.12), T12e's failures and pastes (T12.13,
+     T12.14), the rest of T12f (T12.15) and T12h's downloads (T12.16).
+
+  Each entry sits wholly in one commit, and each commit passes `check`.
+
+- **Context:** After T12c was built and before it was committed, with
+  T12d–T12h still to do. [T12.1](#t12-1) planned one commit per subtask.
+  All six were first built as one change.
+- **Why:** The page's subtasks are small and share files. Escaping, paste
+  handling and the run queue all live in `shell.ts` and `console-panel.ts`,
+  and the new browser tests cover several of them at once. Separate commits
+  would split single functions across commits that each need the others to
+  read well. The program's subtasks share none of that code, and a reader
+  of the command-line program's history should not need to read past the
+  page to find them. Two commits keep that line, and the entries keep each
+  subtask's reasoning apart. **Rejected:**
+  - One commit per subtask, as T12.1 planned, which splits single functions
+    in the page across commits.
+  - One commit for all six, which mixes changes to the program with changes
+    to the page.
+  - T12c alone, then the rest, which leaves the reader and the quote cap
+    among the page's changes.
+- **Supersedes:** [T12.1](#t12-1), in part: each subtask as one commit. The
+  subtasks, their order and their questions stand.
+- **Origin:** Building them together, then splitting into two commits: Mine.
+  The line between the program and the page: LLM-suggested, accepted.
+
+#### <a id="t12-10"></a>T12.10 — The reader searches each chunk once
+
+- **Decision:** `readLines` searches each chunk for `\n` on its own. The
+  pieces of an unfinished line are held in an array and joined once when the
+  line ends. It no longer appends every chunk to one string and searches
+  that string again. What it yields is unchanged, and a test joins one line
+  from a thousand chunks, empty ones among them.
+- **Context:** T12g. The audit after T11 timed one line of 8, 16, 32 and
+  64 MB at 0.14, 0.42, 1.46 and 4.38 s, which is quadratic. Measured here
+  before the fix, reading only, in 64 KB chunks: 0.076, 0.326, 1.289 and
+  5.248 s. A first fix that searched only the unsearched part of the string
+  gave 0.066, 0.267, 1.093 and 4.439 s. The cost was not the search:
+  appending builds a rope, and each search flattened all of it. After the
+  fix: 0.001, 0.002, 0.004 and 0.009 s. The whole program on a 64 MB line
+  now takes 0.32 s, startup included.
+- **Why:** A file of one enormous line is the case [T6.11](#t6-11) bounds
+  for the warning, and the reader should not undo that by taking seconds to
+  find the line's end. Linear is what a streaming reader promises.
+  **Rejected:**
+  - Searching from where the last search stopped, the fix PLAN described,
+    which measured as still quadratic, for the reason above.
+  - Capping line length and refusing longer lines, a new rule for input
+    the program can already handle.
+- **Origin:** LLM-suggested, in T12g (the cost found by the audit after
+  T11). That searching from the last position was not enough was found by
+  measuring it.
+
+#### <a id="t12-11"></a><a id="q40"></a>T12.11 — Q40: A quote holds at most 200 characters, counted as characters
+
+- **Decision:** A warning's quote holds at most 200 characters of output.
+  An escape that would pass the limit is left out whole. The count in
+  `... (N characters)` is in characters, a surrogate pair counting as one,
+  not UTF-16 units. A character left as typed counts as one whatever its
+  UTF-16 length. A line of exactly 200 characters of output is quoted whole.
+- **Context:** T12f. [T6.11](#t6-11) and the README say quotes are capped at
+  200 characters, but the loop stopped only once 200 was reached, so a quote
+  could run to 209. The count used `text.length`, so a line of emoji
+  reported about twice its length.
+- **Why:** The docs describe a rule a reader can check, and the code should
+  keep it. Q40's alternative, rewording the docs to describe a soft cap, is
+  harder to state and to test. Counting characters matches what a person
+  counts and what the cap itself counts. The count takes one pass over the
+  line with nothing allocated. The line is still escaped only as far as the
+  cap, so a very long line stays cheap to quote. **Rejected:**
+  - Describing the soft cap in the docs, the other half of Q40.
+  - Counting with `[...text].length`, which builds an array the size of the
+    line to count it.
+- **Origin:** Q40's default, LLM-suggested, accepted when T12f was planned.
+  The count without allocating: LLM-suggested, in T12f.
 
 ---
 

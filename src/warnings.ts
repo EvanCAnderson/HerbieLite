@@ -114,18 +114,44 @@ export function writeFailure(cause: string): string {
 }
 
 /**
- * One line of input, made safe to print and bounded in length (T6.11). The
- * loop stops at the limit rather than escaping the whole line first, so a
- * multi-megabyte line costs nothing to quote and no escape is ever cut in
- * half.
+ * How many characters `text` holds, counting a surrogate pair as one, as
+ * `for...of` does. One pass over the text with nothing allocated.
+ */
+function characterCount(text: string): number {
+  let count = 0;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    const previous = i > 0 ? text.charCodeAt(i - 1) : 0;
+    const lowAfterHigh =
+      code >= 0xdc00 &&
+      code <= 0xdfff &&
+      previous >= 0xd800 &&
+      previous <= 0xdbff;
+    if (!lowAfterHigh) count += 1;
+  }
+  return count;
+}
+
+/**
+ * One line of input, made safe to print and bounded in length (T6.11): at
+ * most QUOTE_LIMIT characters of output, then how many characters the line
+ * held (Q40). An escape that would pass the limit is left out whole, never
+ * cut in half, and the line is escaped only as far as the limit, so a
+ * multi-megabyte line costs one count, not an escape of every character.
  */
 function quoted(text: string): string {
   let out = "";
+  let length = 0;
   for (const character of text) {
-    if (out.length >= QUOTE_LIMIT) {
-      return `${out}... (${text.length} characters)`;
+    const shown = escape(character);
+    // An escape is ASCII; a character left as typed is one, whatever its
+    // UTF-16 length.
+    const width = shown === character ? 1 : shown.length;
+    if (length + width > QUOTE_LIMIT) {
+      return `${out}... (${characterCount(text)} characters)`;
     }
-    out += escape(character);
+    out += shown;
+    length += width;
   }
   return out;
 }

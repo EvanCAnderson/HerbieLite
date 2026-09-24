@@ -2,9 +2,24 @@ import { spawn } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { Readable, Writable } from "node:stream";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { main } from "./cli.js";
 import { HELP, OPENING } from "./help.js";
+import type { SourceLine } from "./parser.js";
+
+// The parser, made to throw on request, so a test can throw from inside the
+// read loop itself (T6.12). Every other test gets the real parser.
+const parser = vi.hoisted(() => ({ fault: undefined as Error | undefined }));
+vi.mock("./parser.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./parser.js")>();
+  return {
+    ...actual,
+    parseLine: (source: SourceLine) => {
+      if (parser.fault !== undefined) throw parser.fault;
+      return actual.parseLine(source);
+    },
+  };
+});
 
 const ROOT = join(import.meta.dirname, "..");
 const EXAMPLES = join(ROOT, "examples");
@@ -500,18 +515,20 @@ describe("an I/O failure and a bug are told apart (T6.12)", () => {
   });
 
   it("lets any other throw from inside the read loop propagate", async () => {
-    // reportLines already crashes on a broken invariant (T5.2); this holds
-    // the other half, that the try around the loop catches only ReadError
-    // and never dresses a bug up as a problem with the user's file.
-    const boom = new Error("bug in a layer below");
-    const exploding = Object.assign(new Writable({ write: () => undefined }), {
-      write: () => {
-        throw boom;
-      },
-    }) as unknown as NodeJS.WritableStream;
-    await expect(
-      main([], Readable.from(["not a command\n"]), sink(), exploding),
-    ).rejects.toBe(boom);
+    // buildReport already crashes on a broken invariant (T5.2); this holds
+    // the other half, that the try around the read loop catches only
+    // ReadError and never dresses a bug up as a problem with the user's file.
+    const boom = new Error("bug in the parser");
+    parser.fault = boom;
+    const err = sink();
+    try {
+      await expect(
+        main([], Readable.from(["Partner Chris\n"]), sink(), err),
+      ).rejects.toBe(boom);
+    } finally {
+      parser.fault = undefined;
+    }
+    expect(err.text()).toBe("");
   });
 });
 
@@ -617,8 +634,11 @@ describe("the program as a process (brief 3, PLAN §7)", () => {
     child.stdin.end(stdin ?? "");
     return new Promise((resolve, reject) => {
       child.on("error", reject);
-      child.on("close", (code) => {
-        resolve({ code: code ?? 0, out, err });
+      // A child killed by a signal has no exit code; reading that as 0
+      // would pass a crash as a success.
+      child.on("close", (code, signal) => {
+        if (code === null) reject(new Error(`killed by ${String(signal)}`));
+        else resolve({ code, out, err });
       });
     });
   }

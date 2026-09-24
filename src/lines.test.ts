@@ -33,6 +33,16 @@ describe("splitting and numbering", () => {
     ]);
   });
 
+  it("joins a line spread over many chunks, empty ones among them (T12.10)", async () => {
+    const pieces = Array.from({ length: 1000 }, (_, i) =>
+      i % 100 === 0 ? "" : "a",
+    );
+    expect(await read(...pieces, "\nb", "", "c")).toEqual([
+      { lineNumber: 1, text: "a".repeat(990) },
+      { lineNumber: 2, text: "bc" },
+    ]);
+  });
+
   it("yields several lines arriving in one chunk", async () => {
     expect(await read("Partner Chris\nCompany Globex\nCompany ACME\n")).toEqual(
       [

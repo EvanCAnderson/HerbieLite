@@ -193,6 +193,33 @@ describe("quoting input back (T6.11)", () => {
     expect(warning).not.toMatch(/\\u[0-9a-f]{0,3}\.\.\./);
   });
 
+  /** The quoted line in a warning, less any "... (N characters)". */
+  function quote(warning: string | undefined): string {
+    const text = (warning ?? "").split("discarded: ")[1] ?? "";
+    return text.replace(/\.\.\. \(\d+ characters\)$/, "");
+  }
+
+  it("quotes at most 200 characters, and a line of exactly 200 whole (Q40)", () => {
+    const whole = parserWarnings(`Partner ${"1".repeat(192)}`)[0];
+    expect(quote(whole)).toHaveLength(200);
+    expect(whole).not.toContain("...");
+    const cut = parserWarnings(`Partner ${"1".repeat(193)}`)[0];
+    expect(quote(cut)).toHaveLength(200);
+    expect(cut?.endsWith("... (201 characters)")).toBe(true);
+  });
+
+  it("leaves out an escape that would pass the limit (Q40)", () => {
+    // 9 characters, then 31 escapes of 6 make 195; a 32nd would make 201.
+    const warning = parserWarnings(`Partner x${"\u00a0".repeat(40)}`)[0];
+    expect(quote(warning)).toBe(`Partner x${"\\u00a0".repeat(31)}`);
+  });
+
+  it("counts characters, not UTF-16 units (Q40)", () => {
+    const warning = parserWarnings(`Partner ${"\u{1f600}".repeat(300)}`)[0];
+    expect([...quote(warning)]).toHaveLength(200);
+    expect(warning?.endsWith("... (308 characters)")).toBe(true);
+  });
+
   it("escapes the standing declaration too, not only the discarded line", () => {
     expect(
       resolutionWarnings(

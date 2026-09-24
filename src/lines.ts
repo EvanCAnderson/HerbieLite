@@ -29,7 +29,11 @@ const BYTE_ORDER_MARK = "\uFEFF";
 export async function* readLines(
   chunks: AsyncIterable<string> | Iterable<string>,
 ): AsyncIterable<SourceLine> {
-  let buffer = "";
+  // The pieces of a line not ended yet. Each chunk is searched for `\n`
+  // on its own and the pieces joined once the line ends, so a line spread
+  // over many chunks costs linear time. Appending to one string instead
+  // made every search flatten all the text held so far (T12.10).
+  let pending: string[] = [];
   let lineNumber = 0;
   let atStreamStart = true;
 
@@ -38,26 +42,29 @@ export async function* readLines(
   // this catch, so a bug downstream is never mislabelled as an I/O problem
   // (T6.12); the tests hold both halves of that.
   try {
-    for await (const chunk of chunks) {
-      buffer += chunk;
-      if (atStreamStart && buffer !== "") {
-        if (buffer.startsWith(BYTE_ORDER_MARK)) buffer = buffer.slice(1);
+    for await (let chunk of chunks) {
+      if (atStreamStart && chunk !== "") {
+        if (chunk.startsWith(BYTE_ORDER_MARK)) chunk = chunk.slice(1);
         atStreamStart = false;
       }
-      let newline = buffer.indexOf("\n");
+      let start = 0;
+      let newline = chunk.indexOf("\n");
       while (newline !== -1) {
+        pending.push(chunk.slice(start, newline));
         lineNumber += 1;
-        yield { lineNumber, text: buffer.slice(0, newline) };
-        buffer = buffer.slice(newline + 1);
-        newline = buffer.indexOf("\n");
+        yield { lineNumber, text: pending.join("") };
+        pending = [];
+        start = newline + 1;
+        newline = chunk.indexOf("\n", start);
       }
+      if (start < chunk.length) pending.push(chunk.slice(start));
     }
   } catch (error) {
     throw new ReadError(error);
   }
 
-  if (buffer !== "") {
+  if (pending.length > 0) {
     lineNumber += 1;
-    yield { lineNumber, text: buffer };
+    yield { lineNumber, text: pending.join("") };
   }
 }

@@ -497,10 +497,12 @@ warning is the signal that the report may be affected. All warnings print
 after input ends, in line order ([T9.13](docs/DECISIONS.md#t9-13)).
 
 **Quoted input is escaped and capped at 200 characters**
-([T6.11](docs/DECISIONS.md#t6-11)). Control, format and separator characters
+([T6.11](docs/DECISIONS.md#t6-11), [Q40](docs/DECISIONS.md#q40)). Control, format and separator characters
 show as `\t`, `\r`, or `\u00a0`. So an invisible character is visible in the
 warning, and a hostile or binary file cannot send terminal escapes to stderr.
-Past the cap, the quote ends `... (5008 characters)`. Visible non-ASCII such
+Past the cap, the quote ends `... (5008 characters)`, counting characters
+as a person would, not UTF-16 units. An escape that would pass the cap is
+left out whole rather than cut. Visible non-ASCII such
 as `Zoë` is left as typed. **Known limit:** invalid UTF-8 arrives as the
 replacement character, U+FFFD. It is printable, so it is not escaped, and the
 warning cannot show the original bytes.
@@ -594,6 +596,7 @@ Anything counting lines would otherwise see a report where there is none.
 | Q31   | `--partners` and `--employees` answer instead of the report, one per run  | [T10.8](docs/DECISIONS.md#t10-8)   |
 | Q32   | A query lists partners strongest first, employees alphabetically          | [T10.9](docs/DECISIONS.md#t10-9)   |
 | Q33   | A query naming an undeclared company exits 1, after the input is read     | [T10.10](docs/DECISIONS.md#t10-10) |
+| Q40   | A quote holds at most 200 characters; its length is counted in characters | [T12.11](docs/DECISIONS.md#t12-11) |
 
 The web page raised questions of its own, about the page rather than the
 input:
